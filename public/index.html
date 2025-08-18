@@ -41,7 +41,6 @@
                     </button>
                 </div>
             </div>
-            
             <!-- 手機選單 -->
             <div id="mobileMenu" class="hidden md:hidden pb-4">
                 <div class="space-y-2">
@@ -56,7 +55,6 @@
             </div>
         </div>
     </nav>
-
     <!-- 首頁區塊 -->
     <section id="home" class="bg-gradient-to-br from-actc-orange to-actc-orange-dark text-white py-20 fade-in">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -72,7 +70,6 @@
             </p>
         </div>
     </section>
-
     <!-- 最新消息 -->
     <section id="news" class="py-20 bg-white fade-in">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,7 +77,6 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">最新消息</h2>
                 <div class="w-24 h-1 bg-actc-orange mx-auto"></div>
             </div>
-
             <!-- 分類篩選 -->
             <div class="flex flex-wrap justify-center gap-4 mb-12">
                 <button class="category-filter px-6 py-3 rounded-full border-2 border-gray-300 text-gray-600 hover:border-actc-orange hover:text-actc-orange transition-all duration-300 active" data-category="all">
@@ -99,7 +95,6 @@
                     一般消息
                 </button>
             </div>
-
             <!-- 載入中狀態 -->
             <div id="news-loading" class="text-center py-12">
                 <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-actc-orange transition ease-in-out duration-150">
@@ -110,12 +105,10 @@
                     載入中...
                 </div>
             </div>
-
             <!-- 新聞列表容器 -->
             <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 gap-8 hidden">
                 <!-- 新聞卡片將在這裡動態生成 -->
             </div>
-
             <!-- 無新聞時的提示 -->
             <div id="news-empty" class="text-center py-12 hidden">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,7 +117,6 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">暫無最新消息</h3>
                 <p class="mt-1 text-sm text-gray-500">請稍後再來查看</p>
             </div>
-
             <!-- 載入更多按鈕 -->
             <div id="load-more-container" class="text-center mt-12 hidden">
                 <button id="load-more-btn" class="btn-primary px-8 py-3 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
@@ -133,9 +125,6 @@
             </div>
         </div>
     </section>
-
-
-
     <!-- 活動課程 -->
     <section id="events" class="py-20 bg-gray-50 fade-in">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -146,7 +135,6 @@
                     專業的資安培訓課程、工作坊和研討會，助您提升資訊安全技能
                 </p>
             </div>
-
             <!-- 搜尋和篩選區塊 -->
             <div class="mb-8 bg-white rounded-lg shadow-md p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -163,7 +151,6 @@
                             </div>
                         </div>
                     </div>
-                    
                     <!-- 類型篩選 -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">活動類型</label>
@@ -177,7 +164,6 @@
                             <option value="others">其他</option>
                         </select>
                     </div>
-                    
                     <!-- 排序方式 -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">排序方式</label>
@@ -189,7 +175,6 @@
                         </select>
                     </div>
                 </div>
-                
                 <!-- 標籤篩選 -->
                 <div class="mt-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">熱門標籤</label>
@@ -198,7 +183,6 @@
                     </div>
                 </div>
             </div>
-            
             <!-- 載入中狀態 -->
             <div id="events-loading" class="text-center py-12">
                 <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-actc-orange transition ease-in-out duration-150">
@@ -209,12 +193,10 @@
                     載入活動課程中...
                 </div>
             </div>
-
             <!-- 活動列表容器 -->
             <div id="events-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 hidden">
                 <!-- 活動卡片將在這裡動態生成 -->
             </div>
-
             <!-- 無活動時的提示 -->
             <div id="events-empty" class="text-center py-12 hidden">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -223,7 +205,6 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">暫無活動課程</h3>
                 <p class="mt-1 text-sm text-gray-500">請稍後再來查看或嘗試調整搜尋條件</p>
             </div>
-
             <!-- 載入更多按鈕 -->
             <div id="load-more-events-container" class="text-center mt-12 hidden">
                 <button id="load-more-events-btn" class="btn-primary px-8 py-3 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
@@ -232,7 +213,6 @@
             </div>
         </div>
     </section>
-
     <!-- 企業會員專區 -->
     <section id="corporate-members" class="py-20 bg-white fade-in">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -243,13 +223,11 @@
                     感謝企業夥伴的支持與參與，共同推動資訊安全人才培育發展
                 </p>
             </div>
-
             <!-- 載入狀態 -->
             <div id="home-members-loading" class="flex flex-col items-center justify-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-actc-orange"></div>
                 <p class="mt-4 text-gray-600">載入企業會員資料中...</p>
             </div>
-
             <!-- 空狀態 -->
             <div id="home-members-empty" class="hidden text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -258,7 +236,6 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">暫無企業會員</h3>
                 <p class="mt-1 text-sm text-gray-500">目前沒有企業會員資料</p>
             </div>
-
             <!-- 錯誤狀態 -->
             <div id="home-members-error" class="hidden text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,12 +244,10 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">載入失敗</h3>
                 <p class="mt-1 text-sm text-gray-500">無法載入企業會員資料，請稍後再試</p>
             </div>
-
             <!-- 企業會員容器 -->
             <div id="home-members-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- 動態載入的企業會員內容 -->
             </div>
-
             <!-- 查看更多按鈕 -->
             <div class="text-center mt-12">
                 <a href="corporate-members.html" class="btn-primary inline-flex items-center px-8 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
@@ -284,7 +259,6 @@
             </div>
         </div>
     </section>
-
     <!-- 頁尾 -->
     <footer class="bg-gray-800 text-white py-12 fade-in">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -302,9 +276,8 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-4">聯絡資訊</h3>
                     <div class="space-y-2 text-gray-300">
-                        <p>電話：(02) 2345-6789</p>
-                        <p>傳真：(02) 2345-6790</p>
-                        <p>信箱：info@actc.org.tw</p>
+                        <p>信箱：actcactc2023@gmail.com</p>
+                        <p>信箱：rain5279@gmail.com</p>
                         <p>地址：105台北市松山區復興北路57號</p>
                     </div>
                 </div>
@@ -324,10 +297,8 @@
             </div>
         </div>
     </footer>
-
     <!-- Swiper.js -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
-    
     <!-- 主要 JavaScript -->
     <script>
         // 新聞管理
@@ -345,17 +316,14 @@
                 this.itemsPerPage = 6; // 每頁顯示數量
                 this.init();
             }
-
             async init() {
                 await this.loadNews();
                 this.addEventListeners();
             }
-
             async loadNews() {
                 try {
                     const response = await fetch('/api/news');
                     if (!response.ok) throw new Error('Failed to fetch news');
-                    
                     this.allNews = await response.json();
                     this.displayNews();
                 } catch (error) {
@@ -363,28 +331,22 @@
                     this.showError();
                 }
             }
-
             displayNews() {
                 this.newsLoading.classList.add('hidden');
-                
                 if (!this.allNews || this.allNews.length === 0) {
                     this.newsEmpty.classList.remove('hidden');
                     return;
                 }
-
                 this.newsContainer.classList.remove('hidden');
                 this.filterNews();
                 this.initializeSwipers();
             }
-
             filterNews() {
                 const filteredNews = this.allNews.filter(news => {
                     const newsCategory = news.category || '一般';
                     return this.currentCategory === 'all' || newsCategory === this.currentCategory;
                 });
-
                 this.newsContainer.innerHTML = filteredNews.slice(0, this.itemsPerPage).map(item => this.createNewsCard(item)).join('');
-
                 if (filteredNews.length > this.itemsPerPage) {
                     this.loadMoreContainer.classList.remove('hidden');
                     this.loadMoreBtn.addEventListener('click', () => this.loadMore());
@@ -392,7 +354,6 @@
                     this.loadMoreContainer.classList.add('hidden');
                 }
             }
-
             loadMore() {
                 this.currentPage++;
                 const startIndex = this.currentPage * this.itemsPerPage;
@@ -401,17 +362,14 @@
                     const newsCategory = news.category || '一般';
                     return this.currentCategory === 'all' || newsCategory === this.currentCategory;
                 });
-
                 const newsToAdd = filteredNews.slice(startIndex, endIndex).map(item => this.createNewsCard(item));
                 this.newsContainer.innerHTML += newsToAdd.join('');
                 this.initializeSwipers();
-
                 if (endIndex >= filteredNews.length) {
                     this.loadMoreContainer.classList.add('hidden');
                     this.loadMoreBtn.removeEventListener('click', () => this.loadMore());
                 }
             }
-
             createNewsCard(news) {
                 // 優先使用 imageUrl，然後是 images 陣列
                 const imageUrl = news.imageUrl || (news.images && news.images.length > 0 ? news.images[0] : '');
@@ -420,7 +378,6 @@
                 const hasLink = news.link;
                 const newsDate = news.date ? new Date(news.date) : new Date();
                 const category = news.category || '一般';
-                
                 return `
                     <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer" 
                          onclick="showNewsModal('${news.title}', '${newsDate.toLocaleDateString('zh-TW')}', '${(news.description || '').replace(/'/g, "\\'")}', '${news.category || '一般'}')"
@@ -457,15 +414,12 @@
                                 </div>
                             </div>
                         `}
-                        
                         <div class="p-6">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="text-xl font-semibold text-gray-800 line-clamp-2">${news.title}</h3>
                                 <span class="text-sm text-actc-orange font-medium whitespace-nowrap ml-2">${newsDate.toLocaleDateString('zh-TW')}</span>
                             </div>
-                            
                             <p class="text-gray-600 mb-4 line-clamp-3 leading-relaxed">${news.description || news.content || ''}</p>
-                            
                             <div class="space-y-2">
                                 ${hasFile ? `
                                     <a href="${news.file.startsWith('/') ? news.file : '/' + news.file}" download class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-actc-orange hover:bg-actc-orange-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-actc-sand transition-colors">
@@ -475,7 +429,6 @@
                                         下載附件
                                     </a>
                                 ` : ''}
-                                
                                 ${hasLink ? `
                                     <a href="${news.link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-3 py-2 border border-actc-orange text-sm leading-4 font-medium rounded-md text-actc-orange bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,14 +442,12 @@
                     </div>
                 `;
             }
-
             initializeSwipers() {
                 const swiperContainers = document.querySelectorAll('.swiper-container');
                 swiperContainers.forEach(container => {
                     const pagination = container.querySelector('.swiper-pagination');
                     const nextButton = container.querySelector('.swiper-button-next');
                     const prevButton = container.querySelector('.swiper-button-prev');
-                    
                     new Swiper(container, {
                         loop: true,
                         autoplay: {
@@ -516,7 +467,6 @@
                     });
                 });
             }
-
             showError() {
                 this.newsLoading.classList.add('hidden');
                 this.newsEmpty.classList.remove('hidden');
@@ -528,7 +478,6 @@
                     <p class="mt-1 text-sm text-gray-500">無法載入最新消息，請稍後再試</p>
                 `;
             }
-
             addEventListeners() {
                 this.categoryFilters.forEach(filter => {
                     filter.addEventListener('click', () => {
@@ -537,26 +486,21 @@
                             f.classList.remove('active', 'bg-actc-orange', 'text-white', 'border-actc-orange');
                             f.classList.add('border-gray-300', 'text-gray-600');
                         });
-                        
                         filter.classList.add('active', 'bg-actc-orange', 'text-white', 'border-actc-orange');
                         filter.classList.remove('border-gray-300', 'text-gray-600');
-                        
                         // 更新當前分類
                         this.currentCategory = filter.dataset.category;
                         this.currentPage = 1; // 切換分類時重置頁碼
                         this.filterNews();
                         this.loadMoreContainer.classList.add('hidden'); // 切換分類時隱藏載入更多
-                        
                         // 移除舊的載入更多監聽器
                         this.loadMoreBtn.removeEventListener('click', this.loadMore);
-                        
                         // 添加新的載入更多監聽器
                         this.loadMoreBtn.addEventListener('click', () => this.loadMore());
                     });
                 });
             }
         }
-
         // 首頁企業會員管理器
         class HomeMembersManager {
             constructor() {
@@ -565,27 +509,20 @@
                 this.emptyElement = document.getElementById('home-members-empty');
                 this.errorElement = document.getElementById('home-members-error');
                 this.apiUrl = '/api/corporate-members/displayed';
-                
                 this.loadMembers();
             }
-            
             async loadMembers() {
                 try {
                     this.showLoading();
                     const response = await fetch(this.apiUrl);
-                    
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    
                     const data = await response.json();
-                    
                     if (!data.success) {
                         throw new Error(data.message || 'API request failed');
                     }
-                    
                     const members = data.members || [];
-                    
                     if (members.length === 0) {
                         this.showEmpty();
                     } else {
@@ -599,15 +536,12 @@
                     this.showError();
                 }
             }
-            
             renderMembers(members) {
                 this.membersContainer.innerHTML = '';
-                
                 members.forEach((member, index) => {
                     const memberCard = this.createMemberCard(member);
                     this.membersContainer.appendChild(memberCard);
                 });
-                
                 // 添加淡入動畫
                 setTimeout(() => {
                     const cards = this.membersContainer.querySelectorAll('.member-card');
@@ -619,11 +553,9 @@
                     });
                 }, 100);
             }
-            
             createMemberCard(member) {
                 const card = document.createElement('div');
                 card.className = 'member-card bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 opacity-0';
-                
                 const logoDisplay = member.logo ? 
                     `<div class="w-full h-32 mb-4 flex items-center justify-center bg-gray-50 rounded-lg p-4">
                         <img src="${member.logo.startsWith('http') ? member.logo : member.logo}" alt="${member.companyName} Logo" class="max-w-full max-h-full object-contain" loading="lazy" onerror="this.parentElement.innerHTML='<svg class=&quot;w-12 h-12 text-gray-400&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; viewBox=&quot;0 0 24 24&quot;><path stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; stroke-width=&quot;2&quot; d=&quot;M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4&quot;></path></svg>';">
@@ -633,7 +565,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                         </svg>
                     </div>`;
-
                 const websiteLink = member.website ? 
                     `<div class="pt-3 border-t border-gray-100 mt-auto">
                         <a href="${member.website}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-actc-orange hover:text-actc-orange-dark transition-colors font-medium text-sm focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">
@@ -643,7 +574,6 @@
                             </svg>
                         </a>
                     </div>` : '';
-
                 card.innerHTML = `
                     <div class="p-6 h-full flex flex-col">
                         ${logoDisplay}
@@ -654,31 +584,26 @@
                         ${websiteLink}
                     </div>
                 `;
-                
                 return card;
             }
-            
             showLoading() {
                 this.loadingElement.classList.remove('hidden');
                 this.emptyElement.classList.add('hidden');
                 this.errorElement.classList.add('hidden');
                 this.membersContainer.classList.add('hidden');
             }
-            
             showEmpty() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.remove('hidden');
                 this.errorElement.classList.add('hidden');
                 this.membersContainer.classList.add('hidden');
             }
-            
             showError() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.add('hidden');
                 this.errorElement.classList.remove('hidden');
                 this.membersContainer.classList.add('hidden');
             }
-            
             showMembers() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.add('hidden');
@@ -686,7 +611,6 @@
                 this.membersContainer.classList.remove('hidden');
             }
         }
-
         // 首頁活動課程管理器
         class HomeEventsManager {
             constructor() {
@@ -699,7 +623,6 @@
                 this.typeFilter = document.getElementById('eventsTypeFilter');
                 this.sortSelect = document.getElementById('eventsSort');
                 this.tagsFilter = document.getElementById('eventsTagsFilter');
-                
                 this.apiUrl = '/api/events';
                 this.currentPage = 1;
                 this.itemsPerPage = 6;
@@ -712,16 +635,13 @@
                     sortBy: 'date',
                     sortOrder: 'asc'
                 };
-                
                 this.loadEvents();
                 this.addEventListeners();
                 this.setupSearchDebounce();
             }
-            
             async loadEvents() {
                 try {
                     this.showLoading();
-                    
                     // 構建查詢參數
                     const params = new URLSearchParams({
                         page: this.currentPage,
@@ -729,32 +649,24 @@
                         sortBy: this.currentFilters.sortBy,
                         sortOrder: this.currentFilters.sortOrder
                     });
-                    
                     if (this.currentFilters.type) {
                         params.append('type', this.currentFilters.type);
                     }
-                    
                     if (this.currentFilters.search) {
                         params.append('search', this.currentFilters.search);
                     }
-                    
                     if (this.currentFilters.tags.length > 0) {
                         params.append('tags', this.currentFilters.tags.join(','));
                     }
-                    
                     const response = await fetch(`${this.apiUrl}?${params}`);
-                    
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    
                     const data = await response.json();
                     this.allEvents = data.events;
                     this.filteredEvents = [...this.allEvents];
-                    
                     // 更新標籤篩選器
                     this.updateTagsFilter();
-                    
                     if (this.allEvents.length === 0) {
                         this.showEmpty();
                     } else {
@@ -765,7 +677,6 @@
                     this.showError();
                 }
             }
-            
             updateTagsFilter() {
                 // 收集所有活動的標籤
                 const allTags = new Set();
@@ -774,7 +685,6 @@
                         event.tags.forEach(tag => allTags.add(tag));
                     }
                 });
-                
                 // 生成標籤按鈕
                 this.tagsFilter.innerHTML = '';
                 allTags.forEach(tag => {
@@ -782,17 +692,14 @@
                     tagButton.className = 'px-3 py-1 text-sm border border-gray-300 rounded-full hover:bg-actc-orange hover:text-white hover:border-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2';
                     tagButton.textContent = tag;
                     tagButton.dataset.tag = tag;
-                    
                     // 檢查是否已選中
                     if (this.currentFilters.tags.includes(tag)) {
                         tagButton.classList.add('bg-actc-orange', 'text-white', 'border-actc-orange');
                     }
-                    
                     tagButton.addEventListener('click', () => this.toggleTag(tag));
                     this.tagsFilter.appendChild(tagButton);
                 });
             }
-            
             toggleTag(tag) {
                 const tagIndex = this.currentFilters.tags.indexOf(tag);
                 if (tagIndex > -1) {
@@ -800,25 +707,20 @@
                 } else {
                     this.currentFilters.tags.push(tag);
                 }
-                
                 this.currentPage = 1;
                 this.loadEvents();
             }
-            
             displayEvents() {
                 this.loadingElement.classList.add('hidden');
-                
                 if (!this.filteredEvents || this.filteredEvents.length === 0) {
                     this.emptyElement.classList.remove('hidden');
                     this.eventsContainer.classList.add('hidden');
                     this.loadMoreContainer.classList.add('hidden');
                     return;
                 }
-
                 this.eventsContainer.classList.remove('hidden');
                 this.emptyElement.classList.add('hidden');
                 this.renderEvents();
-                
                 // 檢查是否需要顯示載入更多按鈕
                 if (this.filteredEvents.length > this.itemsPerPage) {
                     this.loadMoreContainer.classList.remove('hidden');
@@ -826,25 +728,20 @@
                     this.loadMoreContainer.classList.add('hidden');
                 }
             }
-            
             renderEvents() {
                 const eventsToShow = this.filteredEvents.slice(0, this.itemsPerPage);
                 this.eventsContainer.innerHTML = eventsToShow.map(event => this.createEventCard(event)).join('');
             }
-            
             loadMore() {
                 this.currentPage++;
                 const startIndex = (this.currentPage - 1) * this.itemsPerPage;
                 const endIndex = startIndex + this.itemsPerPage;
-                
                 const eventsToAdd = this.filteredEvents.slice(startIndex, endIndex).map(event => this.createEventCard(event));
                 this.eventsContainer.innerHTML += eventsToAdd.join('');
-
                 if (endIndex >= this.filteredEvents.length) {
                     this.loadMoreContainer.classList.add('hidden');
                 }
             }
-            
             createEventCard(event) {
                 const eventDate = new Date(event.date);
                 const typeColors = {
@@ -855,13 +752,10 @@
                     'training': 'bg-pink-100 text-pink-800',
                     'others': 'bg-gray-100 text-gray-800'
                 };
-                
                 const typeColor = typeColors[event.type] || typeColors['others'];
                 const typeLabel = event.typeLabel || event.type;
-                
                 // 檢查活動狀態
                 const statusInfo = this.getStatusInfo(event);
-                
                 return `
                     <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                         <div class="h-48 bg-gradient-to-br from-actc-orange to-actc-orange-dark flex items-center justify-center relative">
@@ -872,14 +766,12 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                 </svg>
                             `}
-                            
                             <!-- 類型標籤 -->
                             <div class="absolute top-3 left-3">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${typeColor} shadow-lg">
                                     ${typeLabel}
                                 </span>
                             </div>
-                            
                             <!-- 狀態標籤 -->
                             ${statusInfo.badge ? `
                                 <div class="absolute top-3 right-3">
@@ -889,16 +781,13 @@
                                 </div>
                             ` : ''}
                         </div>
-                        
                         <div class="p-6">
                             <h3 class="text-xl font-semibold text-gray-800 mb-3 line-clamp-2">${event.title}</h3>
-                            
                             ${event.shortDescription ? `
                                 <p class="text-gray-600 mb-4 line-clamp-2 leading-relaxed">${event.shortDescription}</p>
                             ` : `
                                 <p class="text-gray-600 mb-4 line-clamp-3 leading-relaxed">${event.description}</p>
                             `}
-                            
                             <!-- 講師資訊 -->
                             ${event.instructor && event.instructor.name ? `
                                 <div class="flex items-center text-sm text-gray-500 mb-3">
@@ -908,7 +797,6 @@
                                     <span>${event.instructor.name}${event.instructor.title ? ` - ${event.instructor.title}` : ''}</span>
                                 </div>
                             ` : ''}
-                            
                             <!-- 時長資訊 -->
                             ${event.formattedDuration ? `
                                 <div class="flex items-center text-sm text-gray-500 mb-3">
@@ -918,7 +806,6 @@
                                     <span>${event.formattedDuration}</span>
                                 </div>
                             ` : ''}
-                            
                             <div class="space-y-2">
                                 <div class="flex items-center text-sm text-gray-500">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -932,7 +819,6 @@
                                         minute: '2-digit'
                                     })}</span>
                                 </div>
-                                
                                 <div class="flex items-center text-sm text-gray-500">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -940,7 +826,6 @@
                                     </svg>
                                     <span class="truncate">${event.location}</span>
                                 </div>
-                                
                                 <!-- 價格資訊 -->
                                 ${event.formattedPrice ? `
                                     <div class="flex items-center text-sm text-gray-500">
@@ -950,7 +835,6 @@
                                         <span class="font-medium ${event.price.isFree ? 'text-green-600' : 'text-orange-600'}">${event.formattedPrice}</span>
                                     </div>
                                 ` : ''}
-                                
                                 <!-- 名額資訊 -->
                                 ${event.capacity ? `
                                     <div class="flex items-center text-sm text-gray-500">
@@ -960,7 +844,6 @@
                                         <span>${event.registeredCount || 0}/${event.capacity} 人</span>
                                     </div>
                                 ` : ''}
-                                
                                 <!-- 標籤 -->
                                 ${event.tags && event.tags.length > 0 ? `
                                     <div class="flex flex-wrap gap-1 mt-3">
@@ -976,7 +859,6 @@
                                         ` : ''}
                                     </div>
                                 ` : ''}
-                                
                                 <!-- 操作按鈕 -->
                                 <div class="flex gap-2 mt-4">
                                     ${event.canRegister ? `
@@ -984,13 +866,11 @@
                                             立即報名
                                         </button>
                                     ` : ''}
-                                    
                                     ${event.hasFile ? `
                                         <a href="/api/events/${event._id}/download" class="flex-1 border border-blue-500 text-blue-500 bg-white hover:bg-blue-50 px-4 py-2 rounded-md transition-colors text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                             <i class="fas fa-download mr-2"></i>下載檔案
                                         </a>
                                     ` : ''}
-                                    
                                     ${event.link ? `
                                         <a href="${event.link}" target="_blank" rel="noopener noreferrer" class="flex-1 border border-actc-orange text-actc-orange bg-white hover:bg-gray-50 px-4 py-2 rounded-md transition-colors text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                             ${event.link.includes('discord') ? 'Discord' : 
@@ -1005,33 +885,28 @@
                     </div>
                 `;
             }
-            
             getStatusInfo(event) {
                 const status = event.status || 'published';
                 const now = new Date();
                 const eventDate = new Date(event.date);
-                
                 if (status === 'cancelled') {
                     return {
                         badge: '已取消',
                         badgeClass: 'bg-red-100 text-red-800'
                     };
                 }
-                
                 if (status === 'completed') {
                     return {
                         badge: '已完成',
                         badgeClass: 'bg-gray-100 text-gray-800'
                     };
                 }
-                
                 if (eventDate < now) {
                     return {
                         badge: '已結束',
                         badgeClass: 'bg-gray-100 text-gray-800'
                     };
                 }
-                
                 if (status === 'registration_open') {
                     if (event.capacity && event.registeredCount >= event.capacity) {
                         return {
@@ -1044,31 +919,26 @@
                         badgeClass: 'bg-green-100 text-green-800'
                     };
                 }
-                
                 if (status === 'registration_closed') {
                     return {
                         badge: '報名截止',
                         badgeClass: 'bg-yellow-100 text-yellow-800'
                     };
                 }
-                
                 return {};
             }
-            
             showLoading() {
                 this.loadingElement.classList.remove('hidden');
                 this.emptyElement.classList.add('hidden');
                 this.eventsContainer.classList.add('hidden');
                 this.loadMoreContainer.classList.add('hidden');
             }
-            
             showEmpty() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.remove('hidden');
                 this.eventsContainer.classList.add('hidden');
                 this.loadMoreContainer.classList.add('hidden');
             }
-            
             showError() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.remove('hidden');
@@ -1082,7 +952,6 @@
                 this.eventsContainer.classList.add('hidden');
                 this.loadMoreContainer.classList.add('hidden');
             }
-            
             setupSearchDebounce() {
                 let searchTimeout;
                 this.searchInput.addEventListener('input', (e) => {
@@ -1094,7 +963,6 @@
                     }, 500);
                 });
             }
-            
             addEventListeners() {
                 // 類型篩選
                 this.typeFilter.addEventListener('change', (e) => {
@@ -1102,7 +970,6 @@
                     this.currentPage = 1;
                     this.loadEvents();
                 });
-                
                 // 排序
                 this.sortSelect.addEventListener('change', (e) => {
                     const [sortBy, sortOrder] = e.target.value.split('-');
@@ -1111,12 +978,10 @@
                     this.currentPage = 1;
                     this.loadEvents();
                 });
-                
                 // 載入更多
                 this.loadMoreBtn.addEventListener('click', () => this.loadMore());
             }
         }
-
         // 平滑滾動
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -1130,12 +995,10 @@
                 }
             });
         });
-
         // 導航欄高亮當前區塊
         window.addEventListener('scroll', () => {
             const sections = document.querySelectorAll('section[id]');
             const navLinks = document.querySelectorAll('nav a[href^="#"]');
-            
             let current = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
@@ -1144,7 +1007,6 @@
                     current = section.getAttribute('id');
                 }
             });
-
             navLinks.forEach(link => {
                 link.classList.remove('text-actc-orange');
                 if (link.getAttribute('href') === `#${current}`) {
@@ -1152,24 +1014,20 @@
                 }
             });
         });
-
         // 初始化管理器
         document.addEventListener('DOMContentLoaded', () => {
             new NewsManager();
             new HomeMembersManager();
             new HomeEventsManager();
-            
             // 手機選單功能
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const mobileMenu = document.getElementById('mobileMenu');
-            
             if (mobileMenuBtn && mobileMenu) {
                 mobileMenuBtn.addEventListener('click', () => {
                     mobileMenu.classList.toggle('hidden');
                 });
             }
         });
-
         // 活動報名功能
         async function registerForEvent(eventId) {
             try {
@@ -1180,13 +1038,11 @@
                 showNotification('報名失敗，請稍後再試', 'error');
             }
         }
-        
         // 顯示報名表單
         function showRegistrationForm(eventId) {
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
             modal.id = 'registrationModal';
-            
             modal.innerHTML = `
                 <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                     <div class="mt-3 text-center">
@@ -1216,26 +1072,21 @@
                     </div>
                 </div>
             `;
-            
             document.body.appendChild(modal);
-            
             // 處理表單提交
             document.getElementById('registrationForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await submitRegistration(eventId);
             });
         }
-        
         // 提交報名
         async function submitRegistration(eventId) {
             const name = document.getElementById('participantName').value.trim();
             const email = document.getElementById('participantEmail').value.trim();
-            
             if (!name || !email) {
                 showNotification('請填寫所有必填欄位', 'error');
                 return;
             }
-            
             try {
                 const response = await fetch(`/api/events/${eventId}/register`, {
                     method: 'POST',
@@ -1247,27 +1098,22 @@
                         participantEmail: email
                     })
                 });
-                
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || '報名失敗');
                 }
-                
                 const result = await response.json();
                 closeRegistrationModal();
                 showNotification('報名成功！', 'success');
-                
                 // 重新載入活動資料
                 if (window.homeEventsManager) {
                     window.homeEventsManager.loadEvents();
                 }
-                
             } catch (error) {
                 console.error('報名失敗:', error);
                 showNotification(error.message || '報名失敗，請稍後再試', 'error');
             }
         }
-        
         // 關閉報名表單
         function closeRegistrationModal() {
             const modal = document.getElementById('registrationModal');
@@ -1275,7 +1121,6 @@
                 modal.remove();
             }
         }
-        
         // 顯示新聞模態框
         function showNewsModal(title, date, description, category) {
             // 移除現有的模態框
@@ -1283,7 +1128,6 @@
             if (existingModal) {
                 existingModal.remove();
             }
-            
             const modal = document.createElement('div');
             modal.className = 'news-modal';
             modal.setAttribute('role', 'dialog');
@@ -1314,32 +1158,26 @@
                     </div>
                 </div>
             `;
-            
             document.body.appendChild(modal);
-            
             // 顯示動畫
             setTimeout(() => {
                 modal.classList.add('show');
             }, 10);
-            
             // 點擊背景關閉
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     closeNewsModal();
                 }
             });
-            
             // 鍵盤導航支援
             const closeButton = modal.querySelector('.news-modal-close');
             const firstFocusableElement = closeButton;
             const lastFocusableElement = closeButton;
-            
             // ESC鍵關閉
             const handleKeydown = (e) => {
                 if (e.key === 'Escape') {
                     closeNewsModal();
                 }
-                
                 // Tab鍵循環焦點
                 if (e.key === 'Tab') {
                     if (e.shiftKey) {
@@ -1355,20 +1193,16 @@
                     }
                 }
             };
-            
             document.addEventListener('keydown', handleKeydown);
-            
             // 聚焦到關閉按鈕
             setTimeout(() => {
                 closeButton.focus();
             }, 100);
-            
             // 清理事件監聽器
             modal.addEventListener('close', () => {
                 document.removeEventListener('keydown', handleKeydown);
             });
         }
-        
         // 關閉新聞模態框
         function closeNewsModal() {
             const modal = document.querySelector('.news-modal');
@@ -1381,26 +1215,20 @@
                 }, 300);
             }
         }
-        
         // 顯示通知
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-full`;
-            
             const bgColor = type === 'success' ? 'bg-green-500' : 
                            type === 'error' ? 'bg-red-500' : 
                            type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500';
-            
             notification.className += ` ${bgColor} text-white`;
             notification.textContent = message;
-            
             document.body.appendChild(notification);
-            
             // 動畫進入
             setTimeout(() => {
                 notification.classList.remove('translate-x-full');
             }, 100);
-            
             // 自動移除
             setTimeout(() => {
                 notification.classList.add('translate-x-full');
@@ -1411,9 +1239,6 @@
                 }, 300);
             }, 3000);
         }
-
-
-
     </script>
 </body>
 </html>
