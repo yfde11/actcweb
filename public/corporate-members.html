@@ -14,7 +14,6 @@
         .fade-in-up {
             animation: fadeInUp 0.6s ease-out forwards;
         }
-        
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -55,7 +54,6 @@
                     </button>
                 </div>
             </div>
-            
             <!-- 手機選單 -->
             <div id="mobileMenu" class="hidden md:hidden pb-4">
                 <div class="space-y-2">
@@ -69,7 +67,6 @@
             </div>
         </div>
     </nav>
-
     <!-- 頁首橫幅 -->
     <section class="bg-gradient-to-br from-actc-orange to-actc-orange-dark text-white py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -79,7 +76,6 @@
             </p>
         </div>
     </section>
-
     <!-- 企業會員列表 -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -90,7 +86,6 @@
                     感謝以下企業夥伴對資訊安全人才培育的支持與參與，共同建立更安全的數位環境
                 </p>
             </div>
-            
             <!-- 載入中狀態 -->
             <div id="loading" class="text-center py-12">
                 <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-actc-orange">
@@ -101,9 +96,6 @@
                     載入企業會員中...
                 </div>
             </div>
-
-
-
             <!-- 空狀態 -->
             <div id="empty" class="hidden text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,7 +104,6 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">暫無企業會員</h3>
                 <p class="mt-1 text-sm text-gray-500">目前還沒有企業會員加入</p>
             </div>
-
             <!-- 錯誤狀態 -->
             <div id="error" class="hidden text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,14 +112,12 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">載入失敗</h3>
                 <p class="mt-1 text-sm text-gray-500">無法載入企業會員資料，請稍後再試</p>
             </div>
-
             <!-- 企業會員容器 -->
             <div id="members-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- 動態載入的企業會員內容 -->
             </div>
         </div>
     </section>
-
     <!-- 加入我們區塊 -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -137,7 +126,7 @@
                 如果您的企業願意支持資訊安全人才培育，歡迎加入 ACTC 企業會員，與我們一起為台灣的資安產業發展做出貢獻
             </p>
             <div class="space-y-4 md:space-y-0 md:space-x-4 md:flex md:justify-center">
-                <a href="mailto:info@actc.org.tw?subject=企業會員諮詢" class="inline-block bg-actc-orange hover:bg-actc-orange-dark text-white font-bold py-3 px-8 rounded-lg transition-colors">
+                <a href="mailto:actcactc2023@gmail.com?subject=企業會員諮詢" class="inline-block bg-actc-orange hover:bg-actc-orange-dark text-white font-bold py-3 px-8 rounded-lg transition-colors">
                     聯絡我們
                 </a>
                 <a href="about.html" class="inline-block border-2 border-actc-orange text-actc-orange hover:bg-actc-orange hover:text-white font-bold py-3 px-8 rounded-lg transition-colors">
@@ -146,7 +135,6 @@
             </div>
         </div>
     </section>
-
     <!-- 頁尾 -->
     <footer class="bg-gray-800 text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -164,9 +152,8 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-4">聯絡資訊</h3>
                     <div class="space-y-2 text-gray-300">
-                        <p>電話：(02) 2345-6789</p>
-                        <p>傳真：(02) 2345-6790</p>
-                        <p>信箱：info@actc.org.tw</p>
+                        <p>信箱：actcactc2023@gmail.com</p>
+                        <p>信箱：rain5279@gmail.com</p>
                         <p>地址：105台北市松山區復興北路57號</p>
                     </div>
                 </div>
@@ -186,14 +173,12 @@
             </div>
         </div>
     </footer>
-
     <script>
         // 手機選單切換
         document.getElementById('mobileMenuBtn').addEventListener('click', () => {
             const mobileMenu = document.getElementById('mobileMenu');
             mobileMenu.classList.toggle('hidden');
         });
-
         // 企業會員管理
         class MembersManager {
             constructor() {
@@ -201,34 +186,25 @@
                 this.loadingElement = document.getElementById('loading');
                 this.emptyElement = document.getElementById('empty');
                 this.errorElement = document.getElementById('error');
-                
                 // 檢查DOM元素是否存在
                 if (!this.membersContainer || !this.loadingElement || !this.emptyElement || !this.errorElement) {
                     console.error('Required DOM elements not found');
                     return;
                 }
-                
                 this.loadMembers();
             }
-
             async loadMembers() {
                 try {
                     this.showLoading();
-                    
                     const response = await fetch('/api/corporate-members/displayed');
-                    
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                    
                     const data = await response.json();
-                    
                     if (!data.success) {
                         throw new Error(data.message || 'API request failed');
                     }
-                    
                     const members = data.members || [];
-                    
                     if (members.length === 0) {
                         this.showEmpty();
                     } else {
@@ -240,19 +216,15 @@
                     this.showError(error.message);
                 }
             }
-
             renderMembers(members) {
                 if (!this.membersContainer) {
                     console.error('Cannot render members: container not found');
                     return;
                 }
-                
                 const html = members.map((member, index) => {
                     return this.createMemberCard(member, index);
                 }).join('');
-                
                 this.membersContainer.innerHTML = html;
-                
                 // 添加淡入動畫
                 setTimeout(() => {
                     const cards = this.membersContainer.querySelectorAll('.member-card');
@@ -263,7 +235,6 @@
                     });
                 }, 100);
             }
-
             createMemberCard(member, index) {
                 const logoDisplay = member.logo ? 
                     `<img src="${member.logo.startsWith('http') ? member.logo : member.logo}" alt="${member.companyName} Logo" class="w-full h-32 object-contain mb-6" onerror="console.error('Failed to load logo:', this.src); this.parentElement.innerHTML='<div class=&quot;w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-6 flex items-center justify-center&quot;><svg class=&quot;w-16 h-16 text-gray-400&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; viewBox=&quot;0 0 24 24&quot;><path stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; stroke-width=&quot;2&quot; d=&quot;M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4&quot;></path></svg></div>';">` :
@@ -272,7 +243,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                         </svg>
                     </div>`;
-
                 const websiteLink = member.website ? 
                     `<div class="pt-4 border-t border-gray-100">
                         <a href="${member.website}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-actc-orange hover:text-actc-orange-dark transition-colors font-medium">
@@ -282,7 +252,6 @@
                             </svg>
                         </a>
                     </div>` : '';
-
                 return `
                     <div class="member-card bg-white rounded-lg shadow-md overflow-hidden opacity-0">
                         <div class="p-6">
@@ -294,34 +263,29 @@
                     </div>
                 `;
             }
-
             showLoading() {
                 this.loadingElement.classList.remove('hidden');
                 this.emptyElement.classList.add('hidden');
                 this.errorElement.classList.add('hidden');
                 this.membersContainer.classList.add('hidden');
             }
-
             showEmpty() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.remove('hidden');
                 this.errorElement.classList.add('hidden');
                 this.membersContainer.classList.add('hidden');
             }
-
             showError(message = '載入失敗') {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.add('hidden');
                 this.errorElement.classList.remove('hidden');
                 this.membersContainer.classList.add('hidden');
-                
                 // 更新錯誤訊息
                 const errorMessageElement = this.errorElement.querySelector('p:last-child');
                 if (errorMessageElement) {
                     errorMessageElement.textContent = message;
                 }
             }
-
             showMembers() {
                 this.loadingElement.classList.add('hidden');
                 this.emptyElement.classList.add('hidden');
@@ -329,9 +293,6 @@
                 this.membersContainer.classList.remove('hidden');
             }
         }
-
-
-
         // 初始化企業會員管理
         document.addEventListener('DOMContentLoaded', () => {
             try {
