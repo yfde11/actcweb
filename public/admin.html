@@ -4,15 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理後台 - ACTC</title>
+    <script src="/assets/js/tailwind-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/assets/css/common.css" />
+    <style>[x-cloak]{display:none!important}</style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
     <script src="/components/NewsManagement.js"></script>
 </head>
-<body class="bg-gray-50" x-data="adminApp()">
+<body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
+    <nav class="bg-white shadow-lg sticky top-0 z-40" aria-label="全站與管理後台導覽">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10">
+                        <img src="/assets/images/actc-logo.jpg" alt="ACTC Logo" class="w-full h-full object-contain rounded-full" loading="lazy">
+                    </div>
+                    <span class="text-xl font-bold text-gray-800">ACTC</span>
+                </a>
+                <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
+                    <a href="/#home" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">首頁</a>
+                    <a href="/about.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
+                    <div id="desktopMemberNav" class="relative flex items-center gap-2">
+                        <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
+                        <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
+                            <i class="fa-solid fa-user-circle text-2xl" aria-hidden="true"></i>
+                            <span class="sr-only">會員選單</span>
+                        </button>
+                        <div id="desktopMemberDropdown" class="hidden absolute right-0 top-full z-[60] mt-1 w-52 rounded-lg border border-gray-100 bg-white py-1 shadow-lg" role="menu">
+                            <div id="desktopMemberLinksGuest">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">會員總覽</a>
+                                <a href="/member#register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">註冊</a>
+                                <a href="/member#login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">登入</a>
+                            </div>
+                            <div id="desktopMemberLinksAuthed" class="hidden">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">前往會員專區</a>
+                                <a href="/member#account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">帳號管理</a>
+                                <button type="button" id="desktopMemberLogoutBtn" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50" role="menuitem">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">最新消息</a>
+                    <a href="/#events" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">活動課程</a>
+                    <a href="/#corporate-members" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">企業會員</a>
+                    <a href="/workgroups.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">工作小組</a>
+                </div>
+                <div class="md:hidden">
+                    <button type="button" id="mobileMenuBtn" class="text-gray-600 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMenu" aria-label="開啟選單">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div
+                x-show="isLoggedIn && !showForcePasswordChange"
+                x-cloak
+                class="border-t border-gray-100 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                aria-label="管理後台資訊列"
+            >
+                <h1 class="text-lg sm:text-xl font-bold text-gray-900">ACTC 管理後台</h1>
+                <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <span class="text-sm text-gray-600" x-text="currentUser ? `歡迎，${currentUser.username}（${currentUser.role}）` : ''"></span>
+                    <button type="button" @click="logout" class="bg-red-500 text-white px-4 py-2 rounded text-sm shrink-0 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300">登出</button>
+                </div>
+            </div>
+            <div id="mobileMenu" class="hidden md:hidden pb-4" role="navigation" aria-label="手機主選單">
+                <div class="space-y-2">
+                    <a href="/#home" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
+                    <a href="/about.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <div class="border-t border-gray-100 pt-2">
+                        <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
+                            <span class="flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-user-circle text-actc-orange text-xl" aria-hidden="true"></i>
+                                會員
+                            </span>
+                            <i id="mobileMemberChevron" class="fa-solid fa-chevron-down text-xs text-gray-500 transition-transform" aria-hidden="true"></i>
+                        </button>
+                        <p id="mobileMemberHint" class="pl-8 text-xs text-gray-500 pb-1"></p>
+                        <div id="mobileMemberSub" class="hidden space-y-1 pl-8 pb-2">
+                            <div id="mobileMemberGuest">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">會員總覽</a>
+                                <a href="/member#register" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">註冊</a>
+                                <a href="/member#login" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">登入</a>
+                            </div>
+                            <div id="mobileMemberAuthed" class="hidden space-y-1">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">前往會員專區</a>
+                                <a href="/member#account" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">帳號管理</a>
+                                <button type="button" id="mobileMemberLogoutBtn" class="w-full py-1.5 text-left text-sm text-red-600 hover:underline">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
+                    <a href="/#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
+                    <a href="/#corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
+                    <a href="/workgroups.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <!-- 強制修改密碼對話框 -->
-    <div x-show="showForcePasswordChange" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 class="text-lg font-semibold mb-4">首次登入 - 請修改密碼</h3>
+    <div x-show="showForcePasswordChange" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" role="dialog" aria-modal="true" aria-labelledby="force-pw-title">
+        <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4 shadow-xl relative z-[101]">
+            <h3 id="force-pw-title" class="text-lg font-semibold mb-4">首次登入 - 請修改密碼</h3>
             <form @submit.prevent="forceChangePassword">
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">新密碼</label>
@@ -43,7 +138,8 @@
                 <div>
                     <input x-model="loginForm.username" type="text" required 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md" 
-                           placeholder="使用者帳號">
+                           placeholder="管理員帳號或 Email"
+                           autocomplete="username">
                 </div>
                 <div>
                     <input x-model="loginForm.password" type="password" required 
@@ -63,19 +159,6 @@
 
     <!-- 管理後台 -->
     <div x-show="isLoggedIn && !showForcePasswordChange">
-        <!-- 導航列 -->
-        <nav class="bg-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="flex justify-between items-center h-16">
-                    <h1 class="text-xl font-bold">ACTC 管理後台</h1>
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm text-gray-600" x-text="`歡迎, ${currentUser.username} (${currentUser.role})`"></span>
-                        <button @click="logout" class="bg-red-500 text-white px-4 py-2 rounded text-sm">登出</button>
-                    </div>
-                </div>
-            </div>
-        </nav>
-        
         <!-- 側邊選單 -->
         <div class="flex">
             <aside class="w-64 bg-gray-800 min-h-screen">
@@ -85,6 +168,13 @@
                            :class="currentTab === 'users' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                            class="flex items-center px-6 py-3 cursor-pointer">
                             <span>使用者管理</span>
+                        </a>
+                    </template>
+                    <template x-if="currentUser.role === 'admin'">
+                        <a @click="openMembershipTab()" 
+                           :class="currentTab === 'membership' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
+                           class="flex items-center px-6 py-3 cursor-pointer">
+                            <span>會員審核</span>
                         </a>
                     </template>
                     <a @click="currentTab = 'news'" 
@@ -101,6 +191,11 @@
                        :class="currentTab === 'corporate-members' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>企業會員管理</span>
+                    </a>
+                    <a @click="currentTab = 'working-groups'" 
+                       :class="currentTab === 'working-groups' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
+                       class="flex items-center px-6 py-3 cursor-pointer">
+                        <span>工作小組</span>
                     </a>
                 </nav>
             </aside>
@@ -121,9 +216,11 @@
                         <table class="min-w-full">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用者名稱</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">電子郵件</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">角色</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">會員審核</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">最後登入</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
@@ -132,6 +229,9 @@
                             <tbody class="divide-y divide-gray-200">
                                 <template x-for="user in users" :key="user._id">
                                     <tr>
+                                        <td class="px-6 py-4 max-w-[8rem]">
+                                            <code class="text-xs text-gray-500 break-all select-all" x-text="user._id"></code>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm font-medium text-gray-900" x-text="user.username"></div>
                                             <div class="text-sm text-gray-500" x-text="user.fullName || '-'"></div>
@@ -141,6 +241,7 @@
                                             <span :class="user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'"
                                                   class="px-2 py-1 text-xs font-semibold rounded-full" x-text="user.role"></span>
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-700" x-text="user.role === 'admin' ? '—' : (user.membershipStatus === 'approved' ? '已核准' : user.membershipStatus === 'pending' ? '審核中' : user.membershipStatus === 'rejected' ? '未核准' : '一般')"></td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                                                   class="px-2 py-1 text-xs font-semibold rounded-full" x-text="user.isActive ? '啟用' : '停用'"></span>
@@ -162,7 +263,7 @@
                     </div>
 
                     <!-- 新增/編輯使用者 Modal -->
-                    <div x-show="showCreateModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div x-show="showCreateModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" role="dialog" aria-modal="true">
                         <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
                             <h3 class="text-lg font-semibold mb-4" x-text="showEditModal ? '編輯使用者' : '新增使用者'"></h3>
                             <form @submit.prevent="showEditModal ? updateUser() : createUser()">
@@ -188,6 +289,23 @@
                                         <option value="admin">管理員</option>
                                     </select>
                                 </div>
+                                <template x-if="showEditModal && editingUser && editingUser.role === 'user'">
+                                    <div class="mb-4 space-y-3 border-t border-gray-100 pt-3">
+                                        <p class="text-xs text-gray-500">與「會員審核」相同欄位；若前端仍顯示審核中，可在此改為已核准並儲存。</p>
+                                        <div>
+                                            <label class="block text-sm font-medium mb-2">會員審核狀態</label>
+                                            <select x-model="userForm.membershipStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                                <option value="none">一般（未申請）</option>
+                                                <option value="pending">審核中</option>
+                                                <option value="approved">已核准</option>
+                                                <option value="rejected">未核准</option>
+                                            </select>
+                                        </div>
+                                        <label class="flex items-center gap-2 text-sm">
+                                            <input type="checkbox" x-model="userForm.canManageContent" /> 開通內容管理權（最新消息／活動）
+                                        </label>
+                                    </div>
+                                </template>
                                 <div class="flex space-x-2">
                                     <button type="submit" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
                                         <span x-text="showEditModal ? '更新' : '創建'"></span>
@@ -198,6 +316,40 @@
                                 </div>
                             </form>
                         </div>
+                    </div>
+                </div>
+
+                <!-- 會員審核（僅 admin） -->
+                <div x-show="currentTab === 'membership' && currentUser && currentUser.role === 'admin'">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold">會員審核</h2>
+                            <button @click="refreshMembership()" class="text-sm text-blue-600">重新整理</button>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">核准後可勾選「開通內容管理」以使用 /member 最新消息／活動功能。</p>
+                        <table class="min-w-full text-sm">
+                            <thead><tr class="bg-gray-50 text-left">
+                                <th class="px-3 py-2">帳號</th>
+                                <th class="px-3 py-2">Email</th>
+                                <th class="px-3 py-2">申請說明</th>
+                                <th class="px-3 py-2">操作</th>
+                            </tr></thead>
+                            <tbody>
+                                <template x-for="u in membershipPending" :key="u._id">
+                                    <tr class="border-t">
+                                        <td class="px-3 py-2" x-text="u.username"></td>
+                                        <td class="px-3 py-2" x-text="u.email || '-'"></td>
+                                        <td class="px-3 py-2 max-w-xs truncate" x-text="u.membershipApplicationNote || '-'"></td>
+                                        <td class="px-3 py-2 space-x-2">
+                                            <button @click="reviewMembership(u._id, 'approve', true)" class="text-green-600">核准＋內容權</button>
+                                            <button @click="reviewMembership(u._id, 'approve', false)" class="text-green-700">僅核准</button>
+                                            <button @click="reviewMembership(u._id, 'reject', false)" class="text-red-600">駁回</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <p x-show="membershipPending.length === 0" class="text-gray-500 mt-4">目前無待審申請</p>
                     </div>
                 </div>
 
@@ -422,6 +574,120 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 工作小組管理 -->
+                <div x-show="currentTab === 'working-groups'" x-data="workingGroupsTab()" x-init="init()">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <h2 class="text-2xl font-bold">工作小組</h2>
+                        <button type="button" @click="openCreate()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">新增工作小組</button>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">刪除採「停用」：請將「啟用」取消後儲存。僅已核准且已驗證信箱的會員可加入；會員亦可於會員專區自選。</p>
+                    <p x-show="err" class="text-red-600 text-sm mb-2" x-text="err"></p>
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">代碼</th>
+                                    <th class="px-4 py-2 text-left">標題</th>
+                                    <th class="px-4 py-2 text-left">排序</th>
+                                    <th class="px-4 py-2 text-left">狀態</th>
+                                    <th class="px-4 py-2 text-left">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="g in groups" :key="g._id">
+                                    <tr class="border-t">
+                                        <td class="px-4 py-2 font-mono" x-text="g.code"></td>
+                                        <td class="px-4 py-2" x-text="g.title"></td>
+                                        <td class="px-4 py-2" x-text="g.sortOrder"></td>
+                                        <td class="px-4 py-2">
+                                            <span :class="g.isActive ? 'text-green-600' : 'text-gray-400'" x-text="g.isActive ? '啟用' : '停用'"></span>
+                                        </td>
+                                        <td class="px-4 py-2 space-x-2 whitespace-nowrap">
+                                            <button type="button" @click="openEdit(g)" class="text-blue-600 hover:underline">編輯</button>
+                                            <button type="button" @click="openMembers(g)" class="text-purple-600 hover:underline">成員</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <p x-show="!loading && groups.length === 0" class="p-6 text-gray-500">尚無資料</p>
+                        <p x-show="loading" class="p-6 text-gray-500">載入中…</p>
+                    </div>
+
+                    <!-- 編輯／新增 -->
+                    <div x-show="editOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4" role="dialog" aria-modal="true">
+                        <div class="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl">
+                            <h3 class="text-lg font-semibold mb-4" x-text="editingId ? '編輯工作小組' : '新增工作小組'"></h3>
+                            <div class="space-y-3 text-sm">
+                                <div>
+                                    <label class="block text-gray-600 mb-1">代碼（英文小寫，建立後勿隨意更改）</label>
+                                    <input type="text" x-model="form.code" :disabled="!!editingId" class="w-full border rounded px-3 py-2 disabled:bg-gray-100" />
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 mb-1">標題</label>
+                                    <input type="text" x-model="form.title" class="w-full border rounded px-3 py-2" />
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 mb-1">副標（選填）</label>
+                                    <input type="text" x-model="form.subtitle" class="w-full border rounded px-3 py-2" />
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 mb-1">說明</label>
+                                    <textarea x-model="form.description" rows="4" class="w-full border rounded px-3 py-2"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 mb-1">排序數字</label>
+                                    <input type="number" x-model.number="form.sortOrder" class="w-full border rounded px-3 py-2" />
+                                </div>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" x-model="form.isActive" /> 啟用（前台顯示、可加入）
+                                </label>
+                            </div>
+                            <div class="flex gap-2 mt-6">
+                                <button type="button" @click="saveForm()" class="flex-1 bg-blue-600 text-white py-2 rounded">儲存</button>
+                                <button type="button" @click="editOpen = false" class="flex-1 bg-gray-200 py-2 rounded">取消</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 成員列表 -->
+                    <div x-show="membersOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4" role="dialog" aria-modal="true">
+                        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl">
+                            <h3 class="text-lg font-semibold mb-1">成員 — <span x-text="membersTitle"></span></h3>
+                            <p class="text-xs text-gray-500 mb-4">代加入：輸入使用者 MongoDB <code class="bg-gray-100 px-1">_id</code>（可從使用者管理複製）。對象須已核准會員且已驗證信箱。</p>
+                            <div class="flex gap-2 mb-4">
+                                <input type="text" x-model="addUserId" placeholder="使用者 ID" class="flex-1 border rounded px-3 py-2 text-sm" />
+                                <button type="button" @click="addMember()" class="bg-green-600 text-white px-4 py-2 rounded text-sm">加入</button>
+                            </div>
+                            <p x-show="membersErr" class="text-red-600 text-sm mb-2" x-text="membersErr"></p>
+                            <table class="min-w-full text-sm border">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-2 py-1 text-left">帳號</th>
+                                        <th class="px-2 py-1 text-left">Email</th>
+                                        <th class="px-2 py-1 text-left">會員狀態</th>
+                                        <th class="px-2 py-1"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="m in members" :key="m.membershipId">
+                                        <tr class="border-t" x-show="m.user">
+                                            <td class="px-2 py-1" x-text="m.user.username"></td>
+                                            <td class="px-2 py-1 break-all" x-text="m.user.email || '-'"></td>
+                                            <td class="px-2 py-1" x-text="m.user.membershipStatus"></td>
+                                            <td class="px-2 py-1">
+                                                <button type="button" @click="removeMember(m.user.id)" class="text-red-600 hover:underline">移除</button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                            <p class="text-gray-500 text-sm mt-2" x-show="members.length === 0">尚無成員</p>
+                            <button type="button" @click="membersOpen = false" class="mt-6 w-full bg-gray-200 py-2 rounded">關閉</button>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -433,6 +699,7 @@
                 isLoading: false,
                 currentUser: null,
                 currentTab: 'users',
+                membershipPending: [],
                 showForcePasswordChange: false,
                 newPassword: '',
                 confirmPassword: '',
@@ -442,7 +709,48 @@
                 },
 
                 async init() {
+                    window.addEventListener('actc-member-logout', () => this.logout());
                     await this.checkAuth();
+                    if (typeof updateMemberNav === 'function') updateMemberNav();
+                },
+
+                async openMembershipTab() {
+                    this.currentTab = 'membership';
+                    await this.refreshMembership();
+                },
+
+                async refreshMembership() {
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const r = await fetch('/api/membership/admin/pending', {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (!r.ok) return;
+                        const d = await r.json();
+                        this.membershipPending = d.users || [];
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                async reviewMembership(userId, action, grantContent) {
+                    const note = prompt('管理員備註（選填）') || '';
+                    const token = localStorage.getItem('adminToken');
+                    const r = await fetch(`/api/membership/admin/${userId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action,
+                            canManageContent: action === 'approve' ? grantContent : false,
+                            note
+                        })
+                    });
+                    const d = await r.json();
+                    alert(d.message || (r.ok ? '完成' : '失敗'));
+                    await this.refreshMembership();
                 },
 
                 async checkAuth() {
@@ -464,12 +772,15 @@
                             if (data.user.isFirstLogin) {
                                 this.showForcePasswordChange = true;
                             }
+                            if (typeof updateMemberNav === 'function') updateMemberNav();
                         } else {
                             localStorage.removeItem('adminToken');
+                            if (typeof updateMemberNav === 'function') updateMemberNav();
                         }
                     } catch (error) {
                         console.error('Auth check failed:', error);
                         localStorage.removeItem('adminToken');
+                        if (typeof updateMemberNav === 'function') updateMemberNav();
                     }
                 },
 
@@ -481,7 +792,11 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                            body: JSON.stringify(this.loginForm)
+                    body: JSON.stringify({
+                        username: String(this.loginForm.username || '').trim(),
+                        password: this.loginForm.password,
+                        forAdmin: true
+                    })
                 });
 
                         const data = await response.json();
@@ -496,6 +811,7 @@
                             }
                             
                             this.loginForm = { username: '', password: '' };
+                            if (typeof updateMemberNav === 'function') updateMemberNav();
                 } else {
                             alert('登入失敗：' + data.message);
                 }
@@ -541,9 +857,11 @@
 
                 logout() {
                     localStorage.removeItem('adminToken');
+                    localStorage.removeItem('memberToken');
                     this.isLoggedIn = false;
                     this.currentUser = null;
                     this.currentTab = 'users';
+                    if (typeof updateMemberNav === 'function') updateMemberNav();
                 }
             }
         }
@@ -558,7 +876,9 @@
                     username: '',
                     email: '',
                     fullName: '',
-                    role: 'user'
+                    role: 'user',
+                    membershipStatus: 'none',
+                    canManageContent: false
                 },
 
                 async init() {
@@ -613,20 +933,32 @@
                         username: user.username,
                         email: user.email || '',
                         fullName: user.fullName || '',
-                        role: user.role
+                        role: user.role,
+                        membershipStatus: user.membershipStatus || 'none',
+                        canManageContent: !!user.canManageContent
                     };
                     this.showEditModal = true;
                 },
 
                 async updateUser() {
                     try {
+                        const payload = {
+                            username: this.userForm.username,
+                            email: this.userForm.email,
+                            fullName: this.userForm.fullName,
+                            role: this.userForm.role
+                        };
+                        if (this.editingUser.role === 'user') {
+                            payload.membershipStatus = this.userForm.membershipStatus;
+                            payload.canManageContent = this.userForm.canManageContent;
+                        }
                         const response = await fetch(`/api/users/${this.editingUser._id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                             },
-                            body: JSON.stringify(this.userForm)
+                            body: JSON.stringify(payload)
                         });
 
                         const data = await response.json();
@@ -709,11 +1041,184 @@
                         username: '',
                         email: '',
                         fullName: '',
-                        role: 'user'
+                        role: 'user',
+                        membershipStatus: 'none',
+                        canManageContent: false
                     };
                 }
             }
         }
+
+        function workingGroupsTab() {
+            return {
+                groups: [],
+                loading: false,
+                err: '',
+                editOpen: false,
+                editingId: null,
+                form: { code: '', title: '', subtitle: '', description: '', sortOrder: 0, isActive: true },
+                membersOpen: false,
+                membersWgId: null,
+                membersTitle: '',
+                members: [],
+                membersErr: '',
+                addUserId: '',
+
+                async init() {
+                    await this.loadGroups();
+                },
+
+                authHeaders() {
+                    return {
+                        Authorization: 'Bearer ' + localStorage.getItem('adminToken'),
+                        'Content-Type': 'application/json'
+                    };
+                },
+
+                async loadGroups() {
+                    this.loading = true;
+                    this.err = '';
+                    try {
+                        const r = await fetch('/api/admin/working-groups', { headers: this.authHeaders() });
+                        const d = await r.json();
+                        if (!r.ok) throw new Error(d.message || '載入失敗');
+                        this.groups = d.groups || [];
+                    } catch (e) {
+                        this.err = e.message || '無法載入工作小組';
+                        this.groups = [];
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                openCreate() {
+                    this.editingId = null;
+                    this.form = {
+                        code: '',
+                        title: '',
+                        subtitle: '',
+                        description: '',
+                        sortOrder: (this.groups.length || 0) + 1,
+                        isActive: true
+                    };
+                    this.editOpen = true;
+                },
+
+                openEdit(g) {
+                    this.editingId = g._id;
+                    this.form = {
+                        code: g.code,
+                        title: g.title,
+                        subtitle: g.subtitle || '',
+                        description: g.description,
+                        sortOrder: g.sortOrder,
+                        isActive: !!g.isActive
+                    };
+                    this.editOpen = true;
+                },
+
+                async saveForm() {
+                    this.err = '';
+                    try {
+                        if (this.editingId) {
+                            const r = await fetch('/api/admin/working-groups/' + this.editingId, {
+                                method: 'PATCH',
+                                headers: this.authHeaders(),
+                                body: JSON.stringify({
+                                    title: this.form.title,
+                                    subtitle: this.form.subtitle,
+                                    description: this.form.description,
+                                    sortOrder: this.form.sortOrder,
+                                    isActive: this.form.isActive
+                                })
+                            });
+                            const d = await r.json();
+                            if (!r.ok) throw new Error(d.message || '更新失敗');
+                        } else {
+                            const r = await fetch('/api/admin/working-groups', {
+                                method: 'POST',
+                                headers: this.authHeaders(),
+                                body: JSON.stringify(this.form)
+                            });
+                            const d = await r.json();
+                            if (!r.ok) throw new Error(d.message || '建立失敗');
+                        }
+                        this.editOpen = false;
+                        await this.loadGroups();
+                        alert('已儲存');
+                    } catch (e) {
+                        alert(e.message || '儲存失敗');
+                    }
+                },
+
+                openMembers(g) {
+                    this.membersWgId = g._id;
+                    this.membersTitle = g.title;
+                    this.membersOpen = true;
+                    this.members = [];
+                    this.membersErr = '';
+                    this.addUserId = '';
+                    this.loadMembers();
+                },
+
+                async loadMembers() {
+                    if (!this.membersWgId) return;
+                    this.membersErr = '';
+                    try {
+                        const r = await fetch(
+                            '/api/admin/working-groups/' + this.membersWgId + '/members?limit=100',
+                            { headers: this.authHeaders() }
+                        );
+                        const d = await r.json();
+                        if (!r.ok) throw new Error(d.message || '載入失敗');
+                        this.members = d.members || [];
+                    } catch (e) {
+                        this.membersErr = e.message || '無法載入成員';
+                        this.members = [];
+                    }
+                },
+
+                async addMember() {
+                    this.membersErr = '';
+                    const uid = String(this.addUserId || '').trim();
+                    if (!uid) {
+                        this.membersErr = '請輸入使用者 ID';
+                        return;
+                    }
+                    try {
+                        const r = await fetch('/api/admin/working-groups/' + this.membersWgId + '/members', {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({ userId: uid })
+                        });
+                        const d = await r.json();
+                        if (!r.ok) throw new Error(d.message || '加入失敗');
+                        this.addUserId = '';
+                        await this.loadMembers();
+                        alert(d.message || '已加入');
+                    } catch (e) {
+                        this.membersErr = e.message || '加入失敗';
+                    }
+                },
+
+                async removeMember(userId) {
+                    if (!confirm('確定從此工作小組移除該成員？')) return;
+                    this.membersErr = '';
+                    try {
+                        const r = await fetch(
+                            '/api/admin/working-groups/' + this.membersWgId + '/members/' + userId,
+                            { method: 'DELETE', headers: this.authHeaders() }
+                        );
+                        const d = await r.json();
+                        if (!r.ok) throw new Error(d.message || '移除失敗');
+                        await this.loadMembers();
+                    } catch (e) {
+                        this.membersErr = e.message || '移除失敗';
+                    }
+                }
+            };
+        }
+
         // 載入新聞快速統計
         async function loadNewsQuickStats() {
             try {
@@ -794,8 +1299,128 @@
             }
         }
 
+        function siteAuthNavLoggedIn() {
+            return !!(localStorage.getItem('memberToken') || localStorage.getItem('adminToken'));
+        }
+
+        function setDesktopMemberMenuOpen(open) {
+            const dd = document.getElementById('desktopMemberDropdown');
+            const btn = document.getElementById('desktopMemberMenuBtn');
+            if (!dd || !btn) return;
+            dd.classList.toggle('hidden', !open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        function updateMemberNav() {
+            const authed = siteAuthNavLoggedIn();
+            const desktopHint = document.getElementById('desktopMemberHint');
+            const mobileHint = document.getElementById('mobileMemberHint');
+            if (desktopHint) {
+                desktopHint.textContent = authed ? '會員管理' : '請先登入或註冊';
+            }
+            if (mobileHint) {
+                mobileHint.textContent = authed ? '會員管理' : '請先登入或註冊';
+            }
+            const dg = document.getElementById('desktopMemberLinksGuest');
+            const da = document.getElementById('desktopMemberLinksAuthed');
+            const mg = document.getElementById('mobileMemberGuest');
+            const ma = document.getElementById('mobileMemberAuthed');
+            if (dg && da) {
+                dg.classList.toggle('hidden', authed);
+                da.classList.toggle('hidden', !authed);
+            }
+            if (mg && ma) {
+                mg.classList.toggle('hidden', authed);
+                ma.classList.toggle('hidden', !authed);
+            }
+            setDesktopMemberMenuOpen(false);
+        }
+
+        function initMemberNavControls() {
+            const nav = document.getElementById('desktopMemberNav');
+            const btn = document.getElementById('desktopMemberMenuBtn');
+            const dd = document.getElementById('desktopMemberDropdown');
+            if (btn && dd) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const willOpen = dd.classList.contains('hidden');
+                    setDesktopMemberMenuOpen(willOpen);
+                });
+            }
+            document.addEventListener('click', (e) => {
+                if (!nav || !dd || dd.classList.contains('hidden')) return;
+                if (!nav.contains(e.target)) {
+                    setDesktopMemberMenuOpen(false);
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    setDesktopMemberMenuOpen(false);
+                }
+            });
+            const doLogout = () => {
+                localStorage.removeItem('memberToken');
+                localStorage.removeItem('adminToken');
+                updateMemberNav();
+                window.dispatchEvent(new CustomEvent('actc-member-logout'));
+            };
+            document.getElementById('desktopMemberLogoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                doLogout();
+            });
+            document.getElementById('mobileMemberLogoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                doLogout();
+                const sub = document.getElementById('mobileMemberSub');
+                const chev = document.getElementById('mobileMemberChevron');
+                const mobToggle = document.getElementById('mobileMemberToggle');
+                if (sub) sub.classList.add('hidden');
+                chev?.classList.remove('rotate-180');
+                mobToggle?.setAttribute('aria-expanded', 'false');
+            });
+            dd?.querySelectorAll('a').forEach((a) => {
+                a.addEventListener('click', () => setDesktopMemberMenuOpen(false));
+            });
+            const mobToggle = document.getElementById('mobileMemberToggle');
+            const mobSub = document.getElementById('mobileMemberSub');
+            const chev = document.getElementById('mobileMemberChevron');
+            if (mobToggle && mobSub) {
+                mobToggle.addEventListener('click', () => {
+                    const open = mobSub.classList.toggle('hidden') === false;
+                    mobToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    chev?.classList.toggle('rotate-180', open);
+                });
+            }
+            mobSub?.querySelectorAll('a')?.forEach((a) => {
+                a.addEventListener('click', () => {
+                    mobSub.classList.add('hidden');
+                    chev?.classList.remove('rotate-180');
+                    mobToggle?.setAttribute('aria-expanded', 'false');
+                });
+            });
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'memberToken' || e.key === 'adminToken') {
+                    updateMemberNav();
+                }
+            });
+            window.addEventListener('pageshow', () => {
+                updateMemberNav();
+            });
+        }
+
         // 頁面載入時自動載入統計
         document.addEventListener('DOMContentLoaded', function() {
+            updateMemberNav();
+            initMemberNavControls();
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    const open = !mobileMenu.classList.contains('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                });
+            }
             // 延遲載入統計，確保用戶已登入
             setTimeout(loadNewsQuickStats, 2000);
             setTimeout(loadMemberQuickStats, 2500);

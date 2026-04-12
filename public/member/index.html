@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會員專區 - ACTC</title>
+    <script src="/assets/js/tailwind-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/assets/css/common.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="memberApp()" x-init="init()">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10">
+                        <img src="/assets/images/actc-logo.jpg" alt="ACTC Logo" class="w-full h-full object-contain rounded-full" loading="lazy">
+                    </div>
+                    <span class="text-xl font-bold text-gray-800">ACTC</span>
+                </a>
+                <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
+                    <a href="/#home" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">首頁</a>
+                    <a href="/about.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
+                    <div id="desktopMemberNav" class="relative flex items-center gap-2">
+                        <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
+                        <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
+                            <i class="fa-solid fa-user-circle text-2xl" aria-hidden="true"></i>
+                            <span class="sr-only">會員選單</span>
+                        </button>
+                        <div id="desktopMemberDropdown" class="hidden absolute right-0 top-full z-[60] mt-1 w-52 rounded-lg border border-gray-100 bg-white py-1 shadow-lg" role="menu">
+                            <div id="desktopMemberLinksGuest">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">會員總覽</a>
+                                <a href="/member#register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">註冊</a>
+                                <a href="/member#login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">登入</a>
+                            </div>
+                            <div id="desktopMemberLinksAuthed" class="hidden">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">前往會員專區</a>
+                                <a href="/member#account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">帳號管理</a>
+                                <button type="button" id="desktopMemberLogoutBtn" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50" role="menuitem">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">最新消息</a>
+                    <a href="/#events" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">活動課程</a>
+                    <a href="/#corporate-members" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">企業會員</a>
+                    <a href="/workgroups.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">工作小組</a>
+                </div>
+                <div class="md:hidden">
+                    <button type="button" id="mobileMenuBtn" class="text-gray-600 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMenu" aria-label="開啟選單">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobileMenu" class="hidden md:hidden pb-4" role="navigation" aria-label="手機主選單">
+                <div class="space-y-2">
+                    <a href="/#home" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
+                    <a href="/about.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <div class="border-t border-gray-100 pt-2">
+                        <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
+                            <span class="flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-user-circle text-actc-orange text-xl" aria-hidden="true"></i>
+                                會員
+                            </span>
+                            <i id="mobileMemberChevron" class="fa-solid fa-chevron-down text-xs text-gray-500 transition-transform" aria-hidden="true"></i>
+                        </button>
+                        <p id="mobileMemberHint" class="pl-8 text-xs text-gray-500 pb-1"></p>
+                        <div id="mobileMemberSub" class="hidden space-y-1 pl-8 pb-2">
+                            <div id="mobileMemberGuest">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">會員總覽</a>
+                                <a href="/member#register" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">註冊</a>
+                                <a href="/member#login" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">登入</a>
+                            </div>
+                            <div id="mobileMemberAuthed" class="hidden space-y-1">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">前往會員專區</a>
+                                <a href="/member#account" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">帳號管理</a>
+                                <button type="button" id="mobileMemberLogoutBtn" class="w-full py-1.5 text-left text-sm text-red-600 hover:underline">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
+                    <a href="/#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
+                    <a href="/#corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
+                    <a href="/workgroups.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <div x-show="verifyMsg" class="mb-4 p-4 rounded bg-blue-50 text-blue-800" x-text="verifyMsg"></div>
+
+        <!-- 未登入 -->
+        <div x-show="!token" class="space-y-8">
+            <div id="password-reset" x-show="resetTokenFromUrl" class="bg-white p-6 rounded-lg shadow border border-orange-100">
+                <h2 class="text-xl font-bold mb-2">重設密碼</h2>
+                <p class="text-sm text-gray-600 mb-4">請輸入新密碼（至少 6 字元），並再確認一次。</p>
+                <form class="space-y-3 max-w-md" @submit.prevent="submitPasswordReset" novalidate>
+                    <input x-model="resetPwForm.newPassword" type="password" autocomplete="new-password" placeholder="新密碼" class="w-full border rounded px-3 py-2" />
+                    <input x-model="resetPwForm.confirm" type="password" autocomplete="new-password" placeholder="確認新密碼" class="w-full border rounded px-3 py-2" />
+                    <p class="text-sm min-h-[1.25rem]" :class="resetPwOk ? 'text-green-600' : 'text-red-600'" x-show="resetPwMsg" x-text="resetPwMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="resetPwSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="resetPwSending ? '送出中…' : '更新密碼'"></span>
+                    </button>
+                </form>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+            <div id="register" class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">註冊</h2>
+                <form class="space-y-3" @submit.prevent="register" novalidate>
+                    <input x-model="reg.username" autocomplete="username" placeholder="使用者名稱（至少3字）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名（選填）" class="w-full border rounded px-3 py-2" />
+                    <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="registerSending ? '送出中…' : '註冊'"></span>
+                    </button>
+                </form>
+            </div>
+            <div id="login" class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">登入</h2>
+                <form class="space-y-3" @submit.prevent="login" novalidate>
+                    <input x-model="loginForm.username" autocomplete="username" placeholder="使用者名稱或 Email" class="w-full border rounded px-3 py-2" />
+                    <input x-model="loginForm.password" type="password" autocomplete="current-password" placeholder="密碼" class="w-full border rounded px-3 py-2" />
+                    <p class="text-sm min-h-[1.25rem]" :class="loginOk ? 'text-green-600' : 'text-red-600'" x-show="loginMsg" x-text="loginMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="loginSending" class="w-full bg-gray-800 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="loginSending ? '登入中…' : '登入'"></span>
+                    </button>
+                </form>
+                <p class="text-sm font-medium text-gray-700 mt-5 mb-1">忘記密碼？</p>
+                <p class="text-xs text-gray-500 mb-2">輸入註冊時已驗證的 Email，我們將寄送重設連結（1 小時內有效）。</p>
+                <form class="space-y-2" @submit.prevent="forgotPassword" novalidate>
+                    <input x-model="forgotEmail" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2 text-sm" />
+                    <p class="text-sm min-h-[1.25rem]" :class="forgotOk ? 'text-green-600' : 'text-red-600'" x-show="forgotMsg" x-text="forgotMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="forgotSending" class="w-full border border-gray-300 text-gray-700 py-2 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
+                        <span x-text="forgotSending ? '送出中…' : '寄送重設連結'"></span>
+                    </button>
+                </form>
+                <p class="text-sm text-gray-500 mt-4">未收到驗證信？</p>
+                <form class="flex gap-2 mt-2" @submit.prevent="resend">
+                    <input x-model="resendEmail" type="email" placeholder="註冊時的 Email" class="flex-1 border rounded px-3 py-2 text-sm" />
+                    <button type="submit" class="px-3 py-2 bg-gray-200 rounded text-sm">重寄</button>
+                </form>
+            </div>
+            </div>
+        </div>
+
+        <!-- 已登入 -->
+        <div id="account" x-show="token" class="space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-2">帳號狀態</h2>
+                <p class="text-sm text-gray-600">信箱驗證：<span class="font-medium" x-text="me.emailVerified ? '已完成' : '未完成（部分功能受限）'"></span></p>
+                <p class="text-sm text-gray-600">會員審核：<span class="font-medium" x-text="statusLabel(me.membershipStatus)"></span></p>
+                <p class="text-sm text-gray-600">內容管理權（最新消息／活動）：<span class="font-medium" :class="me.canManageContent ? 'text-green-700' : 'text-gray-700'" x-text="me.canManageContent ? '已開通' : '未開通'"></span></p>
+                <p class="text-xs text-gray-500 mt-3 leading-relaxed border-t border-gray-100 pt-3">
+                    管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-700">不會</strong>自動變成「已核准」會員，也不等於內容管理權。
+                    若需發布最新消息／活動，須由管理員在會員審核時勾選開通內容管理權，或日後於使用者管理中調整。
+                </p>
+                <button type="button" @click="loadMe()" class="mt-3 text-sm text-actc-orange hover:underline">重新整理狀態</button>
+                <span class="text-xs text-gray-400 ml-2">（管理員已核准後若畫面未更新，請按此或重新登入）</span>
+                <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
+                    <button @click="applyMembership" class="mt-3 px-4 py-2 bg-orange-600 text-white rounded text-sm">申請成為會員</button>
+                </template>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">個人資料</h2>
+                <form class="space-y-3 max-w-md" @submit.prevent="saveProfile">
+                    <div><label class="text-sm text-gray-600">Email</label><p class="font-mono text-sm" x-text="me.email || '-'"></p></div>
+                    <input x-model="profile.fullName" placeholder="姓名" class="w-full border rounded px-3 py-2" />
+                    <input x-model="profile.phone" placeholder="電話（選填）" class="w-full border rounded px-3 py-2" />
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" x-model="profile.emailSubscribed" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
+                    </label>
+                    <p class="text-sm min-h-[1.25rem]" :class="profileOk ? 'text-green-600' : 'text-red-600'" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="profileSending" class="px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="profileSending ? '儲存中…' : '儲存'"></span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="workgroups-panel" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token && me.membershipStatus === 'approved'">
+                <h2 class="text-xl font-bold mb-2">工作小組</h2>
+                <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups.html" class="text-actc-orange underline">工作小組介紹</a>。</p>
+                <div class="space-y-3 mb-4" x-show="wgCatalog.length">
+                    <template x-for="g in wgCatalog" :key="g._id">
+                        <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">
+                            <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" />
+                            <span>
+                                <span class="font-medium text-gray-900" x-text="g.title"></span>
+                                <span class="block text-sm text-gray-600 mt-0.5" x-text="g.description"></span>
+                            </span>
+                        </label>
+                    </template>
+                </div>
+                <p x-show="token && me.membershipStatus === 'approved' && wgCatalog.length === 0" class="text-sm text-gray-500">目前無可加入的工作小組。</p>
+                <p class="text-sm min-h-[1.25rem]" :class="wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600'" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
+                <button type="button" @click="saveWorkingGroups()" :disabled="wgPanelSaving" class="px-4 py-2 bg-orange-600 text-white rounded text-sm disabled:opacity-60">
+                    <span x-text="wgPanelSaving ? '儲存中…' : '儲存選擇'"></span>
+                </button>
+            </div>
+
+            <template x-if="me.canManageContent && me.membershipStatus === 'approved'">
+                <div class="bg-white p-6 rounded-lg shadow space-y-6">
+                    <h2 class="text-xl font-bold">內容管理（最新消息）</h2>
+                    <form class="space-y-2 max-w-xl" @submit.prevent="createNews">
+                        <input x-model="newsForm.title" required placeholder="標題" class="w-full border rounded px-3 py-2" />
+                        <textarea x-model="newsForm.content" required rows="4" placeholder="內文" class="w-full border rounded px-3 py-2"></textarea>
+                        <select x-model="newsForm.status" class="w-full border rounded px-3 py-2">
+                            <option value="draft">草稿</option>
+                            <option value="published">發布</option>
+                        </select>
+                        <select x-model="newsForm.notifyAudience" class="w-full border rounded px-3 py-2">
+                            <option value="none">不寄送通知</option>
+                            <option value="verified_users">通知：所有已驗證信箱帳號</option>
+                            <option value="approved_members">通知：僅已核准會員</option>
+                        </select>
+                        <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded">建立</button>
+                    </form>
+                    <div>
+                        <h3 class="font-semibold mb-2">我的文章</h3>
+                        <ul class="text-sm space-y-1">
+                            <template x-for="n in myNews" :key="n._id">
+                                <li class="border-b py-1" x-text="n.title + '（' + n.status + '）'"></li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <script>
+        function memberApp() {
+            return {
+                token: localStorage.getItem('memberToken') || '',
+                me: {},
+                profile: { fullName: '', phone: '', emailSubscribed: true },
+                reg: { username: '', email: '', password: '', fullName: '' },
+                loginForm: { username: '', password: '' },
+                resendEmail: '',
+                myNews: [],
+                verifyMsg: '',
+                registerMsg: '',
+                registerOk: false,
+                registerSending: false,
+                loginMsg: '',
+                loginOk: false,
+                loginSending: false,
+                forgotEmail: '',
+                forgotMsg: '',
+                forgotOk: false,
+                forgotSending: false,
+                resetTokenFromUrl: '',
+                resetPwForm: { newPassword: '', confirm: '' },
+                resetPwMsg: '',
+                resetPwOk: false,
+                resetPwSending: false,
+                profileMsg: '',
+                profileOk: false,
+                profileSending: false,
+                wgCatalog: [],
+                wgSelectedIds: [],
+                wgPanelMsg: '',
+                wgPanelSaving: false,
+
+                statusLabel(s) {
+                    const m = { none: '一般使用者', pending: '審核中', approved: '已核准', rejected: '未核准' };
+                    return m[s] || s;
+                },
+
+                async init() {
+                    const p = new URLSearchParams(location.search);
+                    if (p.get('verify') === 'ok') this.verifyMsg = '信箱驗證成功，請登入。';
+                    if (p.get('verify') === 'invalid') this.verifyMsg = '驗證連結無效或已過期。';
+                    this.resetTokenFromUrl = p.get('resetToken') || '';
+                    if (this.token) await this.loadMe();
+                    this.scrollToHashTarget();
+                    window.addEventListener('hashchange', () => this.scrollToHashTarget());
+                    window.addEventListener('actc-member-logout', () => {
+                        this.logout();
+                    });
+                    if (typeof updateMemberNav === 'function') {
+                        updateMemberNav();
+                    }
+                },
+
+                scrollToHashTarget() {
+                    const h = (location.hash || '').toLowerCase();
+                    const go = (id) => {
+                        const el = document.getElementById(id);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    };
+                    const run = () => {
+                        if (this.token) {
+                            if (h === '#workgroups') {
+                                go('workgroups-panel');
+                                return;
+                            }
+                            if (h === '#register' || h === '#login' || h === '#account') go('account');
+                            return;
+                        }
+                        if (this.resetTokenFromUrl) {
+                            go('password-reset');
+                            return;
+                        }
+                        if (h === '#register') go('register');
+                        else if (h === '#login') go('login');
+                        else if (h === '#account') go('login');
+                    };
+                    requestAnimationFrame(() => setTimeout(run, 100));
+                },
+
+                authHeaders() {
+                    return { Authorization: 'Bearer ' + this.token, 'Content-Type': 'application/json' };
+                },
+
+                async loadMe() {
+                    try {
+                        const r = await fetch('/api/profile/me', {
+                            headers: this.authHeaders(),
+                            cache: 'no-store'
+                        });
+                        if (!r.ok) throw new Error();
+                        const d = await r.json();
+                        this.me = d.user;
+                        this.profile.fullName = d.user.fullName || '';
+                        this.profile.phone = d.user.phone || '';
+                        this.profile.emailSubscribed = d.user.emailSubscribed !== false;
+                        if (this.me.canManageContent && this.me.membershipStatus === 'approved') {
+                            const nr = await fetch('/api/member/news/mine', { headers: this.authHeaders() });
+                            if (nr.ok) {
+                                const nd = await nr.json();
+                                this.myNews = nd.news || [];
+                            }
+                        }
+                        await this.loadWorkingGroupsForMember();
+                    } catch {
+                        this.logout();
+                    }
+                },
+
+                async loadWorkingGroupsForMember() {
+                    this.wgPanelMsg = '';
+                    if (this.me.membershipStatus !== 'approved') {
+                        this.wgCatalog = [];
+                        this.wgSelectedIds = [];
+                        return;
+                    }
+                    try {
+                        const r = await fetch('/api/working-groups');
+                        const d = await r.json();
+                        if (!r.ok) throw new Error();
+                        this.wgCatalog = d.groups || [];
+                        this.wgSelectedIds = [...(this.me.workingGroupIds || [])];
+                    } catch {
+                        this.wgCatalog = [];
+                        this.wgSelectedIds = [...(this.me.workingGroupIds || [])];
+                    }
+                },
+
+                async saveWorkingGroups() {
+                    this.wgPanelMsg = '';
+                    if (this.me.membershipStatus !== 'approved') {
+                        this.wgPanelMsg = '僅已核准會員可設定工作小組。';
+                        return;
+                    }
+                    this.wgPanelSaving = true;
+                    try {
+                        const r = await fetch('/api/profile/me/working-groups', {
+                            method: 'PUT',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({ groupIds: this.wgSelectedIds })
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.wgPanelMsg = '伺服器回應無法解析。';
+                            return;
+                        }
+                        if (!r.ok) {
+                            this.wgPanelMsg = d.message || '儲存失敗';
+                            return;
+                        }
+                        this.me = d.user;
+                        this.wgSelectedIds = [...(d.user.workingGroupIds || [])];
+                        this.wgPanelMsg = d.message || '已儲存';
+                    } catch {
+                        this.wgPanelMsg = '網路錯誤或無法連線。';
+                    } finally {
+                        this.wgPanelSaving = false;
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('memberToken');
+                    this.token = '';
+                    this.me = {};
+                    this.myNews = [];
+                    this.wgCatalog = [];
+                    this.wgSelectedIds = [];
+                    this.wgPanelMsg = '';
+                    if (typeof updateMemberNav === 'function') {
+                        updateMemberNav();
+                    }
+                },
+
+                async register() {
+                    this.registerMsg = '';
+                    this.registerOk = false;
+                    const u = String(this.reg.username || '').trim();
+                    const email = String(this.reg.email || '').trim();
+                    const pwd = this.reg.password || '';
+                    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!u || !email || !pwd) {
+                        this.registerMsg = '請填寫使用者名稱、Email 與密碼。';
+                        return;
+                    }
+                    if (u.length < 3) {
+                        this.registerMsg = '使用者名稱至少 3 字元。';
+                        return;
+                    }
+                    if (pwd.length < 6) {
+                        this.registerMsg = '密碼至少 6 字元。';
+                        return;
+                    }
+                    if (!EMAIL_RE.test(email)) {
+                        this.registerMsg = 'Email 格式不正確。';
+                        return;
+                    }
+                    this.registerSending = true;
+                    try {
+                        const r = await fetch('/api/auth/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...this.reg, username: u, email: email.toLowerCase() })
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.registerMsg = '伺服器回應無法解析，請稍後再試。';
+                            return;
+                        }
+                        this.registerOk = r.ok;
+                        this.registerMsg = d.message || (r.ok ? '註冊成功' : '註冊失敗');
+                        if (r.ok) {
+                            this.reg = { username: '', email: '', password: '', fullName: '' };
+                        }
+                    } catch {
+                        this.registerMsg = '網路錯誤或無法連線，請檢查網路後再試。';
+                    } finally {
+                        this.registerSending = false;
+                    }
+                },
+
+                async login() {
+                    this.loginMsg = '';
+                    this.loginOk = false;
+                    const u = String(this.loginForm.username || '').trim();
+                    const pwd = this.loginForm.password || '';
+                    if (!u || !pwd) {
+                        this.loginMsg = '請輸入使用者名稱（或 Email）與密碼。';
+                        return;
+                    }
+                    this.loginSending = true;
+                    try {
+                        const r = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: u, password: pwd })
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.loginMsg = '伺服器回應無法解析，請稍後再試。';
+                            return;
+                        }
+                        if (!r.ok) {
+                            this.loginMsg = d.message || '登入失敗';
+                            return;
+                        }
+                        if (d.user && d.user.role === 'admin') {
+                            localStorage.setItem('adminToken', d.token);
+                            localStorage.removeItem('memberToken');
+                            window.location.href = '/admin';
+                            return;
+                        }
+                        localStorage.setItem('memberToken', d.token);
+                        this.token = d.token;
+                        this.loginMsg = '';
+                        await this.loadMe();
+                        if (typeof updateMemberNav === 'function') {
+                            updateMemberNav();
+                        }
+                    } catch {
+                        this.loginMsg = '網路錯誤或無法連線，請稍後再試。';
+                    } finally {
+                        this.loginSending = false;
+                    }
+                },
+
+                async forgotPassword() {
+                    this.forgotMsg = '';
+                    this.forgotOk = false;
+                    const email = String(this.forgotEmail || '').trim();
+                    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!email) {
+                        this.forgotMsg = '請輸入 Email。';
+                        return;
+                    }
+                    if (!EMAIL_RE.test(email)) {
+                        this.forgotMsg = 'Email 格式不正確。';
+                        return;
+                    }
+                    this.forgotSending = true;
+                    try {
+                        const r = await fetch('/api/auth/forgot-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: email.toLowerCase() })
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.forgotMsg = '伺服器回應無法解析，請稍後再試。';
+                            return;
+                        }
+                        this.forgotOk = r.ok;
+                        this.forgotMsg = d.message || (r.ok ? '已處理' : '請稍後再試');
+                        if (r.ok) this.forgotEmail = '';
+                    } catch {
+                        this.forgotMsg = '網路錯誤或無法連線。';
+                    } finally {
+                        this.forgotSending = false;
+                    }
+                },
+
+                async submitPasswordReset() {
+                    this.resetPwMsg = '';
+                    this.resetPwOk = false;
+                    const p1 = this.resetPwForm.newPassword || '';
+                    const p2 = this.resetPwForm.confirm || '';
+                    if (p1.length < 6) {
+                        this.resetPwMsg = '密碼至少 6 字元。';
+                        return;
+                    }
+                    if (p1 !== p2) {
+                        this.resetPwMsg = '兩次輸入的密碼不一致。';
+                        return;
+                    }
+                    this.resetPwSending = true;
+                    try {
+                        const r = await fetch('/api/auth/reset-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: this.resetTokenFromUrl, newPassword: p1 })
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.resetPwMsg = '伺服器回應無法解析，請稍後再試。';
+                            return;
+                        }
+                        this.resetPwOk = r.ok;
+                        this.resetPwMsg = d.message || (r.ok ? '已更新' : '重設失敗');
+                        if (r.ok) {
+                            this.resetPwForm = { newPassword: '', confirm: '' };
+                            this.resetTokenFromUrl = '';
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete('resetToken');
+                            const q = url.searchParams.toString();
+                            history.replaceState({}, '', url.pathname + (q ? '?' + q : '') + (window.location.hash || ''));
+                            this.verifyMsg = '密碼已重設，請使用新密碼登入。';
+                        }
+                    } catch {
+                        this.resetPwMsg = '網路錯誤或無法連線。';
+                    } finally {
+                        this.resetPwSending = false;
+                    }
+                },
+
+                async resend() {
+                    const r = await fetch('/api/auth/resend-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: this.resendEmail })
+                    });
+                    const d = await r.json();
+                    alert(d.message || '已處理');
+                },
+
+                async applyMembership() {
+                    const r = await fetch('/api/membership/apply', {
+                        method: 'POST',
+                        headers: this.authHeaders(),
+                        body: JSON.stringify({})
+                    });
+                    const d = await r.json();
+                    alert(d.message || '已送出');
+                    await this.loadMe();
+                },
+
+                async saveProfile() {
+                    this.profileMsg = '';
+                    this.profileOk = false;
+                    this.profileSending = true;
+                    try {
+                        const r = await fetch('/api/profile/me', {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify(this.profile)
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.profileMsg = '伺服器回應無法解析，請稍後再試。';
+                            return;
+                        }
+                        if (r.status === 401) {
+                            this.profileMsg = d.message || '登入已失效，請重新登入。';
+                            this.logout();
+                            return;
+                        }
+                        if (!r.ok) {
+                            this.profileMsg = d.message || '儲存失敗，請稍後再試。';
+                            return;
+                        }
+                        this.profileOk = true;
+                        this.profileMsg = d.message || '已儲存';
+                        if (d.user) {
+                            this.me = d.user;
+                            this.profile.fullName = d.user.fullName || '';
+                            this.profile.phone = d.user.phone || '';
+                            this.profile.emailSubscribed = d.user.emailSubscribed !== false;
+                        }
+                    } catch {
+                        this.profileMsg = '網路錯誤或無法連線，請稍後再試。';
+                    } finally {
+                        this.profileSending = false;
+                    }
+                },
+
+                newsForm: { title: '', content: '', status: 'draft', notifyAudience: 'none' },
+
+                async createNews() {
+                    const fd = new FormData();
+                    fd.append('title', this.newsForm.title);
+                    fd.append('content', this.newsForm.content);
+                    fd.append('status', this.newsForm.status);
+                    fd.append('notifyAudience', this.newsForm.notifyAudience);
+                    const r = await fetch('/api/member/news', {
+                        method: 'POST',
+                        headers: { Authorization: 'Bearer ' + this.token },
+                        body: fd
+                    });
+                    const d = await r.json();
+                    if (!r.ok) {
+                        alert(d.message || '建立失敗');
+                        return;
+                    }
+                    alert('已建立');
+                    this.newsForm = { title: '', content: '', status: 'draft', notifyAudience: 'none' };
+                    await this.loadMe();
+                }
+            };
+        }
+    </script>
+    <script>
+        function memberTokenPresent() {
+            return !!localStorage.getItem('memberToken');
+        }
+
+        function setDesktopMemberMenuOpen(open) {
+            const dd = document.getElementById('desktopMemberDropdown');
+            const btn = document.getElementById('desktopMemberMenuBtn');
+            if (!dd || !btn) return;
+            dd.classList.toggle('hidden', !open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        function updateMemberNav() {
+            const authed = memberTokenPresent();
+            const desktopHint = document.getElementById('desktopMemberHint');
+            const mobileHint = document.getElementById('mobileMemberHint');
+            if (desktopHint) {
+                desktopHint.textContent = authed ? '會員管理' : '請先登入或註冊';
+            }
+            if (mobileHint) {
+                mobileHint.textContent = authed ? '會員管理' : '請先登入或註冊';
+            }
+            const dg = document.getElementById('desktopMemberLinksGuest');
+            const da = document.getElementById('desktopMemberLinksAuthed');
+            const mg = document.getElementById('mobileMemberGuest');
+            const ma = document.getElementById('mobileMemberAuthed');
+            if (dg && da) {
+                dg.classList.toggle('hidden', authed);
+                da.classList.toggle('hidden', !authed);
+            }
+            if (mg && ma) {
+                mg.classList.toggle('hidden', authed);
+                ma.classList.toggle('hidden', !authed);
+            }
+            setDesktopMemberMenuOpen(false);
+        }
+
+        function initMemberNavControls() {
+            const nav = document.getElementById('desktopMemberNav');
+            const btn = document.getElementById('desktopMemberMenuBtn');
+            const dd = document.getElementById('desktopMemberDropdown');
+            if (btn && dd) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const willOpen = dd.classList.contains('hidden');
+                    setDesktopMemberMenuOpen(willOpen);
+                });
+            }
+            document.addEventListener('click', (e) => {
+                if (!nav || !dd || dd.classList.contains('hidden')) return;
+                if (!nav.contains(e.target)) {
+                    setDesktopMemberMenuOpen(false);
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    setDesktopMemberMenuOpen(false);
+                }
+            });
+            const doLogout = () => {
+                localStorage.removeItem('memberToken');
+                updateMemberNav();
+                window.dispatchEvent(new CustomEvent('actc-member-logout'));
+            };
+            document.getElementById('desktopMemberLogoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                doLogout();
+            });
+            document.getElementById('mobileMemberLogoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                doLogout();
+                const sub = document.getElementById('mobileMemberSub');
+                const chev = document.getElementById('mobileMemberChevron');
+                const mobToggle = document.getElementById('mobileMemberToggle');
+                if (sub) sub.classList.add('hidden');
+                chev?.classList.remove('rotate-180');
+                mobToggle?.setAttribute('aria-expanded', 'false');
+            });
+            dd?.querySelectorAll('a').forEach((a) => {
+                a.addEventListener('click', () => setDesktopMemberMenuOpen(false));
+            });
+            const mobToggle = document.getElementById('mobileMemberToggle');
+            const mobSub = document.getElementById('mobileMemberSub');
+            const chev = document.getElementById('mobileMemberChevron');
+            if (mobToggle && mobSub) {
+                mobToggle.addEventListener('click', () => {
+                    const open = mobSub.classList.toggle('hidden') === false;
+                    mobToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    chev?.classList.toggle('rotate-180', open);
+                });
+            }
+            mobSub?.querySelectorAll('a')?.forEach((a) => {
+                a.addEventListener('click', () => {
+                    mobSub.classList.add('hidden');
+                    chev?.classList.remove('rotate-180');
+                    mobToggle?.setAttribute('aria-expanded', 'false');
+                });
+            });
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'memberToken') {
+                    updateMemberNav();
+                }
+            });
+            window.addEventListener('pageshow', () => {
+                updateMemberNav();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMemberNav();
+            initMemberNavControls();
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    const open = !mobileMenu.classList.contains('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

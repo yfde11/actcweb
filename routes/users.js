@@ -43,14 +43,19 @@ router.post('/', adminAuth, async (req, res) => {
             });
         }
 
+        const roleNorm = ['admin', 'user'].includes(role) ? role : 'user';
+
         // 創建新使用者，預設密碼為 'user'
         const newUser = new User({
             username,
             password: 'user', // 預設密碼，會透過 pre-save middleware 加密
             email,
             fullName,
-            role: ['admin', 'user'].includes(role) ? role : 'user',
-            isFirstLogin: true
+            role: roleNorm,
+            isFirstLogin: true,
+            emailVerified: true,
+            membershipStatus: roleNorm === 'admin' ? 'approved' : 'none',
+            canManageContent: roleNorm === 'admin'
         });
 
         await newUser.save();
@@ -102,7 +107,7 @@ router.get('/:id', adminAuth, async (req, res) => {
 // 更新使用者 (僅管理員)
 router.put('/:id', adminAuth, async (req, res) => {
     try {
-        const { username, email, fullName, role } = req.body;
+        const { username, email, fullName, role, membershipStatus, canManageContent } = req.body;
         const userId = req.params.id;
 
         // 不允許修改自己的角色
@@ -112,27 +117,44 @@ router.put('/:id', adminAuth, async (req, res) => {
             });
         }
 
-        const updateData = {};
-        if (username) updateData.username = username;
-        if (email !== undefined) updateData.email = email;
-        if (fullName !== undefined) updateData.fullName = fullName;
-        if (role && ['admin', 'user'].includes(role)) updateData.role = role;
-
-        const user = await User.findByIdAndUpdate(
-            userId,
-            updateData,
-            { new: true, runValidators: true }
-        ).select('-password');
-
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
                 message: 'User not found'
             });
         }
 
+        if (username) user.username = String(username).trim();
+        if (email !== undefined) user.email = email ? String(email).trim().toLowerCase() : email;
+        if (fullName !== undefined) user.fullName = fullName ? String(fullName).trim() : '';
+        if (role && ['admin', 'user'].includes(role)) {
+            user.role = role;
+        }
+
+        // 僅一般使用者可調整會員審核／內容管理權（避免誤改 admin 帳號）
+        if (user.role === 'user') {
+            const MS = ['none', 'pending', 'approved', 'rejected'];
+            if (membershipStatus !== undefined && MS.includes(String(membershipStatus))) {
+                user.membershipStatus = String(membershipStatus);
+                if (user.membershipStatus !== 'approved') {
+                    user.canManageContent = false;
+                }
+            }
+            if (canManageContent !== undefined) {
+                user.canManageContent = !!canManageContent;
+                if (user.canManageContent) {
+                    user.membershipStatus = 'approved';
+                }
+            }
+        }
+
+        await user.save();
+
+        const out = await User.findById(userId).select('-password');
+
         res.json({
             message: 'User updated successfully',
-            user
+            user: out
         });
 
     } catch (error) {

@@ -25,9 +25,28 @@
                     </div>
                     <span class="text-xl font-bold text-gray-800">ACTC</span>
                 </div>
-                <div class="hidden md:flex space-x-8">
+                <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
                     <a href="#home" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">首頁</a>
                     <a href="about.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
+                    <div id="desktopMemberNav" class="relative flex items-center gap-2">
+                        <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
+                        <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
+                            <i class="fa-solid fa-user-circle text-2xl" aria-hidden="true"></i>
+                            <span class="sr-only">會員選單</span>
+                        </button>
+                        <div id="desktopMemberDropdown" class="hidden absolute right-0 top-full z-[60] mt-1 w-52 rounded-lg border border-gray-100 bg-white py-1 shadow-lg" role="menu">
+                            <div id="desktopMemberLinksGuest">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">會員總覽</a>
+                                <a href="/member#register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">註冊</a>
+                                <a href="/member#login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">登入</a>
+                            </div>
+                            <div id="desktopMemberLinksAuthed" class="hidden">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">前往會員專區</a>
+                                <a href="/member#account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">帳號管理</a>
+                                <button type="button" id="desktopMemberLogoutBtn" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50" role="menuitem">登出</button>
+                            </div>
+                        </div>
+                    </div>
                     <a href="#news" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">最新消息</a>
                     <a href="#events" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">活動課程</a>
                     <a href="#corporate-members" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">企業會員</a>
@@ -46,6 +65,28 @@
                 <div class="space-y-2">
                     <a href="#home" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
                     <a href="about.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <div class="border-t border-gray-100 pt-2">
+                        <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
+                            <span class="flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-user-circle text-actc-orange text-xl" aria-hidden="true"></i>
+                                會員
+                            </span>
+                            <i id="mobileMemberChevron" class="fa-solid fa-chevron-down text-xs text-gray-500 transition-transform" aria-hidden="true"></i>
+                        </button>
+                        <p id="mobileMemberHint" class="pl-8 text-xs text-gray-500 pb-1"></p>
+                        <div id="mobileMemberSub" class="hidden space-y-1 pl-8 pb-2">
+                            <div id="mobileMemberGuest">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">會員總覽</a>
+                                <a href="/member#register" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">註冊</a>
+                                <a href="/member#login" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">登入</a>
+                            </div>
+                            <div id="mobileMemberAuthed" class="hidden space-y-1">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">前往會員專區</a>
+                                <a href="/member#account" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">帳號管理</a>
+                                <button type="button" id="mobileMemberLogoutBtn" class="w-full py-1.5 text-left text-sm text-red-600 hover:underline">登出</button>
+                            </div>
+                        </div>
+                    </div>
                     <a href="#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
                     <a href="#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
                     <a href="#corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
@@ -285,6 +326,7 @@
                     <h3 class="text-lg font-semibold mb-4">快速連結</h3>
                     <div class="space-y-2">
                         <a href="about.html" class="nav-link block text-gray-300 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
+                        <a href="/member" class="nav-link block text-gray-300 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">會員中心</a>
                         <a href="#news" class="nav-link block text-gray-300 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">最新消息</a>
                         <a href="#events" class="nav-link block text-gray-300 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">活動課程</a>
                         <a href="#corporate-members" class="nav-link block text-gray-300 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">企業會員</a>
@@ -1014,11 +1056,120 @@
                 }
             });
         });
+        function memberTokenPresent() {
+            return !!localStorage.getItem('memberToken');
+        }
+
+        function setDesktopMemberMenuOpen(open) {
+            const dd = document.getElementById('desktopMemberDropdown');
+            const btn = document.getElementById('desktopMemberMenuBtn');
+            if (!dd || !btn) return;
+            dd.classList.toggle('hidden', !open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        function updateMemberNav() {
+            const authed = memberTokenPresent();
+            const desktopHint = document.getElementById('desktopMemberHint');
+            const mobileHint = document.getElementById('mobileMemberHint');
+            if (desktopHint) {
+                desktopHint.textContent = authed ? '會員管理' : '請先登入或註冊';
+            }
+            if (mobileHint) {
+                mobileHint.textContent = authed ? '會員管理' : '請先登入或註冊';
+            }
+            const dg = document.getElementById('desktopMemberLinksGuest');
+            const da = document.getElementById('desktopMemberLinksAuthed');
+            const mg = document.getElementById('mobileMemberGuest');
+            const ma = document.getElementById('mobileMemberAuthed');
+            if (dg && da) {
+                dg.classList.toggle('hidden', authed);
+                da.classList.toggle('hidden', !authed);
+            }
+            if (mg && ma) {
+                mg.classList.toggle('hidden', authed);
+                ma.classList.toggle('hidden', !authed);
+            }
+            setDesktopMemberMenuOpen(false);
+        }
+
+        function initMemberNavControls() {
+            const nav = document.getElementById('desktopMemberNav');
+            const btn = document.getElementById('desktopMemberMenuBtn');
+            const dd = document.getElementById('desktopMemberDropdown');
+            if (btn && dd) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const willOpen = dd.classList.contains('hidden');
+                    setDesktopMemberMenuOpen(willOpen);
+                });
+            }
+            document.addEventListener('click', (e) => {
+                if (!nav || !dd || dd.classList.contains('hidden')) return;
+                if (!nav.contains(e.target)) {
+                    setDesktopMemberMenuOpen(false);
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    setDesktopMemberMenuOpen(false);
+                }
+            });
+            const doLogout = () => {
+                localStorage.removeItem('memberToken');
+                updateMemberNav();
+            };
+            document.getElementById('desktopMemberLogoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                doLogout();
+            });
+            document.getElementById('mobileMemberLogoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                doLogout();
+                const sub = document.getElementById('mobileMemberSub');
+                const chev = document.getElementById('mobileMemberChevron');
+                const mobToggle = document.getElementById('mobileMemberToggle');
+                if (sub) sub.classList.add('hidden');
+                chev?.classList.remove('rotate-180');
+                mobToggle?.setAttribute('aria-expanded', 'false');
+            });
+            dd?.querySelectorAll('a').forEach((a) => {
+                a.addEventListener('click', () => setDesktopMemberMenuOpen(false));
+            });
+            const mobToggle = document.getElementById('mobileMemberToggle');
+            const mobSub = document.getElementById('mobileMemberSub');
+            const chev = document.getElementById('mobileMemberChevron');
+            if (mobToggle && mobSub) {
+                mobToggle.addEventListener('click', () => {
+                    const open = mobSub.classList.toggle('hidden') === false;
+                    mobToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    chev?.classList.toggle('rotate-180', open);
+                });
+            }
+            mobSub?.querySelectorAll('a')?.forEach((a) => {
+                a.addEventListener('click', () => {
+                    mobSub.classList.add('hidden');
+                    chev?.classList.remove('rotate-180');
+                    mobToggle?.setAttribute('aria-expanded', 'false');
+                });
+            });
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'memberToken') {
+                    updateMemberNav();
+                }
+            });
+            window.addEventListener('pageshow', () => {
+                updateMemberNav();
+            });
+        }
+
         // 初始化管理器
         document.addEventListener('DOMContentLoaded', () => {
             new NewsManager();
             new HomeMembersManager();
             new HomeEventsManager();
+            updateMemberNav();
+            initMemberNavControls();
             // 手機選單功能
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const mobileMenu = document.getElementById('mobileMenu');

@@ -37,6 +37,53 @@ const userSchema = new mongoose.Schema({
     },
     lastLogin: {
         type: Date
+    },
+    /** 信箱驗證：未通過者不可登入 */
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerificationToken: {
+        type: String,
+        select: false
+    },
+    emailVerificationExpires: {
+        type: Date,
+        select: false
+    },
+    /** 忘記密碼：仅存 SHA-256 hex，不存明文 token */
+    passwordResetTokenHash: {
+        type: String,
+        select: false
+    },
+    passwordResetExpires: {
+        type: Date,
+        select: false
+    },
+    /** 會員審核：none=一般註冊者, pending, approved, rejected */
+    membershipStatus: {
+        type: String,
+        enum: ['none', 'pending', 'approved', 'rejected'],
+        default: 'none'
+    },
+    membershipAppliedAt: { type: Date },
+    membershipApplicationNote: { type: String, trim: true, maxlength: 500 },
+    membershipReviewedAt: { type: Date },
+    membershipReviewNote: { type: String, trim: true, maxlength: 500 },
+    /** 管理員核准會員時，是否允許管理最新消息／活動 */
+    canManageContent: {
+        type: Boolean,
+        default: false
+    },
+    /** 是否接收內容通知郵件（僅已驗證 email 帳號會寄送） */
+    emailSubscribed: {
+        type: Boolean,
+        default: true
+    },
+    phone: {
+        type: String,
+        trim: true,
+        maxlength: [30, 'Phone too long']
     }
 }, {
     timestamps: true

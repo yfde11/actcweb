@@ -68,8 +68,7 @@ const newsSchema = new mongoose.Schema({
     analyticsId: {
         type: String,
         trim: true,
-        unique: true,
-        sparse: true // 允許 null 值但保持唯一性
+        sparse: true
     },
     // 保留舊欄位以向後兼容
     date: {
@@ -100,6 +99,12 @@ const newsSchema = new mongoose.Schema({
     featured: {
         type: Boolean,
         default: false
+    },
+    /** 發布時是否寄信：僅限已驗證 email；approved_members 再限縮為已核准會員 */
+    notifyAudience: {
+        type: String,
+        enum: ['none', 'verified_users', 'approved_members'],
+        default: 'none'
     }
 }, {
     timestamps: true
@@ -112,7 +117,7 @@ newsSchema.index({ createdAt: -1 });
 newsSchema.index({ featured: -1, publishDate: -1 });
 newsSchema.index({ tags: 1 });
 newsSchema.index({ viewCount: -1 });
-newsSchema.index({ analyticsId: 1 });
+newsSchema.index({ analyticsId: 1 }, { unique: true, sparse: true });
 
 // Pre-save middleware 自動設置 videoType
 newsSchema.pre('save', function(next) {

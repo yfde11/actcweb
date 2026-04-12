@@ -1,6 +1,7 @@
 const express = require('express');
 const Event = require('../models/Event');
-const auth = require('../middleware/auth');
+const { adminAuth } = require('../middleware/adminAuth');
+const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/contentNotifications');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -62,6 +63,20 @@ const upload = multer({
         fileSize: 20 * 1024 * 1024 // 20MB
     }
 });
+
+const NOTIFY_AUDIENCES = ['none', 'verified_users', 'approved_members'];
+
+async function notifyIfEventPublished(event, prevStatus) {
+    const pub = ['published', 'registration_open', 'registration_closed'].includes(event.status);
+    if (!pub || !NOTIFY_AUDIENCES.includes(event.notifyAudience) || event.notifyAudience === 'none') return;
+    if (['published', 'registration_open', 'registration_closed'].includes(prevStatus)) return;
+    const { subject, html, text } = buildEventEmailDoc(event);
+    try {
+        await notifyAudienceByEmail({ audience: event.notifyAudience, subject, html, text });
+    } catch (e) {
+        console.warn('Event notify:', e.message);
+    }
+}
 
 // 獲取所有活動 (公開)
 router.get('/', async (req, res) => {
@@ -152,7 +167,7 @@ router.get('/', async (req, res) => {
 });
 
 // 獲取所有活動 (管理員用)
-router.get('/admin', auth, async (req, res) => {
+router.get('/admin', adminAuth, async (req, res) => {
     try {
         const { 
             type, 
@@ -236,7 +251,7 @@ router.get('/admin', auth, async (req, res) => {
 });
 
 // 獲取活動統計資訊 (管理員用)
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', adminAuth, async (req, res) => {
     try {
         const stats = await Event.aggregate([
             {
@@ -273,7 +288,7 @@ router.get('/stats', auth, async (req, res) => {
 });
 
 // 創建活動 (需要認證，支援檔案上傳)
-router.post('/', auth, upload.fields([
+router.post('/', adminAuth, upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'file', maxCount: 1 },
     { name: 'instructorPhoto', maxCount: 1 }
@@ -296,7 +311,8 @@ router.post('/', auth, upload.fields([
             status,
             tags,
             requirements,
-            materials
+            materials,
+            notifyAudience = 'none'
         } = req.body;
         
         // 驗證必填字段
@@ -322,6 +338,10 @@ router.post('/', auth, upload.fields([
             });
         }
 
+        if (!NOTIFY_AUDIENCES.includes(notifyAudience)) {
+            return res.status(400).json({ message: 'notifyAudience 無效' });
+        }
+
         // 處理檔案上傳
         let eventData = {
             title,
@@ -340,7 +360,9 @@ router.post('/', auth, upload.fields([
             status: status || 'draft',
             tags: tags ? JSON.parse(tags) : [],
             requirements,
-            materials: materials ? JSON.parse(materials) : []
+            materials: materials ? JSON.parse(materials) : [],
+            createdBy: req.user.userId,
+            notifyAudience
         };
 
         // 處理活動圖片
@@ -365,7 +387,9 @@ router.post('/', auth, upload.fields([
 
         // 創建活動
         const event = new Event(eventData);
+        const prevStatus = 'draft';
         await event.save();
+        await notifyIfEventPublished(event, prevStatus);
 
         res.status(201).json({
             message: 'Event created successfully',
@@ -394,7 +418,7 @@ router.post('/', auth, upload.fields([
 });
 
 // 更新活動 (需要認證，支援檔案上傳)
-router.put('/:id', auth, upload.fields([
+router.put('/:id', adminAuth, upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'file', maxCount: 1 },
     { name: 'instructorPhoto', maxCount: 1 }
@@ -410,6 +434,8 @@ router.put('/:id', auth, upload.fields([
                 message: 'Event not found'
             });
         }
+
+        const prevStatus = event.status;
 
         // 驗證活動類型（如果提供）
         if (updateData.type) {
@@ -456,6 +482,10 @@ router.put('/:id', auth, upload.fields([
             updateData.materials = JSON.parse(updateData.materials);
         }
 
+        if (updateData.notifyAudience !== undefined && !NOTIFY_AUDIENCES.includes(updateData.notifyAudience)) {
+            return res.status(400).json({ message: 'notifyAudience 無效' });
+        }
+
         // 處理檔案上傳
         if (req.files && req.files.image) {
             updateData.image = '/' + req.files.image[0].path;
@@ -495,6 +525,8 @@ router.put('/:id', auth, upload.fields([
             runValidators: true 
         });
 
+        await notifyIfEventPublished(updatedEvent, prevStatus);
+
         res.json({
             message: 'Event updated successfully',
             event: updatedEvent
@@ -522,7 +554,7 @@ router.put('/:id', auth, upload.fields([
 });
 
 // 刪除活動 (需要認證)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         

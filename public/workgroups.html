@@ -49,7 +49,6 @@
                     <a href="workgroups.html" class="block text-actc-orange font-semibold py-2">工作小組</a>
                 </div>
             </div>
-            </div>
         </div>
     </nav>
     <!-- 頁面標題 -->
@@ -57,104 +56,21 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 class="text-4xl md:text-6xl font-bold mb-6">工作小組介紹</h1>
             <p class="text-lg md:text-xl max-w-3xl mx-auto opacity-90">
-                了解 ACTC 各專業工作小組的使命與成員
+                了解 ACTC 各工作小組的定位與重點方向（內容由協會後台維護）
             </p>
         </div>
     </section>
-    <!-- 工作小組內容 -->
+    <!-- 工作小組內容（由 API 載入） -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">現有工作小組</h2>
-                <div class="w-24 h-1 bg-actc-orange mx-auto"></div>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">工作小組</h2>
+                <div class="w-24 h-1 bg-actc-orange mx-auto mb-3"></div>
+                <p class="text-gray-600 text-sm max-w-2xl mx-auto">已核准會員可於<a href="/member" class="text-actc-orange underline">會員專區</a>選擇加入有興趣的小組。</p>
             </div>
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- 人工智慧資安讀書會工作小組 -->
-                <div class="bg-gray-100 rounded-lg p-8 hover:shadow-lg transition-shadow">
-                    <div class="flex items-center mb-6">
-                        <div class="w-16 h-16 bg-actc-orange rounded-full flex items-center justify-center mr-4">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-2xl font-bold text-actc-orange">人工智慧資安讀書會工作小組</h3>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-actc-orange">
-                            <h4 class="font-semibold text-gray-800 mb-2">工作小組</h4>
-                            <div class="space-y-2">
-                                <p class="text-gray-700">王耀華 - 啟碁科技資深技術經理</p>
-                                <p class="text-gray-700">賴俊銘 - 東海大學副教授</p>
-                            </div>
-                        </div>
-                        <p class="text-gray-600 leading-relaxed">
-                            專注於人工智慧在資訊安全領域的應用研究，透過讀書會形式促進學術交流與實務經驗分享，
-                            推動 AI 資安技術的發展與創新。
-                        </p>
-                    </div>
-                </div>
-                <!-- 資安人才培養與評估工作小組 -->
-                <div class="bg-gray-100 rounded-lg p-8 hover:shadow-lg transition-shadow">
-                    <div class="flex items-center mb-6">
-                        <div class="w-16 h-16 bg-actc-orange rounded-full flex items-center justify-center mr-4">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-2xl font-bold text-actc-orange">資安人才培養與評估工作小組</h3>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-actc-orange">
-                            <h4 class="font-semibold text-gray-800 mb-2">工作小組</h4>
-                            <div class="space-y-2">
-                                <p class="text-gray-700">蕭孟軒 - 和雲行動服務總監</p>
-                                <p class="text-gray-700">楊順清 - 與世同行有限公司董事長</p>
-                                <p class="text-gray-700">曾文德 - 資深顧問</p>
-                            </div>
-                        </div>
-                        <p class="text-gray-600 leading-relaxed">
-                            致力於建立完整的資安人才培訓體系，制定專業能力評估標準，
-                            推動產學合作，培育符合產業需求的資安專業人才。
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <!-- 工作小組說明 -->
-            <div class="mt-16 bg-gray-50 rounded-lg p-8">
-                <div class="text-center mb-6">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-4">工作小組使命</h3>
-                    <div class="w-16 h-1 bg-actc-orange mx-auto"></div>
-                </div>
-                <div class="grid md:grid-cols-3 gap-6 text-center">
-                    <div class="p-4">
-                        <div class="w-12 h-12 bg-actc-orange rounded-full mx-auto mb-3 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">專業發展</h4>
-                        <p class="text-gray-600 text-sm">推動各領域專業技術發展與創新</p>
-                    </div>
-                    <div class="p-4">
-                        <div class="w-12 h-12 bg-actc-orange rounded-full mx-auto mb-3 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">人才培育</h4>
-                        <p class="text-gray-600 text-sm">建立專業培訓體系與能力評估標準</p>
-                    </div>
-                    <div class="p-4">
-                        <div class="w-12 h-12 bg-actc-orange rounded-full mx-auto mb-3 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">交流合作</h4>
-                        <p class="text-gray-600 text-sm">促進產學合作與國際交流</p>
-                    </div>
-                </div>
-            </div>
+            <p id="wgLoading" class="text-center text-gray-500 py-12">載入中…</p>
+            <p id="wgError" class="hidden text-center text-red-600 py-12"></p>
+            <div id="wgGrid" class="hidden grid md:grid-cols-2 gap-8"></div>
         </div>
     </section>
     <!-- 頁尾 -->
@@ -212,8 +128,8 @@
                 }
             });
         });
-        // 手機選單功能
-        document.addEventListener('DOMContentLoaded', () => {
+        // 手機選單功能 + 工作小組列表
+        document.addEventListener('DOMContentLoaded', async () => {
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const mobileMenu = document.getElementById('mobileMenu');
             if (mobileMenuBtn && mobileMenu) {
@@ -221,7 +137,50 @@
                     mobileMenu.classList.toggle('hidden');
                 });
             }
+
+            const loading = document.getElementById('wgLoading');
+            const errEl = document.getElementById('wgError');
+            const grid = document.getElementById('wgGrid');
+            try {
+                const r = await fetch('/api/working-groups');
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.message || '載入失敗');
+                const groups = d.groups || [];
+                loading.classList.add('hidden');
+                if (groups.length === 0) {
+                    errEl.textContent = '目前尚無工作小組資料。';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                grid.innerHTML = groups
+                    .map(
+                        (g) => `
+                    <article class="rounded-2xl border border-gray-200 bg-gradient-to-b from-white to-gray-50/90 p-8 shadow-sm hover:shadow-md transition-shadow" id="${g.code || ''}">
+                        <div class="flex items-start gap-4 mb-4">
+                            <span class="shrink-0 inline-flex items-center justify-center w-14 h-14 rounded-full bg-actc-orange text-white font-bold text-sm">${escapeHtml((g.code || '').toUpperCase())}</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-actc-orange leading-snug">${escapeHtml(g.title)}</h3>
+                                ${g.subtitle ? `<p class="text-sm text-gray-500 mt-1">${escapeHtml(g.subtitle)}</p>` : ''}
+                            </div>
+                        </div>
+                        <p class="text-gray-600 leading-relaxed text-sm md:text-base">${escapeHtml(g.description)}</p>
+                    </article>`
+                    )
+                    .join('');
+                grid.classList.remove('hidden');
+            } catch (e) {
+                loading.classList.add('hidden');
+                errEl.textContent = '無法載入工作小組，請稍後再試。';
+                errEl.classList.remove('hidden');
+            }
         });
+
+        function escapeHtml(s) {
+            if (!s) return '';
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>

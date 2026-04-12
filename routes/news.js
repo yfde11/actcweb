@@ -3,8 +3,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const News = require('../models/News');
-const { auth, adminAuth } = require('../middleware/adminAuth');
+const { adminAuth } = require('../middleware/adminAuth');
+const { verifiedAuth } = require('../middleware/memberAuth');
 const analyticsService = require('../services/googleAnalytics');
+const { notifyAudienceByEmail, buildNewsEmailDoc } = require('../services/contentNotifications');
 
 const router = express.Router();
 
@@ -65,6 +67,21 @@ const upload = multer({
         files: 5
     }
 });
+
+const NOTIFY_AUDIENCES = ['none', 'verified_users', 'approved_members'];
+
+async function notifyIfNewsPublished(news, prevStatus) {
+    if (news.status !== 'published' || !NOTIFY_AUDIENCES.includes(news.notifyAudience) || news.notifyAudience === 'none') {
+        return;
+    }
+    if (prevStatus === 'published') return;
+    const { subject, html, text } = buildNewsEmailDoc(news);
+    try {
+        await notifyAudienceByEmail({ audience: news.notifyAudience, subject, html, text });
+    } catch (e) {
+        console.warn('News notify:', e.message);
+    }
+}
 
 // ===================
 // 公開路由 (前端使用)
@@ -284,7 +301,8 @@ router.post('/admin', adminAuth, upload.fields([
             publishDate, 
             status = 'draft',
             tags,
-            featured = false
+            featured = false,
+            notifyAudience = 'none'
         } = req.body;
         
         // 驗證必填字段
@@ -292,6 +310,10 @@ router.post('/admin', adminAuth, upload.fields([
             return res.status(400).json({
                 message: 'Title and content are required'
             });
+        }
+
+        if (!NOTIFY_AUDIENCES.includes(notifyAudience)) {
+            return res.status(400).json({ message: 'notifyAudience 無效' });
         }
 
         // 處理上傳的圖片
@@ -332,14 +354,18 @@ router.post('/admin', adminAuth, upload.fields([
             // 保留舊欄位以向後兼容
             date: publishDate ? new Date(publishDate) : new Date(),
             images,
-            file
+            file,
+            notifyAudience
         });
 
+        const prevStatus = 'draft';
         await news.save();
 
         // 獲取完整資訊
         const populatedNews = await News.findById(news._id)
             .populate('author', 'username fullName');
+
+        await notifyIfNewsPublished(populatedNews, prevStatus);
 
         res.status(201).json({
             message: 'News created successfully',
@@ -370,13 +396,20 @@ router.put('/admin/:id', adminAuth, upload.fields([
             status,
             tags,
             featured,
-            removeImage = false
+            removeImage = false,
+            notifyAudience
         } = req.body;
         
         // 查找新聞
         const news = await News.findById(id);
         if (!news) {
             return res.status(404).json({ message: 'News not found' });
+        }
+
+        const prevStatus = news.status;
+
+        if (notifyAudience !== undefined && !NOTIFY_AUDIENCES.includes(notifyAudience)) {
+            return res.status(400).json({ message: 'notifyAudience 無效' });
         }
 
         // 處理圖片更新
@@ -456,6 +489,10 @@ router.put('/admin/:id', adminAuth, upload.fields([
             file
         };
 
+        if (notifyAudience !== undefined) {
+            updateData.notifyAudience = notifyAudience;
+        }
+
         // 只在 imageUrl 有變化時才更新
         if (imageUrl !== news.imageUrl) {
             updateData.imageUrl = imageUrl;
@@ -465,6 +502,8 @@ router.put('/admin/:id', adminAuth, upload.fields([
             new: true, 
             runValidators: true 
         }).populate('author', 'username fullName');
+
+        await notifyIfNewsPublished(updatedNews, prevStatus);
 
         res.json({
             message: 'News updated successfully',
@@ -629,7 +668,7 @@ router.get('/', async (req, res) => {
 });
 
 // 舊的創建新聞路由 (保持向後兼容)
-router.post('/', auth, upload.fields([
+router.post('/', verifiedAuth, upload.fields([
     { name: 'images', maxCount: 3 },
     { name: 'file', maxCount: 1 }
 ]), async (req, res) => {
@@ -657,7 +696,8 @@ router.post('/', auth, upload.fields([
             images,
             file,
             link: link || '',
-            author: req.user.userId
+            author: req.authUser._id,
+            notifyAudience: 'none'
         });
 
         await news.save();

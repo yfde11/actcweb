@@ -1,0 +1,62 @@
+# ACTC 網站：應用與 MongoDB 分離為兩個容器（資料庫即獨立微服務）
+# 使用方式：
+#   cp env.docker.example .env.docker
+#   編輯 .env.docker 至少設定 JWT_SECRET
+#   docker compose --env-file .env.docker up --build
+#
+# 瀏覽：http://localhost:5001  後台：http://localhost:5001/admin
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: actc-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: actc_website
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - actc-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: actc-web
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    ports:
+      - "${WEB_PORT:-5001}:5001"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "5001"
+      MONGO_URI: mongodb://mongo:27017/actc_website
+      MONGO_SERVER_SELECTION_TIMEOUT_MS: "30000"
+      JWT_SECRET: ${JWT_SECRET:?請在 .env.docker 設定 JWT_SECRET}
+      SITE_URL: http://localhost:${WEB_PORT:-5001}
+      # 其餘（含 SMTP）由 .env.docker 經 env_file 注入，勿將密碼寫進此檔
+    volumes:
+      - uploads-data:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - actc-net
+
+volumes:
+  mongo-data:
+    name: actc_mongo_data
+  uploads-data:
+    name: actc_uploads_data
+
+networks:
+  actc-net:
+    name: actc_net

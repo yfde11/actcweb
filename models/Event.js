@@ -248,6 +248,16 @@ const eventSchema = new mongoose.Schema({
             maxlength: [200, 'Material description cannot exceed 200 characters']
         }
     }],
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    notifyAudience: {
+        type: String,
+        enum: ['none', 'verified_users', 'approved_members'],
+        default: 'none'
+    },
     // 活動統計
     views: {
         type: Number,

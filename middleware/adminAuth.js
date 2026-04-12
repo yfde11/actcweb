@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { DB_UNAVAILABLE } = require('./mongoReady');
 
 // 基本認證中間件
 const auth = (req, res, next) => {
@@ -12,7 +13,7 @@ const auth = (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'actc_super_secret_jwt_key_2025');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {
@@ -44,13 +45,20 @@ const adminAuth = async (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'actc_super_secret_jwt_key_2025');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         // 查找用戶並檢查角色
         const user = await User.findById(decoded.userId);
         if (!user || !user.isActive) {
             return res.status(401).json({ 
                 message: 'User not found or inactive.' 
+            });
+        }
+
+        if (!user.emailVerified) {
+            return res.status(403).json({
+                code: 'EMAIL_NOT_VERIFIED',
+                message: '管理員帳號需先完成信箱驗證。'
             });
         }
         
@@ -71,6 +79,12 @@ const adminAuth = async (req, res, next) => {
             return res.status(401).json({ 
                 message: 'Token expired. Please login again.' 
             });
+        }
+        if (
+            error.name === 'MongoServerSelectionError' ||
+            error.name === 'MongooseServerSelectionError'
+        ) {
+            return res.status(503).json({ message: DB_UNAVAILABLE });
         }
         res.status(401).json({ 
             message: 'Invalid token.' 
