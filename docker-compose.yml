@@ -41,7 +41,8 @@ services:
       MONGO_URI: mongodb://mongo:27017/actc_website
       MONGO_SERVER_SELECTION_TIMEOUT_MS: "30000"
       JWT_SECRET: ${JWT_SECRET:?請在 .env.docker 設定 JWT_SECRET}
-      SITE_URL: http://localhost:${WEB_PORT:-5001}
+      # 遠端或自訂埠請在 .env.docker 設定 SITE_URL（須含正確主機名與埠）
+      SITE_URL: ${SITE_URL:-http://localhost:5001}
       # 其餘（含 SMTP）由 .env.docker 經 env_file 注入，勿將密碼寫進此檔
     volumes:
       - uploads-data:/app/uploads
