@@ -32,6 +32,11 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const HOST = process.env.HOST || '0.0.0.0';
 
+// 經 Caddy／Nginx 等反向代理時，正確辨識客戶端 IP 與協定
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // 中間件（關閉 CSP：前台使用 Tailwind CDN 與內嵌 script）
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -176,8 +181,8 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/actc_websit
     }
 
     app.listen(PORT, HOST, () => {
-        console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-        console.log(`📱 Admin panel: http://localhost:${PORT}/admin`);
+        console.log(`🚀 Server listening on http://${HOST}:${PORT} (容器內埠；Docker 時由 Caddy 對外提供 80/443)`);
+        console.log('📱 Admin path: /admin（對外請使用 SITE_URL 對應的網址 + /admin）');
     });
 })
 .catch(err => {

@@ -115,9 +115,10 @@ npm start
 
 | 用途 | 網址 |
 |------|------|
-| 前台首頁 | http://localhost:5001 |
-| 後台 | http://localhost:5001/admin |
-| 會員專區 | http://localhost:5001/member/ |
+| 前台首頁 | http://localhost:5001（本機 `npm start`） |
+| 後台 | 同上 `/admin` |
+| 會員專區 | 同上 `/member/` |
+| Docker Compose | **http://localhost/** 與 **https://localhost/**（Caddy 反代 80／443） |
 
 **首次連線資料庫**時，應用程式會自動執行 [`lib/bootstrapDb.js`](./lib/bootstrapDb.js)：
 
@@ -131,18 +132,21 @@ npm start
 
 ## Docker 部署
 
-專案含 `Dockerfile` 與 `docker-compose.yml`：**web** 與 **mongo** 分離；資料庫與上傳目錄使用命名 volume 持久化。
+專案含 `Dockerfile`、`docker-compose.yml` 與 **`Caddyfile`**：**mongo**、**web**（Node 僅內部 5001）、**caddy**（對外 **80 / 443**）分離；資料庫、上傳檔與 Caddy 憑證資料使用命名 volume 持久化。
 
 ```bash
 cp env.docker.example .env.docker
-# 編輯 .env.docker：至少設定 JWT_SECRET；寄信功能請填 SMTP 相關變數
+# 編輯 .env.docker：至少設定 JWT_SECRET；SITE_URL 請設為對外網址（例如 http://192.168.1.10 或 https://你的網域，勿加 :5001）
+# 寄信請填 SMTP 相關變數
 
 docker compose --env-file .env.docker up --build
 ```
 
-啟動後瀏覽 **http://localhost:5001**（埠號可由 `.env.docker` 的 `WEB_PORT` 調整）。MongoDB 預設僅在 Docker 內部網路對 `web` 開放，未對外映射埠；若需本機連線除錯，可自行在 `mongo` 服務加上 `ports`（僅建議開發環境）。
+啟動後 **HTTP 與 HTTPS 會同時開放**：**http://localhost/**（80）與 **https://localhost/**（443）皆可連到同一站台。443 使用 Caddy 的 **`tls internal` 自簽憑證**，瀏覽器會提示不安全，按「進階／繼續」即可，適合內網或測試。後台為 **`/admin`**。若主機 80/443 已被占用，可在 `.env.docker` 設定 `HTTP_PORT`、`HTTPS_PORT` 改映射。有正式網域名稱時，請改寫 **`Caddyfile`** 為網域區塊，即可由 Caddy 自動申請 Let's Encrypt 憑證（瀏覽器即顯示鎖頭）。
 
-詳見 `env.docker.example` 內註解（含 `SITE_URL`、SMTP 等）。
+MongoDB 僅在 Docker 內部網路對 `web` 開放；若需本機直連 Mongo 除錯，可自行在 `mongo` 服務加上 `ports`（僅建議開發環境）。
+
+正式網域與自動 HTTPS：請編輯專案根目錄 **`Caddyfile`**，改為以網域名稱為主的區塊（可移除 `:443` 的 `tls internal`，改由 Caddy 自動申請憑證）。詳見 `env.docker.example`。
 
 ---
 

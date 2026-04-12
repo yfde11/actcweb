@@ -1,10 +1,11 @@
-# ACTC 網站：應用與 MongoDB 分離為兩個容器（資料庫即獨立微服務）
+# ACTC 網站：MongoDB + Node（web）+ Caddy 反向代理
 # 使用方式：
 #   cp env.docker.example .env.docker
-#   編輯 .env.docker 至少設定 JWT_SECRET
+#   編輯 .env.docker 至少設定 JWT_SECRET、SITE_URL（對外網址，勿含 :5001）
 #   docker compose --env-file .env.docker up --build
 #
-# 瀏覽：http://localhost:5001  後台：http://localhost:5001/admin
+# 對外：http://本機或網域/  與 https://…/（443 為內部憑證，正式網域請改 Caddyfile）
+# 後台：http://…/admin   （Node 僅在 Docker 網路內聽 5001，由 Caddy 轉發）
 
 services:
   mongo:
@@ -32,8 +33,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env.docker
-    ports:
-      - "${WEB_PORT:-5001}:5001"
+    expose:
+      - "5001"
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -41,8 +42,8 @@ services:
       MONGO_URI: mongodb://mongo:27017/actc_website
       MONGO_SERVER_SELECTION_TIMEOUT_MS: "30000"
       JWT_SECRET: ${JWT_SECRET:?請在 .env.docker 設定 JWT_SECRET}
-      # 遠端或自訂埠請在 .env.docker 設定 SITE_URL（須含正確主機名與埠）
-      SITE_URL: ${SITE_URL:-http://localhost:5001}
+      # 對外網址（經 Caddy 80/443），勿再帶 :5001
+      SITE_URL: ${SITE_URL:-http://localhost}
       # 其餘（含 SMTP）由 .env.docker 經 env_file 注入，勿將密碼寫進此檔
     volumes:
       - uploads-data:/app/uploads
@@ -52,11 +53,31 @@ services:
     networks:
       - actc-net
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: actc-caddy
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+    networks:
+      - actc-net
+
 volumes:
   mongo-data:
     name: actc_mongo_data
   uploads-data:
     name: actc_uploads_data
+  caddy-data:
+    name: actc_caddy_data
+  caddy-config:
+    name: actc_caddy_config
 
 networks:
   actc-net:

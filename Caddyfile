@@ -1,0 +1,15 @@
+# 對外 80 / 443 → 內部 Node（服務名 web，埠 5001）
+# 443 使用 Caddy「內部」憑證（tls internal），瀏覽器會提示不受信任，適合內網或測試。
+# 正式環境有網域名稱時，可改為單一區塊以自動申請 Let's Encrypt，例如：
+#   www.example.com {
+#       reverse_proxy web:5001
+#   }
+
+:80 {
+	reverse_proxy web:5001
+}
+
+:443 {
+	tls internal
+	reverse_proxy web:5001
+}
