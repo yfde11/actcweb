@@ -349,10 +349,22 @@ eventSchema.virtual('statusLabel').get(function() {
     return statusLabels[this.status] || this.status;
 });
 
-// 虛擬字段：檢查是否可以報名
+// 虛擬字段：是否仍有正式名額（無設名額時視為仍有名額）
 eventSchema.virtual('canRegister').get(function() {
-    return this.status === 'registration_open' && 
+    return this.status === 'registration_open' &&
            (!this.capacity || this.registeredCount < this.capacity);
+});
+
+// 虛擬字段：已額滿且可排入候補（僅在有設定 capacity 時有意義）
+eventSchema.virtual('canJoinWaitlist').get(function() {
+    return this.status === 'registration_open' &&
+        !!this.capacity &&
+        this.registeredCount >= this.capacity;
+});
+
+// 虛擬字段：報名／候補入口是否開放（僅看狀態；實際表單分流用 canRegister / canJoinWaitlist）
+eventSchema.virtual('canSubmitRegistration').get(function() {
+    return this.status === 'registration_open';
 });
 
 // 虛擬字段：剩餘名額

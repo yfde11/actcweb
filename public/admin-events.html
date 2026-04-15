@@ -173,8 +173,10 @@
                                     <span :class="getStatusClass(event.status)" 
                                           class="px-2 py-1 text-xs font-semibold rounded-full" 
                                           x-text="event.statusLabel"></span>
-                                    <div x-show="event.capacity" class="text-xs text-gray-500 mt-1" 
-                                         x-text="`${event.registeredCount || 0}/${event.capacity}`"></div>
+                                    <div x-show="event.capacity" class="text-xs text-gray-500 mt-1 space-y-0.5">
+                                        <div x-text="`正式 ${event.registeredCount || 0}/${event.capacity}`"></div>
+                                        <div x-show="event.waitlistCount" class="text-amber-700" x-text="`候補 ${event.waitlistCount} 人`"></div>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div x-show="event.hasFile" class="flex items-center space-x-2">

@@ -654,6 +654,7 @@
         // 首頁活動課程管理器
         class HomeEventsManager {
             constructor() {
+                window.homeEventsManager = this;
                 this.eventsContainer = document.getElementById('events-container');
                 this.loadingElement = document.getElementById('events-loading');
                 this.emptyElement = document.getElementById('events-empty');
@@ -877,11 +878,14 @@
                                 ` : ''}
                                 <!-- 名額資訊 -->
                                 ${event.capacity ? `
-                                    <div class="flex items-center text-sm text-gray-500">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
-                                        <span>${event.registeredCount || 0}/${event.capacity} 人</span>
+                                    <div class="flex flex-col text-sm text-gray-500">
+                                        <div class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                            </svg>
+                                            <span>${event.registeredCount || 0}/${event.capacity} 人（正式）</span>
+                                        </div>
+                                        ${event.waitlistCount ? `<span class="pl-6 text-xs text-amber-700">候補 ${event.waitlistCount} 人</span>` : ''}
                                     </div>
                                 ` : ''}
                                 <!-- 標籤 -->
@@ -900,10 +904,15 @@
                                     </div>
                                 ` : ''}
                                 <!-- 操作按鈕 -->
-                                <div class="flex gap-2 mt-4">
+                                <div class="flex flex-wrap gap-2 mt-4">
                                     ${event.canRegister ? `
-                                        <button onclick="registerForEvent('${event._id}')" class="flex-1 bg-actc-orange hover:bg-actc-orange-dark text-white px-4 py-2 rounded-md transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
+                                        <button type="button" onclick="registerForEvent('${event._id}', false)" class="flex-1 min-w-[8rem] bg-actc-orange hover:bg-actc-orange-dark text-white px-4 py-2 rounded-md transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                             立即報名
+                                        </button>
+                                    ` : ''}
+                                    ${event.canJoinWaitlist ? `
+                                        <button type="button" onclick="registerForEvent('${event._id}', true)" class="flex-1 min-w-[8rem] border border-amber-600 text-amber-800 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-md transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
+                                            加入候補
                                         </button>
                                     ` : ''}
                                     ${event.hasFile ? `
@@ -951,7 +960,7 @@
                     if (event.capacity && event.registeredCount >= event.capacity) {
                         return {
                             badge: '名額已滿',
-                            badgeClass: 'bg-red-100 text-red-800'
+                            badgeClass: 'bg-amber-100 text-amber-900'
                         };
                     }
                     return {
@@ -1069,24 +1078,25 @@
             }
         });
         // 活動報名功能
-        async function registerForEvent(eventId) {
+        async function registerForEvent(eventId, isWaitlist) {
             try {
-                // 顯示報名表單
-                showRegistrationForm(eventId);
+                showRegistrationForm(eventId, !!isWaitlist);
             } catch (error) {
                 console.error('報名失敗:', error);
                 showNotification('報名失敗，請稍後再試', 'error');
             }
         }
-        // 顯示報名表單
-        function showRegistrationForm(eventId) {
+        // 顯示報名表單（isWaitlist：加入候補；後端仍用同一 API，僅介面文案不同）
+        function showRegistrationForm(eventId, isWaitlist) {
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
             modal.id = 'registrationModal';
+            const title = isWaitlist ? '候補登記' : '活動報名';
+            const submitLabel = isWaitlist ? '確認加入候補' : '確認報名';
             modal.innerHTML = `
-                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="relative top-20 mx-auto p-5 border w-96 max-w-[calc(100vw-2rem)] shadow-lg rounded-md bg-white">
                     <div class="mt-3 text-center">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">活動報名</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">${title}</h3>
                         <form id="registrationForm" class="text-left">
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">姓名 *</label>
@@ -1094,15 +1104,21 @@
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand"
                                        placeholder="請輸入您的姓名">
                             </div>
-                            <div class="mb-6">
+                            <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件 *</label>
                                 <input type="email" id="participantEmail" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand"
                                        placeholder="請輸入您的電子郵件">
                             </div>
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">電話</label>
+                                <input type="text" id="participantPhone"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand"
+                                       placeholder="選填">
+                            </div>
                             <div class="flex gap-3">
                                 <button type="submit" class="flex-1 bg-actc-orange hover:bg-actc-orange-dark text-white px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
-                                    確認報名
+                                    ${submitLabel}
                                 </button>
                                 <button type="button" onclick="closeRegistrationModal()" class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                     取消
@@ -1113,7 +1129,6 @@
                 </div>
             `;
             document.body.appendChild(modal);
-            // 處理表單提交
             document.getElementById('registrationForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await submitRegistration(eventId);
@@ -1123,6 +1138,8 @@
         async function submitRegistration(eventId) {
             const name = document.getElementById('participantName').value.trim();
             const email = document.getElementById('participantEmail').value.trim();
+            const phoneEl = document.getElementById('participantPhone');
+            const phone = phoneEl ? phoneEl.value.trim() : '';
             if (!name || !email) {
                 showNotification('請填寫所有必填欄位', 'error');
                 return;
@@ -1135,17 +1152,21 @@
                     },
                     body: JSON.stringify({
                         participantName: name,
-                        participantEmail: email
+                        participantEmail: email,
+                        participantPhone: phone || undefined
                     })
                 });
                 if (!response.ok) {
-                    const errorData = await response.json();
+                    const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.message || '報名失敗');
                 }
                 const result = await response.json();
                 closeRegistrationModal();
-                showNotification('報名成功！', 'success');
-                // 重新載入活動資料
+                if (result.registrationStatus === 'waitlist' && result.waitlistPosition) {
+                    showNotification(`已加入候補（第 ${result.waitlistPosition} 號）`, 'success');
+                } else {
+                    showNotification('報名成功！', 'success');
+                }
                 if (window.homeEventsManager) {
                     window.homeEventsManager.loadEvents();
                 }

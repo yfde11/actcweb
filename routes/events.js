@@ -1,5 +1,6 @@
 const express = require('express');
 const Event = require('../models/Event');
+const EventRegistration = require('../models/EventRegistration');
 const { adminAuth } = require('../middleware/adminAuth');
 const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/contentNotifications');
 const multer = require('multer');
@@ -65,6 +66,27 @@ const upload = multer({
 });
 
 const NOTIFY_AUDIENCES = ['none', 'verified_users', 'approved_members'];
+
+function normalizeParticipantEmail(email) {
+    return EventRegistration.normalizeEmail(email);
+}
+
+async function enrichEventsWithWaitlistCounts(eventDocs) {
+    const arr = Array.isArray(eventDocs) ? eventDocs : [eventDocs];
+    if (arr.length === 0) return [];
+    const ids = arr.map((e) => e._id);
+    const counts = await EventRegistration.aggregate([
+        { $match: { event: { $in: ids }, status: 'waitlist' } },
+        { $group: { _id: '$event', waitlistCount: { $sum: 1 } } }
+    ]);
+    const countMap = new Map(counts.map((c) => [String(c._id), c.waitlistCount]));
+    return arr.map((e) => {
+        const plain =
+            typeof e.toObject === 'function' ? e.toObject({ virtuals: true }) : { ...e };
+        plain.waitlistCount = countMap.get(String(e._id)) || 0;
+        return plain;
+    });
+}
 
 async function notifyIfEventPublished(event, prevStatus) {
     const pub = ['published', 'registration_open', 'registration_closed'].includes(event.status);
@@ -145,12 +167,14 @@ router.get('/', async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit))
             .select('-__v');
+
+        const eventsOut = await enrichEventsWithWaitlistCounts(events);
         
         // 獲取總數
         const total = await Event.countDocuments(query);
         
         res.json({
-            events,
+            events: eventsOut,
             pagination: {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(total / parseInt(limit)),
@@ -229,12 +253,14 @@ router.get('/admin', adminAuth, async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit))
             .select('-__v');
+
+        const eventsOut = await enrichEventsWithWaitlistCounts(events);
         
         // 獲取總數
         const total = await Event.countDocuments(query);
         
         res.json({
-            events,
+            events: eventsOut,
             pagination: {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(total / parseInt(limit)),
@@ -579,6 +605,8 @@ router.delete('/:id', adminAuth, async (req, res) => {
             fs.unlinkSync(event.instructor.photo.substring(1));
         }
 
+        await EventRegistration.deleteMany({ event: id });
+
         // 刪除活動
         await Event.findByIdAndDelete(id);
 
@@ -591,6 +619,37 @@ router.delete('/:id', adminAuth, async (req, res) => {
         res.status(500).json({
             message: 'Internal server error'
         });
+    }
+});
+
+// 報名名單與候補筆數（管理員）
+router.get('/:id/registrations', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await Event.findById(id).select('title status');
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const [regs, confirmedCount, waitlistCount] = await Promise.all([
+            EventRegistration.find({ event: id })
+                .sort({ status: 1, waitlistPosition: 1, createdAt: 1 })
+                .select('name email phone status waitlistPosition createdAt')
+                .lean(),
+            EventRegistration.countDocuments({ event: id, status: 'confirmed' }),
+            EventRegistration.countDocuments({ event: id, status: 'waitlist' })
+        ]);
+
+        res.json({
+            eventId: id,
+            title: event.title,
+            registeredCountFromRegistrations: confirmedCount,
+            waitlistCount,
+            registrations: regs
+        });
+    } catch (error) {
+        console.error('Get event registrations error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -617,7 +676,8 @@ router.get('/:id', async (req, res) => {
         event.views += 1;
         await event.save();
 
-        res.json(event);
+        const [enriched] = await enrichEventsWithWaitlistCounts([event]);
+        res.json(enriched);
     } catch (error) {
         console.error('Get single event error:', error);
         res.status(500).json({
@@ -676,15 +736,14 @@ router.post('/:id/register', async (req, res) => {
     try {
         const { id } = req.params;
         const { participantName, participantEmail, participantPhone } = req.body;
-        
-        // 驗證必填欄位
-        if (!participantName || !participantEmail) {
+        const emailNorm = normalizeParticipantEmail(participantEmail);
+
+        if (!participantName || !participantName.toString().trim() || !emailNorm) {
             return res.status(400).json({
                 message: 'Participant name and email are required'
             });
         }
 
-        // 查找活動
         const event = await Event.findById(id);
         if (!event) {
             return res.status(404).json({
@@ -692,35 +751,112 @@ router.post('/:id/register', async (req, res) => {
             });
         }
 
-        // 檢查活動狀態
         if (event.status !== 'registration_open') {
             return res.status(400).json({
                 message: 'Event registration is not open'
             });
         }
 
-        // 檢查名額
-        if (event.capacity && event.registeredCount >= event.capacity) {
-            return res.status(400).json({
-                message: 'Event is full'
+        const dup = await EventRegistration.findOne({ event: event._id, email: emailNorm });
+        if (dup) {
+            return res.status(409).json({
+                message: '此 Email 已報名本活動'
             });
         }
 
-        // 增加報名人數
-        event.registeredCount += 1;
-        await event.save();
+        const nameTrim = String(participantName).trim();
+        const phoneTrim = participantPhone ? String(participantPhone).trim() : '';
 
-        res.json({
-            message: 'Registration successful',
+        const capacity = event.capacity;
+
+        if (!capacity) {
+            const updated = await Event.findByIdAndUpdate(
+                event._id,
+                { $inc: { registeredCount: 1 } },
+                { new: true }
+            );
+            await EventRegistration.create({
+                event: event._id,
+                email: emailNorm,
+                name: nameTrim,
+                phone: phoneTrim,
+                status: 'confirmed'
+            });
+            const [enriched] = await enrichEventsWithWaitlistCounts([updated]);
+            return res.json({
+                message: 'Registration successful',
+                registrationStatus: 'confirmed',
+                event: {
+                    id: enriched._id,
+                    title: enriched.title,
+                    registeredCount: enriched.registeredCount,
+                    remainingSpots: enriched.remainingSpots,
+                    waitlistCount: enriched.waitlistCount
+                }
+            });
+        }
+
+        const updated = await Event.findOneAndUpdate(
+            {
+                _id: event._id,
+                $expr: { $lt: ['$registeredCount', '$capacity'] }
+            },
+            { $inc: { registeredCount: 1 } },
+            { new: true }
+        );
+
+        if (updated) {
+            await EventRegistration.create({
+                event: event._id,
+                email: emailNorm,
+                name: nameTrim,
+                phone: phoneTrim,
+                status: 'confirmed'
+            });
+            const [enriched] = await enrichEventsWithWaitlistCounts([updated]);
+            return res.json({
+                message: 'Registration successful',
+                registrationStatus: 'confirmed',
+                event: {
+                    id: enriched._id,
+                    title: enriched.title,
+                    registeredCount: enriched.registeredCount,
+                    remainingSpots: enriched.remainingSpots,
+                    waitlistCount: enriched.waitlistCount
+                }
+            });
+        }
+
+        const wl = await EventRegistration.countDocuments({ event: event._id, status: 'waitlist' });
+        const waitlistPosition = wl + 1;
+        await EventRegistration.create({
+            event: event._id,
+            email: emailNorm,
+            name: nameTrim,
+            phone: phoneTrim,
+            status: 'waitlist',
+            waitlistPosition
+        });
+        const fresh = await Event.findById(event._id);
+        const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
+        return res.json({
+            message: '已加入候補',
+            registrationStatus: 'waitlist',
+            waitlistPosition,
             event: {
-                id: event._id,
-                title: event.title,
-                registeredCount: event.registeredCount,
-                remainingSpots: event.remainingSpots
+                id: enriched._id,
+                title: enriched.title,
+                registeredCount: enriched.registeredCount,
+                remainingSpots: enriched.remainingSpots,
+                waitlistCount: enriched.waitlistCount
             }
         });
-
     } catch (error) {
+        if (error && error.code === 11000) {
+            return res.status(409).json({
+                message: '此 Email 已報名本活動'
+            });
+        }
         console.error('Event registration error:', error);
         res.status(500).json({
             message: 'Internal server error'
@@ -732,15 +868,14 @@ router.post('/:id/register', async (req, res) => {
 router.post('/:id/unregister', async (req, res) => {
     try {
         const { id } = req.params;
-        const { participantEmail } = req.body;
-        
-        if (!participantEmail) {
+        const emailNorm = normalizeParticipantEmail(req.body.participantEmail);
+
+        if (!emailNorm) {
             return res.status(400).json({
                 message: 'Participant email is required'
             });
         }
 
-        // 查找活動
         const event = await Event.findById(id);
         if (!event) {
             return res.status(404).json({
@@ -748,29 +883,67 @@ router.post('/:id/unregister', async (req, res) => {
             });
         }
 
-        // 檢查活動狀態
         if (event.status !== 'registration_open') {
             return res.status(400).json({
                 message: 'Event registration is not open'
             });
         }
 
-        // 減少報名人數
-        if (event.registeredCount > 0) {
-            event.registeredCount -= 1;
-            await event.save();
+        const reg = await EventRegistration.findOne({ event: event._id, email: emailNorm });
+        if (!reg) {
+            return res.status(404).json({
+                message: '找不到此 Email 的報名紀錄'
+            });
         }
 
-        res.json({
+        if (reg.status === 'waitlist') {
+            await reg.deleteOne();
+            const fresh = await Event.findById(event._id);
+            const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
+            return res.json({
+                message: '已取消候補',
+                registrationStatus: 'cancelled',
+                event: {
+                    id: enriched._id,
+                    title: enriched.title,
+                    registeredCount: enriched.registeredCount,
+                    remainingSpots: enriched.remainingSpots,
+                    waitlistCount: enriched.waitlistCount
+                }
+            });
+        }
+
+        await EventRegistration.deleteOne({ _id: reg._id });
+        await Event.updateOne({ _id: event._id }, { $inc: { registeredCount: -1 } });
+
+        if (event.capacity) {
+            const next = await EventRegistration.findOne({
+                event: event._id,
+                status: 'waitlist'
+            })
+                .sort({ waitlistPosition: 1, createdAt: 1 });
+
+            if (next) {
+                next.status = 'confirmed';
+                next.waitlistPosition = undefined;
+                await next.save();
+                await Event.updateOne({ _id: event._id }, { $inc: { registeredCount: 1 } });
+            }
+        }
+
+        const fresh = await Event.findById(event._id);
+        const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
+        return res.json({
             message: 'Unregistration successful',
+            registrationStatus: 'cancelled',
             event: {
-                id: event._id,
-                title: event.title,
-                registeredCount: event.registeredCount,
-                remainingSpots: event.remainingSpots
+                id: enriched._id,
+                title: enriched.title,
+                registeredCount: enriched.registeredCount,
+                remainingSpots: enriched.remainingSpots,
+                waitlistCount: enriched.waitlistCount
             }
         });
-
     } catch (error) {
         console.error('Event unregistration error:', error);
         res.status(500).json({
