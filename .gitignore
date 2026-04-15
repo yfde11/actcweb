@@ -4,6 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Caddy 自簽憑證（由 scripts/init-caddy-certs.sh 產生）
+caddy-certs/
+
 # Environment variables
 .env
 .env.docker

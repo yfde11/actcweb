@@ -1,0 +1,6 @@
+# 與專案根目錄 Caddyfile 對齊；內網自簽見 Caddyfile.selfsigned.example
+
+www.actc-tw.org {
+	encode gzip
+	reverse_proxy web:5001
+}

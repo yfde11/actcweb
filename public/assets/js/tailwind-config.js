@@ -7,7 +7,8 @@ if (typeof tailwind !== 'undefined') {
                 colors: {
                     'actc-orange': '#F97316',
                     'actc-orange-light': '#FB923C',
-                    'actc-orange-dark': '#EA580C'
+                    'actc-orange-dark': '#EA580C',
+                    'actc-sand': '#F4A460'
                 }
             }
         }
@@ -22,7 +23,8 @@ if (typeof tailwind !== 'undefined') {
                         colors: {
                             'actc-orange': '#F97316',
                             'actc-orange-light': '#FB923C',
-                            'actc-orange-dark': '#EA580C'
+                            'actc-orange-dark': '#EA580C',
+                            'actc-sand': '#F4A460'
                         }
                     }
                 }

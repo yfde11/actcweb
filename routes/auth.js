@@ -61,17 +61,23 @@ router.post('/register', async (req, res) => {
         });
         await user.save();
 
+        let mailResult = { ok: false, mock: true };
         try {
-            await sendVerificationEmail(
+            mailResult = await sendVerificationEmail(
                 { username: user.username, email: user.email },
                 token
             );
         } catch (mailErr) {
             console.warn('Verification email failed:', mailErr.message);
+            mailResult = { ok: false, error: mailErr.message };
         }
 
+        const emailSent = !!mailResult.ok;
         res.status(201).json({
-            message: '註冊成功，請至信箱點擊驗證連結後再登入。',
+            message: emailSent
+                ? '註冊成功，請至信箱點擊驗證連結後再登入。'
+                : '帳號已建立，但驗證信未能寄出（伺服器未設定 SMTP 或寄件失敗）。請聯絡管理員，或於設定 SMTP 後使用「重送驗證信」。',
+            emailSent,
             email: user.email
         });
     } catch (error) {
@@ -139,8 +145,21 @@ router.post('/resend-verification', async (req, res) => {
         user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await user.save();
 
-        await sendVerificationEmail({ username: user.username, email: user.email }, token);
-        res.json({ message: '驗證信已重新寄出' });
+        let mailResult = { ok: false, mock: true };
+        try {
+            mailResult = await sendVerificationEmail({ username: user.username, email: user.email }, token);
+        } catch (e) {
+            console.warn('Resend verification email failed:', e.message);
+            mailResult = { ok: false, error: e.message };
+        }
+        if (!mailResult.ok) {
+            return res.status(503).json({
+                message:
+                    '驗證信無法寄出：請確認伺服器已設定 SMTP_HOST、SMTP_USERNAME、SMTP_PASSWORD（Gmail 須使用應用程式專用密碼），並查看主機日誌。',
+                emailSent: false
+            });
+        }
+        res.json({ message: '驗證信已重新寄出', emailSent: true });
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Internal server error' });

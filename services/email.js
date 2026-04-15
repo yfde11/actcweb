@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 
+/** 寄件人顯示名稱（與實際寄件信箱分開） */
+const MAIL_FROM_DISPLAY_NAME = 'ACTC(國際資安人培協會)';
+
 /** 支援 SMTP_USERNAME / SMTP_PASSWORD 或舊名 SMTP_USER / SMTP_PASS */
 function smtpUser() {
     return (process.env.SMTP_USERNAME || process.env.SMTP_USER || '').trim();
@@ -38,12 +41,12 @@ function createTransport() {
 const fromAddress = () => {
     const digest = process.env.DIGEST_FROM_EMAIL?.trim();
     if (digest) {
-        return digest.includes('<') ? digest : `"ACTC" <${digest}>`;
+        return digest.includes('<') ? digest : `"${MAIL_FROM_DISPLAY_NAME}" <${digest}>`;
     }
     const legacy = process.env.EMAIL_FROM?.trim();
     if (legacy) return legacy;
     const u = smtpUser();
-    return u ? `"ACTC" <${u}>` : '"ACTC" <noreply@localhost>';
+    return u ? `"${MAIL_FROM_DISPLAY_NAME}" <${u}>` : `"${MAIL_FROM_DISPLAY_NAME}" <noreply@localhost>`;
 };
 
 function fallbackRecipientTo() {

@@ -183,6 +183,16 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/actc_websit
     app.listen(PORT, HOST, () => {
         console.log(`🚀 Server listening on http://${HOST}:${PORT} (容器內埠；Docker 時由 Caddy 對外提供 80/443)`);
         console.log('📱 Admin path: /admin（對外請使用 SITE_URL 對應的網址 + /admin）');
+        try {
+            const { isConfigured } = require('./services/email');
+            if (!isConfigured()) {
+                console.warn(
+                    '⚠️  SMTP 未完整設定：信箱驗證信、重設密碼信、會籍通知將不會寄出。請設定 SMTP_HOST、SMTP_USERNAME、SMTP_PASSWORD（見 env.docker.example）。'
+                );
+            }
+        } catch {
+            /* ignore */
+        }
     });
 })
 .catch(err => {

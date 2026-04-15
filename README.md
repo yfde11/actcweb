@@ -139,14 +139,23 @@ cp env.docker.example .env.docker
 # 編輯 .env.docker：至少設定 JWT_SECRET；SITE_URL 請設為對外網址（例如 http://192.168.1.10 或 https://你的網域，勿加 :5001）
 # 寄信請填 SMTP 相關變數
 
+# 內網 HTTPS 須先有自簽憑證（含對外 IP 的 SAN），否則 Caddy 無法完成 TLS 握手：
+CADDY_TLS_IP=你的對外IP ./scripts/init-caddy-certs.sh
+
 docker compose --env-file .env.docker up --build
 ```
 
-啟動後 **HTTP 與 HTTPS 會同時開放**：**http://localhost/**（80）與 **https://localhost/**（443）皆可連到同一站台。443 使用 Caddy 的 **`tls internal` 自簽憑證**，瀏覽器會提示不安全，按「進階／繼續」即可，適合內網或測試。後台為 **`/admin`**。若主機 80/443 已被占用，可在 `.env.docker` 設定 `HTTP_PORT`、`HTTPS_PORT` 改映射。有正式網域名稱時，請改寫 **`Caddyfile`** 為網域區塊，即可由 Caddy 自動申請 Let's Encrypt 憑證（瀏覽器即顯示鎖頭）。
+啟動後 **HTTP 與 HTTPS 會同時開放**。內網／無公網網域時：443 使用 **`caddy-certs/`** 內 **OpenSSL 自簽憑證**（`scripts/init-caddy-certs.sh` 產生；**`caddy-certs/`** 已列入 `.gitignore`），瀏覽器會提示不安全屬正常。後台為 **`/admin`**；若 80/443 被占用，可在 `.env.docker` 設定 `HTTP_PORT`、`HTTPS_PORT`。
+
+**正式網域（例如 `www.actc-tw.org`）要變成瀏覽器可信任的 HTTPS**：須改為由 **Let's Encrypt** 簽發憑證（Caddy 預設會自動申請與續期），步驟摘要如下（詳見專案內 **`Caddyfile.production.example`**）：
+
+1. **DNS**：`actc-tw.org`、`www.actc-tw.org` 的 **A／AAAA** 指向伺服器之 **公網 IP**（僅內網 IP 無法通過 Let's Encrypt 驗證）。
+2. **對外連線**：從網際網路能連到該主機的 **80、443**（同埠轉發到跑 Caddy 的機器）。
+3. **Caddy 設定**：以 **`Caddyfile.production.example`** 為範本，改為 **`www.actc-tw.org, actc-tw.org { … }`** 這類「網址區塊」（**不要**再使用 `auto_https off` 與 **`caddy-certs` 手動憑證**）。請將內容複製為專案根目錄的 **`Caddyfile`**，並在 **`docker-compose.yml`** 的 **caddy** 服務中**註解或刪除** `./caddy-certs:/certs:ro` 這一行。
+4. **環境變數**：`.env.docker` 的 **`SITE_URL=https://www.actc-tw.org`**（與使用者實際開啟的網址一致）。
+5. **Cloudflare**：若網域經 **CDN 代理（橘雲）**，常見的 **HTTP-01** 驗證會失敗；請改為 **僅 DNS（灰雲）**，或改用 Caddy 的 **DNS-01** 外掛（需 API token，範例檔未內建）。
 
 MongoDB 僅在 Docker 內部網路對 `web` 開放；若需本機直連 Mongo 除錯，可自行在 `mongo` 服務加上 `ports`（僅建議開發環境）。
-
-正式網域與自動 HTTPS：請編輯專案根目錄 **`Caddyfile`**，改為以網域名稱為主的區塊（可移除 `:443` 的 `tls internal`，改由 Caddy 自動申請憑證）。詳見 `env.docker.example`。
 
 ---
 

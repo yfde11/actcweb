@@ -1,0 +1,17 @@
+# 內網／無公網網域：HTTPS 使用 caddy-certs/ 自簽憑證（scripts/init-caddy-certs.sh）
+# 使用方式：複製為 Caddyfile，並在 docker-compose.yml 的 caddy 服務保留 ./caddy-certs:/certs:ro
+{
+	auto_https off
+	servers {
+		protocols h1 h2
+	}
+}
+
+:80 {
+	reverse_proxy web:5001
+}
+
+:443 {
+	tls /certs/cert.pem /certs/key.pem
+	reverse_proxy web:5001
+}

@@ -1,15 +1,23 @@
-# 對外 80 / 443 → 內部 Node（服務名 web，埠 5001）
-# 443 使用 Caddy「內部」憑證（tls internal），瀏覽器會提示不受信任，適合內網或測試。
-# 正式環境有網域名稱時，可改為單一區塊以自動申請 Let's Encrypt，例如：
-#   www.example.com {
-#       reverse_proxy web:5001
-#   }
+# 正式站：Let's Encrypt（Caddy 自動申請與續期）
+# 目前僅列 www：裸網域 actc-tw.org 若無 A/AAAA，與 www 同列會導致整張憑證申請失敗。
+# 日後若 apex 已指向同一主機，可改為：www.actc-tw.org, actc-tw.org { ... }
+# {
+# 	email admin@actc-tw.org
+# }
 
-:80 {
+# 內網 IP：HTTP 免憑證；HTTPS 使用 Caddy 內部 CA（瀏覽器會提示不安全，按進階／仍要繼續即可）。
+http://192.168.1.156 {
+	encode gzip
 	reverse_proxy web:5001
 }
 
-:443 {
+https://192.168.1.156 {
 	tls internal
+	encode gzip
+	reverse_proxy web:5001
+}
+
+www.actc-tw.org {
+	encode gzip
 	reverse_proxy web:5001
 }

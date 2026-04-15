@@ -223,25 +223,40 @@ corporateMemberSchema.virtual('daysUntilExpiry').get(function() {
 });
 
 // 靜態方法
+/** 前台列表／分頁 count 共用之查詢條件 */
+corporateMemberSchema.statics.buildDisplayedMembersFilter = function(filters = {}) {
+    const { membershipType, industry, search } = filters;
+    const query = { isActive: true, isDisplayed: true };
+
+    if (membershipType) {
+        query.membershipType = membershipType;
+    }
+
+    if (industry) {
+        query.industry = new RegExp(industry, 'i');
+    }
+
+    if (search && String(search).trim()) {
+        const escaped = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(escaped, 'i');
+        query.$or = [{ companyName: re }, { companyNameEn: re }];
+    }
+
+    return query;
+};
+
 corporateMemberSchema.statics.getDisplayedMembers = function(options = {}) {
     const {
         membershipType,
         industry,
+        search,
         limit = 20,
         skip = 0,
         sortBy = 'displayOrder'
     } = options;
-    
-    const query = { isActive: true, isDisplayed: true };
-    
-    if (membershipType) {
-        query.membershipType = membershipType;
-    }
-    
-    if (industry) {
-        query.industry = new RegExp(industry, 'i');
-    }
-    
+
+    const query = this.buildDisplayedMembersFilter({ membershipType, industry, search });
+
     let sort = {};
     if (sortBy === 'displayOrder') {
         sort = { displayOrder: 1, createdAt: -1 };

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="assets/css/common.css" />
     <!-- 統一 Tailwind 配置 -->
     <script src="assets/js/tailwind-config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body class="bg-gray-50">
     <!-- 導航欄 -->
@@ -22,16 +23,35 @@
                     </div>
                     <span class="text-xl font-bold text-gray-800">ACTC</span>
                 </div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="index.html" class="text-gray-600 hover:text-actc-orange transition-colors">首頁</a>
-                    <a href="about.html" class="text-gray-600 hover:text-actc-orange transition-colors">關於協會</a>
-                    <a href="index.html#news" class="text-gray-600 hover:text-actc-orange transition-colors">最新消息</a>
-                    <a href="index.html#events" class="text-gray-600 hover:text-actc-orange transition-colors">活動課程</a>
-                    <a href="index.html#corporate-members" class="text-gray-600 hover:text-actc-orange transition-colors">企業會員</a>
-                    <a href="workgroups.html" class="text-actc-orange font-semibold">工作小組</a>
+                <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
+                    <a href="/" class="text-gray-600 hover:text-actc-orange transition-colors">首頁</a>
+                    <a href="/about" class="text-gray-600 hover:text-actc-orange transition-colors">關於協會</a>
+                    <div id="desktopMemberNav" class="relative flex items-center gap-2">
+                        <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
+                        <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
+                            <i class="fa-solid fa-user-circle text-2xl" aria-hidden="true"></i>
+                            <span class="sr-only">會員選單</span>
+                        </button>
+                        <div id="desktopMemberDropdown" class="hidden absolute right-0 top-full z-[60] mt-1 w-52 rounded-lg border border-gray-100 bg-white py-1 shadow-lg" role="menu">
+                            <div id="desktopMemberLinksGuest">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">會員總覽</a>
+                                <a href="/member#register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">註冊</a>
+                                <a href="/member#login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">登入</a>
+                            </div>
+                            <div id="desktopMemberLinksAuthed" class="hidden">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">前往會員專區</a>
+                                <a href="/member#account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">帳號管理</a>
+                                <button type="button" id="desktopMemberLogoutBtn" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50" role="menuitem">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="text-gray-600 hover:text-actc-orange transition-colors">最新消息</a>
+                    <a href="/#events" class="text-gray-600 hover:text-actc-orange transition-colors">活動課程</a>
+                    <a href="/corporate-members" class="text-gray-600 hover:text-actc-orange transition-colors">企業會員</a>
+                    <a href="/workgroups" class="text-actc-orange font-semibold">工作小組</a>
                 </div>
                 <div class="md:hidden">
-                    <button id="mobileMenuBtn" class="text-gray-600 hover:text-actc-orange">
+                    <button type="button" id="mobileMenuBtn" class="text-gray-600 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMenu" aria-label="開啟選單">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
@@ -41,12 +61,34 @@
             <!-- 手機選單 -->
             <div id="mobileMenu" class="hidden md:hidden pb-4">
                 <div class="space-y-2">
-                    <a href="index.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
-                    <a href="about.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
-                    <a href="index.html#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
-                    <a href="index.html#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
-                    <a href="index.html#corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
-                    <a href="workgroups.html" class="block text-actc-orange font-semibold py-2">工作小組</a>
+                    <a href="/" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
+                    <a href="/about" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <div class="border-t border-gray-100 pt-2">
+                        <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
+                            <span class="flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-user-circle text-actc-orange text-xl" aria-hidden="true"></i>
+                                會員
+                            </span>
+                            <i id="mobileMemberChevron" class="fa-solid fa-chevron-down text-xs text-gray-500 transition-transform" aria-hidden="true"></i>
+                        </button>
+                        <p id="mobileMemberHint" class="pl-8 text-xs text-gray-500 pb-1"></p>
+                        <div id="mobileMemberSub" class="hidden space-y-1 pl-8 pb-2">
+                            <div id="mobileMemberGuest">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">會員總覽</a>
+                                <a href="/member#register" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">註冊</a>
+                                <a href="/member#login" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">登入</a>
+                            </div>
+                            <div id="mobileMemberAuthed" class="hidden space-y-1">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">前往會員專區</a>
+                                <a href="/member#account" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">帳號管理</a>
+                                <button type="button" id="mobileMemberLogoutBtn" class="w-full py-1.5 text-left text-sm text-red-600 hover:underline">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
+                    <a href="/#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
+                    <a href="/corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
+                    <a href="/workgroups" class="block text-actc-orange font-semibold py-2">工作小組</a>
                 </div>
             </div>
         </div>
@@ -98,12 +140,12 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-4">快速連結</h3>
                     <div class="space-y-2">
-                        <a href="about.html" class="block text-gray-300 hover:text-actc-orange transition-colors">協會宗旨</a>
-                        <a href="about.html#board" class="block text-gray-300 hover:text-actc-orange transition-colors">理監事</a>
-                        <a href="index.html#news" class="block text-gray-300 hover:text-actc-orange transition-colors">最新消息</a>
-                        <a href="index.html#events" class="block text-gray-300 hover:text-actc-orange transition-colors">活動課程</a>
-                        <a href="about.html" class="block text-gray-300 hover:text-actc-orange transition-colors">關於我們</a>
-                        <a href="workgroups.html" class="block text-actc-orange font-semibold">工作小組</a>
+                        <a href="/" class="block text-gray-300 hover:text-actc-orange transition-colors">首頁</a>
+                        <a href="/about" class="block text-gray-300 hover:text-actc-orange transition-colors">關於協會</a>
+                        <a href="/#news" class="block text-gray-300 hover:text-actc-orange transition-colors">最新消息</a>
+                        <a href="/#events" class="block text-gray-300 hover:text-actc-orange transition-colors">活動課程</a>
+                        <a href="/corporate-members" class="block text-gray-300 hover:text-actc-orange transition-colors">企業會員</a>
+                        <a href="/workgroups" class="block text-gray-300 hover:text-actc-orange transition-colors">工作小組</a>
                     </div>
                 </div>
             </div>
@@ -133,7 +175,8 @@
             const mobileMenu = document.getElementById('mobileMenu');
             if (mobileMenuBtn && mobileMenu) {
                 mobileMenuBtn.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
+                    const isHidden = mobileMenu.classList.toggle('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
                 });
             }
 
@@ -181,5 +224,6 @@
             return div.innerHTML;
         }
     </script>
+    <script src="assets/js/member-nav.js"></script>
 </body>
 </html>

@@ -7,15 +7,17 @@
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="ACTC 國際資訊安全人才培育與推廣協會企業會員，匯聚頂尖資安企業，推動產業發展">
-    <meta name="keywords" content="ACTC, 企業會員, 資訊安全, 資安企業, 產業合作">
+    <meta name="keywords" content="ACTC, 企業會員, 資訊安全, 資安企業, 產業合作, 協會">
     <meta name="author" content="ACTC">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
-    
-    <!-- Tailwind CSS -->
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link rel="stylesheet" href="/assets/css/common.css" />
+    <script src="/assets/js/tailwind-config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-424DY83DBT"></script>
     <script>
@@ -36,35 +38,6 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         
-        .membership-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .membership-platinum {
-            background: linear-gradient(135deg, #c0c0c0 0%, #f0f0f0 100%);
-            color: #666;
-        }
-        
-        .membership-gold {
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-            color: #8b7500;
-        }
-        
-        .membership-silver {
-            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-            color: #666;
-        }
-        
-        .membership-bronze {
-            background: linear-gradient(135deg, #cd7f32 0%, #e6a85c 100%);
-            color: #ffffff;
-        }
-        
-        .filter-button.active {
-            background: #3b82f6;
-            color: white;
-        }
-        
         .loading-shimmer {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
@@ -77,22 +50,82 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- 導航欄 -->
+<body class="bg-gray-100">
     <nav class="bg-white shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/" class="flex items-center">
-                        <img src="/assets/images/actc-logo.jpg" alt="ACTC Logo" class="h-10 w-auto">
-                        <span class="ml-3 text-xl font-bold text-gray-900">ACTC</span>
-                    </a>
+            <div class="flex justify-between items-center h-16">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10">
+                        <img src="/assets/images/actc-logo.jpg" alt="ACTC Logo" class="w-full h-full object-contain rounded-full">
+                    </div>
+                    <span class="text-xl font-bold text-gray-800">ACTC</span>
+                </a>
+                <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
+                    <a href="/" class="text-gray-600 hover:text-actc-orange transition-colors">首頁</a>
+                    <a href="/about" class="text-gray-600 hover:text-actc-orange transition-colors">關於協會</a>
+                    <div id="desktopMemberNav" class="relative flex items-center gap-2">
+                        <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
+                        <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
+                            <i class="fa-solid fa-user-circle text-2xl" aria-hidden="true"></i>
+                            <span class="sr-only">會員選單</span>
+                        </button>
+                        <div id="desktopMemberDropdown" class="hidden absolute right-0 top-full z-[60] mt-1 w-52 rounded-lg border border-gray-100 bg-white py-1 shadow-lg" role="menu">
+                            <div id="desktopMemberLinksGuest">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">會員總覽</a>
+                                <a href="/member#register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">註冊</a>
+                                <a href="/member#login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">登入</a>
+                            </div>
+                            <div id="desktopMemberLinksAuthed" class="hidden">
+                                <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">前往會員專區</a>
+                                <a href="/member#account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">帳號管理</a>
+                                <button type="button" id="desktopMemberLogoutBtn" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50" role="menuitem">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="text-gray-600 hover:text-actc-orange transition-colors">最新消息</a>
+                    <a href="/#events" class="text-gray-600 hover:text-actc-orange transition-colors">活動課程</a>
+                    <a href="/corporate-members" class="text-actc-orange font-semibold">企業會員</a>
+                    <a href="/workgroups" class="text-gray-600 hover:text-actc-orange transition-colors">工作小組</a>
                 </div>
-                <div class="flex items-center space-x-8">
-                    <a href="/" class="text-gray-700 hover:text-blue-600 transition-colors">首頁</a>
-                    <a href="/news" class="text-gray-700 hover:text-blue-600 transition-colors">最新消息</a>
-                    <a href="/corporate-members" class="text-blue-600 font-medium">企業會員</a>
-                    <a href="/about" class="text-gray-700 hover:text-blue-600 transition-colors">關於我們</a>
+                <div class="md:hidden">
+                    <button type="button" id="mobileMenuBtn" class="text-gray-600 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMenu">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <span class="sr-only">開啟選單</span>
+                    </button>
+                </div>
+            </div>
+            <div id="mobileMenu" class="hidden md:hidden pb-4" role="navigation" aria-label="手機版主選單">
+                <div class="space-y-2">
+                    <a href="/" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
+                    <a href="/about" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <div class="border-t border-gray-100 pt-2">
+                        <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
+                            <span class="flex items-center gap-2 font-medium">
+                                <i class="fa-solid fa-user-circle text-actc-orange text-xl" aria-hidden="true"></i>
+                                會員
+                            </span>
+                            <i id="mobileMemberChevron" class="fa-solid fa-chevron-down text-xs text-gray-500 transition-transform" aria-hidden="true"></i>
+                        </button>
+                        <p id="mobileMemberHint" class="pl-8 text-xs text-gray-500 pb-1"></p>
+                        <div id="mobileMemberSub" class="hidden space-y-1 pl-8 pb-2">
+                            <div id="mobileMemberGuest">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">會員總覽</a>
+                                <a href="/member#register" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">註冊</a>
+                                <a href="/member#login" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">登入</a>
+                            </div>
+                            <div id="mobileMemberAuthed" class="hidden space-y-1">
+                                <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">前往會員專區</a>
+                                <a href="/member#account" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">帳號管理</a>
+                                <button type="button" id="mobileMemberLogoutBtn" class="w-full py-1.5 text-left text-sm text-red-600 hover:underline">登出</button>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
+                    <a href="/#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
+                    <a href="/corporate-members" class="block text-actc-orange font-semibold py-2">企業會員</a>
+                    <a href="/workgroups" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
                 </div>
             </div>
         </div>
@@ -101,10 +134,10 @@
     <!-- 主要內容 -->
     <main class="min-h-screen">
         <!-- 頁面標題 -->
-        <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+        <section class="bg-gradient-to-r from-actc-orange to-actc-orange-dark text-white py-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">企業會員</h1>
-                <p class="text-xl md:text-2xl text-blue-100 mb-8">
+                <p class="text-xl opacity-90 mb-8">
                     匯聚頂尖資安企業，共同推動產業發展
                 </p>
                 <div class="flex flex-wrap justify-center gap-4">
@@ -114,53 +147,28 @@
                     </div>
                     <div class="bg-white bg-opacity-20 px-4 py-2 rounded-lg">
                         <span id="activeMembers" class="text-2xl font-bold">-</span>
-                        <span class="text-sm block">活躍會員</span>
+                        <span class="text-sm block">啟用中</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 篩選和搜尋 -->
+        <!-- 搜尋與排序（前台不區分會員等級） -->
         <section class="bg-white py-8 border-b">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <!-- 會員類型篩選 -->
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="filterByMembership('all')" 
-                                class="filter-button active px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">
-                            全部
-                        </button>
-                        <button onclick="filterByMembership('platinum')" 
-                                class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">
-                            白金會員
-                        </button>
-                        <button onclick="filterByMembership('gold')" 
-                                class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">
-                            金級會員
-                        </button>
-                        <button onclick="filterByMembership('silver')" 
-                                class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">
-                            銀級會員
-                        </button>
-                        <button onclick="filterByMembership('bronze')" 
-                                class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">
-                            銅級會員
-                        </button>
+                <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
+                    <div class="relative flex-1 min-w-0 max-w-xl">
+                        <input type="text" 
+                               id="searchInput"
+                               placeholder="搜尋企業名稱…"
+                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-actc-sand focus:border-actc-orange">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
                     </div>
-
-                    <!-- 搜尋和排序 -->
-                    <div class="flex gap-4">
-                        <div class="relative">
-                            <input type="text" 
-                                   id="searchInput"
-                                   placeholder="搜尋企業名稱..."
-                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
-                        
-                        <select id="sortSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div class="flex-shrink-0 w-full sm:w-auto">
+                        <label for="sortSelect" class="sr-only">排序方式</label>
+                        <select id="sortSelect" class="w-full sm:w-auto min-w-[11rem] px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-actc-sand focus:border-actc-orange">
                             <option value="displayOrder">依排序顯示</option>
                             <option value="companyName">依公司名稱</option>
                             <option value="joinDate">依加入時間</option>
@@ -175,7 +183,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <!-- 載入狀態 -->
                 <div id="loadingState" class="text-center py-12">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-actc-orange border-t-transparent" role="status" aria-label="載入中"></div>
                     <div class="mt-4 text-gray-600">載入企業會員中...</div>
                 </div>
 
@@ -189,7 +197,7 @@
                     <div id="loadMoreSection" class="text-center mt-12">
                         <button id="loadMoreBtn" 
                                 onclick="loadMoreMembers()"
-                                class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                class="px-8 py-3 bg-actc-orange text-white rounded-lg hover:bg-actc-orange-dark transition-colors font-medium">
                             載入更多
                         </button>
                     </div>
@@ -207,20 +215,49 @@
         </section>
     </main>
 
-    <!-- 頁腳 -->
-    <footer class="bg-gray-900 text-white py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p>&copy; 2024 ACTC 國際資訊安全人才培育與推廣協會. All rights reserved.</p>
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10">
+                            <img src="/assets/images/actc-logo.jpg" alt="ACTC Logo" class="w-full h-full object-contain rounded-full">
+                        </div>
+                        <span class="text-xl font-bold">ACTC</span>
+                    </div>
+                    <p class="text-gray-300 mb-4">國際資訊安全人才培育與推廣協會</p>
+                    <p class="text-gray-400 text-sm">致力於推動資訊安全教育，培養專業人才</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">聯絡資訊</h3>
+                    <div class="space-y-2 text-gray-300">
+                        <p>信箱：actcactc2023@gmail.com</p>
+                        <p>地址：105台北市松山區復興北路57號</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">快速連結</h3>
+                    <div class="space-y-2">
+                        <a href="/" class="block text-gray-300 hover:text-actc-orange transition-colors">首頁</a>
+                        <a href="/about" class="block text-gray-300 hover:text-actc-orange transition-colors">關於協會</a>
+                        <a href="/#news" class="block text-gray-300 hover:text-actc-orange transition-colors">最新消息</a>
+                        <a href="/#events" class="block text-gray-300 hover:text-actc-orange transition-colors">活動課程</a>
+                        <a href="/corporate-members" class="block text-gray-300 hover:text-actc-orange transition-colors">企業會員</a>
+                        <a href="/workgroups" class="block text-gray-300 hover:text-actc-orange transition-colors">工作小組</a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-400">&copy; 2026 國際資訊安全人才培育與推廣協會. 版權所有.</p>
+            </div>
         </div>
     </footer>
 
-    <!-- Analytics Tracker -->
     <script src="/components/AnalyticsTracker.js"></script>
 
     <script>
         // 全域變數
         let currentPage = 1;
-        let currentFilter = 'all';
         let currentSort = 'displayOrder';
         let searchTerm = '';
         let hasMore = true;
@@ -236,6 +273,15 @@
             
             // 設定搜尋和排序事件監聽器
             setupEventListeners();
+
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    const menuHidden = mobileMenu.classList.toggle('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', menuHidden ? 'false' : 'true');
+                });
+            }
             
             // Google Analytics 追蹤
             gtag('event', 'page_view', {
@@ -291,10 +337,6 @@
                     sortBy: currentSort
                 });
 
-                if (currentFilter !== 'all') {
-                    params.append('membershipType', currentFilter);
-                }
-
                 if (searchTerm) {
                     params.append('search', searchTerm);
                 }
@@ -348,14 +390,13 @@
                 items: members.map(member => ({
                     item_id: member._id,
                     item_name: member.companyName,
-                    item_category: member.membershipType
+                    item_category: 'corporate_member'
                 }))
             });
         }
 
         // 創建會員卡片
         function createMemberCard(member) {
-            const membershipClass = `membership-${member.membershipType}`;
             const logoUrl = member.logo || '/assets/images/default-company-logo.png';
             
             return `
@@ -366,11 +407,6 @@
                              alt="${member.companyName}"
                              class="max-h-full max-w-full object-contain"
                              onerror="this.src='/assets/images/default-company-logo.png'">
-                        
-                        <!-- 會員等級徽章 -->
-                        <div class="absolute top-3 right-3 ${membershipClass} px-2 py-1 rounded text-xs font-medium">
-                            ${getMembershipDisplayName(member.membershipType)}
-                        </div>
                     </div>
 
                     <!-- 內容區域 -->
@@ -410,7 +446,7 @@
                         ${member.tags && member.tags.length > 0 ? `
                             <div class="mt-4 flex flex-wrap gap-1">
                                 ${member.tags.slice(0, 3).map(tag => `
-                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tag}</span>
+                                    <span class="inline-block bg-orange-50 text-actc-orange-dark text-xs px-2 py-1 rounded">${tag}</span>
                                 `).join('')}
                                 ${member.tags.length > 3 ? `<span class="text-xs text-gray-500">+${member.tags.length - 3} 更多</span>` : ''}
                             </div>
@@ -422,7 +458,7 @@
                                 <a href="${member.website}" 
                                    target="_blank" 
                                    onclick="trackMemberAction('${member._id}', 'visit_website')"
-                                   class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                   class="flex-1 bg-actc-orange text-white text-center py-2 px-4 rounded-lg hover:bg-actc-orange-dark transition-colors text-sm font-medium">
                                     造訪網站
                                 </a>
                             ` : ''}
@@ -435,30 +471,6 @@
                     </div>
                 </div>
             `;
-        }
-
-        // 會員類型顯示名稱
-        function getMembershipDisplayName(type) {
-            const names = {
-                'platinum': '白金會員',
-                'gold': '金級會員',
-                'silver': '銀級會員',
-                'bronze': '銅級會員',
-                'regular': '一般會員'
-            };
-            return names[type] || '會員';
-        }
-
-        // 依會員類型篩選
-        function filterByMembership(type) {
-            // 更新按鈕狀態
-            document.querySelectorAll('.filter-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            currentFilter = type;
-            resetAndReload();
         }
 
         // 重置並重新載入
@@ -542,5 +554,6 @@
             console.error(message);
         }
     </script>
+    <script src="/assets/js/member-nav.js"></script>
 </body>
 </html>

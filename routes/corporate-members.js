@@ -51,6 +51,7 @@ router.get('/displayed', async (req, res) => {
         const {
             membershipType,
             industry,
+            search,
             limit = 20,
             skip = 0,
             sortBy = 'displayOrder'
@@ -59,17 +60,18 @@ router.get('/displayed', async (req, res) => {
         const members = await CorporateMember.getDisplayedMembers({
             membershipType,
             industry,
-            limit: parseInt(limit),
-            skip: parseInt(skip),
+            search,
+            limit: parseInt(limit, 10),
+            skip: parseInt(skip, 10),
             sortBy
         });
 
-        const total = await CorporateMember.countDocuments({
-            isActive: true,
-            isDisplayed: true,
-            ...(membershipType && { membershipType }),
-            ...(industry && { industry: new RegExp(industry, 'i') })
+        const listFilter = CorporateMember.buildDisplayedMembersFilter({
+            membershipType,
+            industry,
+            search
         });
+        const total = await CorporateMember.countDocuments(listFilter);
 
         res.json({
             success: true,
