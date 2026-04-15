@@ -82,8 +82,17 @@ async function sendMail({ to, subject, html, text, bcc }) {
     return { ok: true, messageId: info.messageId };
 }
 
+/**
+ * 對外站台基底網址（驗證信、重設密碼、通知內連結）。
+ * 請在 .env 設定 SITE_URL（或 FRONTEND_URL）；未設定時生產環境預設 https://www.actc-tw.org，開發預設本機。
+ */
 function siteBaseUrl() {
-    return (process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5001').replace(/\/$/, '');
+    const fromEnv = (process.env.SITE_URL || process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+    if (fromEnv) return fromEnv;
+    if (process.env.NODE_ENV === 'production') {
+        return 'https://www.actc-tw.org';
+    }
+    return 'http://localhost:5001';
 }
 
 async function sendVerificationEmail(user, token) {
