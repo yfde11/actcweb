@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const WorkingGroup = require('../models/WorkingGroup');
 const WorkingGroupMembership = require('../models/WorkingGroupMembership');
+const EventRegistration = require('../models/EventRegistration');
+const { cancelEventRegistration } = require('../services/eventRegistrations');
 const { verifiedAuth } = require('../middleware/memberAuth');
 
 const router = express.Router();
@@ -40,6 +42,63 @@ router.get('/me', verifiedAuth, async (req, res) => {
             user: await userResponsePayload(u)
         });
     } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.get('/me/event-registrations', verifiedAuth, async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        const email = EventRegistration.normalizeEmail(req.authUser.email);
+        const regs = await EventRegistration.find({ email })
+            .populate({ path: 'event', select: 'title date location status capacity registeredCount' })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const items = regs
+            .filter((r) => r.event)
+            .map((r) => ({
+                registrationId: r._id.toString(),
+                status: r.status,
+                waitlistPosition: r.waitlistPosition,
+                createdAt: r.createdAt,
+                event: {
+                    id: r.event._id.toString(),
+                    title: r.event.title,
+                    date: r.event.date,
+                    location: r.event.location,
+                    status: r.event.status,
+                    capacity: r.event.capacity,
+                    registeredCount: r.event.registeredCount
+                }
+            }));
+
+        res.json({ registrations: items });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.delete('/me/event-registrations/:eventId', verifiedAuth, async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        const { eventId } = req.params;
+        if (!mongoose.isValidObjectId(eventId)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
+        const email = EventRegistration.normalizeEmail(req.authUser.email);
+        const result = await cancelEventRegistration(eventId, email);
+        return res.json({
+            message: result.message,
+            registrationStatus: result.registrationStatus,
+            event: result.event
+        });
+    } catch (e) {
+        if (e.status) {
+            return res.status(e.status).json({ message: e.message });
+        }
         console.error(e);
         res.status(500).json({ message: 'Internal server error' });
     }

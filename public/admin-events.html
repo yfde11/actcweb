@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-gray-50" x-data="eventsManager()">
     <!-- 導航列 -->
@@ -186,7 +187,10 @@
                                     </div>
                                     <div x-show="!event.hasFile" class="text-sm text-gray-400">無檔案</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm font-medium space-x-2">
+                                <td class="px-6 py-4 text-sm font-medium space-x-2 flex flex-wrap gap-y-1">
+                                    <button type="button" @click="openRegistrationModal(event)" class="text-teal-600 hover:text-teal-900">
+                                        <i class="fas fa-users mr-1"></i>名單
+                                    </button>
                                     <button @click="editEvent(event)" class="text-blue-600 hover:text-blue-900">
                                         <i class="fas fa-edit mr-1"></i>編輯
                                     </button>
@@ -401,6 +405,60 @@
         </div>
     </div>
 
+    <!-- 報名／候補名單 Modal -->
+    <div x-show="showRegModal"
+         x-cloak
+         class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
+         @keydown.escape.window="closeRegistrationModal()"
+         role="dialog" aria-modal="true">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" @click.stop>
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">報名名單</h3>
+                <button type="button" class="text-gray-500 hover:text-gray-800" @click="closeRegistrationModal()" aria-label="關閉">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="px-6 py-3 bg-gray-50 text-sm text-gray-700 border-b border-gray-100" x-show="regModal.title">
+                <span class="font-medium" x-text="regModal.title"></span>
+                <span class="ml-3" x-show="!regModal.loading && (regModal.confirmedCount !== undefined)">
+                    正式 <span x-text="regModal.confirmedCount"></span> 人
+                    · 候補 <span x-text="regModal.waitlistCount"></span> 人
+                </span>
+            </div>
+            <div class="overflow-y-auto flex-1 p-6">
+                <p x-show="regModal.loading" class="text-gray-500">載入中…</p>
+                <p x-show="!regModal.loading && regModal.error" class="text-red-600" x-text="regModal.error"></p>
+                <div x-show="!regModal.loading && !regModal.error && regModal.registrations.length === 0" class="text-gray-500 text-sm">尚無報名資料。</div>
+                <div x-show="!regModal.loading && regModal.registrations.length" class="overflow-x-auto border border-gray-200 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">姓名</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">Email</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">電話</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">狀態</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">候補序號</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">報名時間</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="(reg, idx) in regModal.registrations" :key="reg._id || idx">
+                                <tr>
+                                    <td class="px-3 py-2" x-text="reg.name"></td>
+                                    <td class="px-3 py-2 break-all" x-text="reg.email"></td>
+                                    <td class="px-3 py-2" x-text="reg.phone || '—'"></td>
+                                    <td class="px-3 py-2" x-text="reg.status === 'confirmed' ? '正式' : '候補'"></td>
+                                    <td class="px-3 py-2" x-text="reg.waitlistPosition != null ? reg.waitlistPosition : '—'"></td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-gray-600" x-text="formatRegTime(reg.createdAt)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function eventsManager() {
             return {
@@ -418,6 +476,15 @@
                 typeFilter: '',
                 showCreateModal: false,
                 showEditModal: false,
+                showRegModal: false,
+                regModal: {
+                    title: '',
+                    loading: false,
+                    error: '',
+                    registrations: [],
+                    confirmedCount: 0,
+                    waitlistCount: 0
+                },
                 eventForm: {
                     title: '',
                     type: '',
@@ -541,6 +608,60 @@
                         'completed': 'bg-gray-100 text-gray-800'
                     };
                     return classes[status] || classes.draft;
+                },
+
+                formatRegTime(iso) {
+                    if (!iso) return '—';
+                    try {
+                        return new Date(iso).toLocaleString('zh-TW', { dateStyle: 'medium', timeStyle: 'short' });
+                    } catch {
+                        return '—';
+                    }
+                },
+
+                closeRegistrationModal() {
+                    this.showRegModal = false;
+                    this.regModal = {
+                        title: '',
+                        loading: false,
+                        error: '',
+                        registrations: [],
+                        confirmedCount: 0,
+                        waitlistCount: 0
+                    };
+                },
+
+                async openRegistrationModal(event) {
+                    this.showRegModal = true;
+                    this.regModal = {
+                        title: event.title || '',
+                        loading: true,
+                        error: '',
+                        registrations: [],
+                        confirmedCount: 0,
+                        waitlistCount: 0
+                    };
+                    try {
+                        const response = await fetch(`/api/events/${event._id}/registrations`, {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            }
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            this.regModal.loading = false;
+                            this.regModal.error = data.message || `載入失敗 (${response.status})`;
+                            return;
+                        }
+                        this.regModal.loading = false;
+                        this.regModal.registrations = data.registrations || [];
+                        this.regModal.confirmedCount = data.registeredCountFromRegistrations ?? 0;
+                        this.regModal.waitlistCount = data.waitlistCount ?? 0;
+                    } catch (e) {
+                        console.error(e);
+                        this.regModal.loading = false;
+                        this.regModal.error = '無法載入名單';
+                    }
                 },
 
                 getPageNumbers() {

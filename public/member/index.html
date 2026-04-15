@@ -42,6 +42,7 @@
                             <div id="desktopMemberLinksAuthed" class="hidden">
                                 <a href="/member" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">前往會員專區</a>
                                 <a href="/member#account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">帳號管理</a>
+                                <a href="/member#my-registrations" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">活動報名紀錄</a>
                                 <button type="button" id="desktopMemberLogoutBtn" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50" role="menuitem">登出</button>
                             </div>
                         </div>
@@ -81,6 +82,7 @@
                             <div id="mobileMemberAuthed" class="hidden space-y-1">
                                 <a href="/member" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">前往會員專區</a>
                                 <a href="/member#account" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">帳號管理</a>
+                                <a href="/member#my-registrations" class="block py-1.5 text-sm text-gray-600 hover:text-actc-orange">活動報名紀錄</a>
                                 <button type="button" id="mobileMemberLogoutBtn" class="w-full py-1.5 text-left text-sm text-red-600 hover:underline">登出</button>
                             </div>
                         </div>
@@ -183,6 +185,51 @@
                 </form>
             </div>
 
+            <div id="my-registrations" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token">
+                <h2 class="text-xl font-bold mb-2">活動報名紀錄</h2>
+                <p class="text-sm text-gray-600 mb-4">僅顯示以<strong class="font-medium">您帳號 Email</strong>報名之活動（與首頁表單填寫的信箱需一致）。報名開放中可取消正式名額或候補。</p>
+                <p x-show="eventRegsLoading" class="text-sm text-gray-500">載入中…</p>
+                <p x-show="!eventRegsLoading && eventRegs.length === 0" class="text-sm text-gray-500">尚無報名紀錄。</p>
+                <div x-show="!eventRegsLoading && eventRegs.length" class="overflow-x-auto border border-gray-200 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">活動</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">時間</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">狀態</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="row in eventRegs" :key="row.registrationId">
+                                <tr>
+                                    <td class="px-3 py-2">
+                                        <div class="font-medium text-gray-900" x-text="row.event.title"></div>
+                                        <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-gray-700" x-text="formatEventDate(row.event.date)"></td>
+                                    <td class="px-3 py-2">
+                                        <span x-text="row.status === 'confirmed' ? '正式' : '候補'"></span>
+                                        <span x-show="row.status === 'waitlist' && row.waitlistPosition" class="text-amber-800" x-text="'（第 ' + row.waitlistPosition + ' 號）'"></span>
+                                    </td>
+                                    <td class="px-3 py-2 whitespace-nowrap">
+                                        <button type="button"
+                                                x-show="row.event.status === 'registration_open'"
+                                                @click="cancelMyEventRegistration(row.event.id)"
+                                                :disabled="eventRegCancellingId === row.event.id"
+                                                class="text-sm text-red-600 hover:underline disabled:opacity-50">
+                                            <span x-text="row.status === 'waitlist' ? '取消候補' : '取消報名'"></span>
+                                        </button>
+                                        <span x-show="row.event.status !== 'registration_open'" class="text-xs text-gray-400">—</span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-sm text-red-600 mt-2 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
+            </div>
+
             <div id="workgroups-panel" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token && me.membershipStatus === 'approved'">
                 <h2 class="text-xl font-bold mb-2">工作小組</h2>
                 <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups.html" class="text-actc-orange underline">工作小組介紹</a>。</p>
@@ -267,6 +314,10 @@
                 wgSelectedIds: [],
                 wgPanelMsg: '',
                 wgPanelSaving: false,
+                eventRegs: [],
+                eventRegsLoading: false,
+                eventRegsMsg: '',
+                eventRegCancellingId: '',
 
                 statusLabel(s) {
                     const m = { none: '一般使用者', pending: '審核中', approved: '已核准', rejected: '未核准' };
@@ -289,6 +340,67 @@
                     }
                 },
 
+                formatEventDate(d) {
+                    if (!d) return '—';
+                    try {
+                        return new Date(d).toLocaleString('zh-TW', { dateStyle: 'medium', timeStyle: 'short' });
+                    } catch {
+                        return '—';
+                    }
+                },
+
+                async loadEventRegistrations() {
+                    if (!this.token) return;
+                    this.eventRegsLoading = true;
+                    this.eventRegsMsg = '';
+                    try {
+                        const r = await fetch('/api/profile/me/event-registrations', {
+                            headers: this.authHeaders(),
+                            cache: 'no-store'
+                        });
+                        if (!r.ok) throw new Error();
+                        const d = await r.json();
+                        this.eventRegs = d.registrations || [];
+                    } catch {
+                        this.eventRegs = [];
+                    } finally {
+                        this.eventRegsLoading = false;
+                    }
+                },
+
+                async cancelMyEventRegistration(eventId) {
+                    if (!confirm('確定要取消此筆報名或候補？')) return;
+                    this.eventRegCancellingId = eventId;
+                    this.eventRegsMsg = '';
+                    try {
+                        const r = await fetch(`/api/profile/me/event-registrations/${eventId}`, {
+                            method: 'DELETE',
+                            headers: this.authHeaders()
+                        });
+                        const text = await r.text();
+                        let d = {};
+                        try {
+                            d = text ? JSON.parse(text) : {};
+                        } catch {
+                            this.eventRegsMsg = '伺服器回應無法解析';
+                            return;
+                        }
+                        if (!r.ok) {
+                            this.eventRegsMsg = d.message || '取消失敗';
+                            return;
+                        }
+                        this.eventRegsMsg = d.message || '已取消';
+                        await this.loadEventRegistrations();
+                        setTimeout(() => {
+                            this.eventRegsMsg = '';
+                        }, 5000);
+                    } catch {
+                        this.eventRegsMsg = '網路錯誤或無法連線';
+                    } finally {
+                        this.eventRegCancellingId = '';
+                    }
+                },
+
                 scrollToHashTarget() {
                     const h = (location.hash || '').toLowerCase();
                     const go = (id) => {
@@ -299,6 +411,10 @@
                         if (this.token) {
                             if (h === '#workgroups') {
                                 go('workgroups-panel');
+                                return;
+                            }
+                            if (h === '#my-registrations') {
+                                go('my-registrations');
                                 return;
                             }
                             if (h === '#register' || h === '#login' || h === '#account') go('account');
@@ -339,6 +455,7 @@
                             }
                         }
                         await this.loadWorkingGroupsForMember();
+                        await this.loadEventRegistrations();
                     } catch {
                         this.logout();
                     }
@@ -403,6 +520,8 @@
                     this.token = '';
                     this.me = {};
                     this.myNews = [];
+                    this.eventRegs = [];
+                    this.eventRegsMsg = '';
                     this.wgCatalog = [];
                     this.wgSelectedIds = [];
                     this.wgPanelMsg = '';

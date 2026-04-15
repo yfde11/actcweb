@@ -1,6 +1,10 @@
 const express = require('express');
 const Event = require('../models/Event');
 const EventRegistration = require('../models/EventRegistration');
+const {
+    enrichEventsWithWaitlistCounts,
+    cancelEventRegistration
+} = require('../services/eventRegistrations');
 const { adminAuth } = require('../middleware/adminAuth');
 const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/contentNotifications');
 const multer = require('multer');
@@ -69,23 +73,6 @@ const NOTIFY_AUDIENCES = ['none', 'verified_users', 'approved_members'];
 
 function normalizeParticipantEmail(email) {
     return EventRegistration.normalizeEmail(email);
-}
-
-async function enrichEventsWithWaitlistCounts(eventDocs) {
-    const arr = Array.isArray(eventDocs) ? eventDocs : [eventDocs];
-    if (arr.length === 0) return [];
-    const ids = arr.map((e) => e._id);
-    const counts = await EventRegistration.aggregate([
-        { $match: { event: { $in: ids }, status: 'waitlist' } },
-        { $group: { _id: '$event', waitlistCount: { $sum: 1 } } }
-    ]);
-    const countMap = new Map(counts.map((c) => [String(c._id), c.waitlistCount]));
-    return arr.map((e) => {
-        const plain =
-            typeof e.toObject === 'function' ? e.toObject({ virtuals: true }) : { ...e };
-        plain.waitlistCount = countMap.get(String(e._id)) || 0;
-        return plain;
-    });
 }
 
 async function notifyIfEventPublished(event, prevStatus) {
@@ -869,82 +856,16 @@ router.post('/:id/unregister', async (req, res) => {
     try {
         const { id } = req.params;
         const emailNorm = normalizeParticipantEmail(req.body.participantEmail);
-
-        if (!emailNorm) {
-            return res.status(400).json({
-                message: 'Participant email is required'
-            });
-        }
-
-        const event = await Event.findById(id);
-        if (!event) {
-            return res.status(404).json({
-                message: 'Event not found'
-            });
-        }
-
-        if (event.status !== 'registration_open') {
-            return res.status(400).json({
-                message: 'Event registration is not open'
-            });
-        }
-
-        const reg = await EventRegistration.findOne({ event: event._id, email: emailNorm });
-        if (!reg) {
-            return res.status(404).json({
-                message: '找不到此 Email 的報名紀錄'
-            });
-        }
-
-        if (reg.status === 'waitlist') {
-            await reg.deleteOne();
-            const fresh = await Event.findById(event._id);
-            const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
-            return res.json({
-                message: '已取消候補',
-                registrationStatus: 'cancelled',
-                event: {
-                    id: enriched._id,
-                    title: enriched.title,
-                    registeredCount: enriched.registeredCount,
-                    remainingSpots: enriched.remainingSpots,
-                    waitlistCount: enriched.waitlistCount
-                }
-            });
-        }
-
-        await EventRegistration.deleteOne({ _id: reg._id });
-        await Event.updateOne({ _id: event._id }, { $inc: { registeredCount: -1 } });
-
-        if (event.capacity) {
-            const next = await EventRegistration.findOne({
-                event: event._id,
-                status: 'waitlist'
-            })
-                .sort({ waitlistPosition: 1, createdAt: 1 });
-
-            if (next) {
-                next.status = 'confirmed';
-                next.waitlistPosition = undefined;
-                await next.save();
-                await Event.updateOne({ _id: event._id }, { $inc: { registeredCount: 1 } });
-            }
-        }
-
-        const fresh = await Event.findById(event._id);
-        const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
+        const result = await cancelEventRegistration(id, emailNorm);
         return res.json({
-            message: 'Unregistration successful',
-            registrationStatus: 'cancelled',
-            event: {
-                id: enriched._id,
-                title: enriched.title,
-                registeredCount: enriched.registeredCount,
-                remainingSpots: enriched.remainingSpots,
-                waitlistCount: enriched.waitlistCount
-            }
+            message: result.message,
+            registrationStatus: result.registrationStatus,
+            event: result.event
         });
     } catch (error) {
+        if (error.status) {
+            return res.status(error.status).json({ message: error.message });
+        }
         console.error('Event unregistration error:', error);
         res.status(500).json({
             message: 'Internal server error'
