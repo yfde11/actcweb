@@ -148,9 +148,7 @@ router.get('/admin', adminAuth, async (req, res) => {
         if (search) {
             query.$or = [
                 { companyName: new RegExp(search, 'i') },
-                { companyNameEn: new RegExp(search, 'i') },
-                { contactPerson: new RegExp(search, 'i') },
-                { email: new RegExp(search, 'i') }
+                { companyNameEn: new RegExp(search, 'i') }
             ];
         }
         
@@ -196,7 +194,11 @@ router.get('/admin', adminAuth, async (req, res) => {
 router.post('/admin', adminAuth, upload.single('logo'), async (req, res) => {
     try {
         const memberData = { ...req.body };
-        
+        memberData.membershipType = 'corporate';
+        ['contactPerson', 'contactTitle', 'email', 'phone', 'membershipLevel'].forEach((k) => {
+            delete memberData[k];
+        });
+
         // 處理上傳的logo
         if (req.file) {
             memberData.logo = `/uploads/images/${req.file.filename}`;
@@ -290,9 +292,9 @@ router.put('/admin/:id', adminAuth, upload.single('logo'), async (req, res) => {
         
         // 🔧 過濾允許更新的欄位 - 排除系統欄位和虛擬欄位
         const allowedFields = [
-            'companyName', 'companyNameEn', 'description', 'contactPerson', 'contactTitle',
-            'email', 'phone', 'website', 'country', 'membershipType', 'membershipLevel',
-            'industry', 'services', 'specialization', 'isActive', 'isDisplayed', 
+            'companyName', 'companyNameEn', 'description',
+            'website', 'country',
+            'industry', 'services', 'specialization', 'isActive', 'isDisplayed',
             'displayOrder', 'tags', 'expiryDate', 'logo'
         ];
         
@@ -382,6 +384,8 @@ router.put('/admin/:id', adminAuth, upload.single('logo'), async (req, res) => {
         if (updateData.expiryDate) {
             updateData.expiryDate = new Date(updateData.expiryDate);
         }
+
+        updateData.membershipType = 'corporate';
 
         // 設定更新資訊
         updateData.updatedBy = req.user.userId;

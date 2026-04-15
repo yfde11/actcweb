@@ -22,7 +22,6 @@ const corporateMemberSchema = new mongoose.Schema({
     // 聯絡資訊
     contactPerson: {
         type: String,
-        required: [true, '聯絡人為必填'],
         trim: true,
         maxlength: [100, '聯絡人姓名不能超過100字符']
     },
@@ -33,11 +32,11 @@ const corporateMemberSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: [true, 'Email為必填'],
         trim: true,
         lowercase: true,
         validate: {
             validator: function(v) {
+                if (!v) return true;
                 return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
             },
             message: '請輸入有效的Email地址'
@@ -82,17 +81,11 @@ const corporateMemberSchema = new mongoose.Schema({
         default: 'Taiwan'
     },
     
-    // 會員資訊
+    // 會員資訊（僅企業會員一種類型）
     membershipType: {
         type: String,
-        enum: ['platinum', 'gold', 'silver', 'bronze', 'regular'],
-        default: 'regular',
+        default: 'corporate',
         required: true
-    },
-    membershipLevel: {
-        type: String,
-        enum: ['A+', 'A', 'B+', 'B', 'C'],
-        default: 'C'
     },
     joinDate: {
         type: Date,
@@ -309,6 +302,7 @@ corporateMemberSchema.methods.updateDisplayOrder = function(newOrder) {
 
 // 前置鉤子
 corporateMemberSchema.pre('save', function(next) {
+    this.membershipType = 'corporate';
     if (this.services && Array.isArray(this.services)) {
         this.services = this.services.filter(service => service && service.trim());
     }
