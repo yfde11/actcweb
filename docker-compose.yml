@@ -42,8 +42,8 @@ services:
       MONGO_URI: mongodb://mongo:27017/actc_website
       MONGO_SERVER_SELECTION_TIMEOUT_MS: "30000"
       JWT_SECRET: ${JWT_SECRET:?請在 .env.docker 設定 JWT_SECRET}
-      # 對外網址（經 Caddy 80/443），勿再帶 :5001
-      SITE_URL: ${SITE_URL:-http://localhost}
+      # 對外網址（經 Caddy 80/443），勿再帶 :5001；未設 .env 時預設正式網域，避免驗證信變成 localhost
+      SITE_URL: ${SITE_URL:-https://www.actc-tw.org}
       # 其餘（含 SMTP）由 .env.docker 經 env_file 注入，勿將密碼寫進此檔
     volumes:
       - uploads-data:/app/uploads

@@ -397,7 +397,7 @@
 
         // 創建會員卡片
         function createMemberCard(member) {
-            const logoUrl = member.logo || '/assets/images/default-company-logo.png';
+            const logoUrl = member.logo || '/assets/images/actc-logo.jpg';
             
             return `
                 <div class="member-card bg-white rounded-lg shadow-md overflow-hidden">
@@ -406,7 +406,7 @@
                         <img src="${logoUrl}" 
                              alt="${member.companyName}"
                              class="max-h-full max-w-full object-contain"
-                             onerror="this.src='/assets/images/default-company-logo.png'">
+                             onerror="this.src='/assets/images/actc-logo.jpg'">
                     </div>
 
                     <!-- 內容區域 -->
