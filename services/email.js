@@ -82,15 +82,40 @@ async function sendMail({ to, subject, html, text, bcc }) {
     return { ok: true, messageId: info.messageId };
 }
 
+const PROD_PUBLIC_SITE = 'https://www.actc-tw.org';
+
+/** 是否為本機網址（誤設 SITE_URL=http://localhost 時，生產環境寄信仍應用正式網域） */
+function looksLikeLocalhostBase(url) {
+    const s = String(url || '').trim();
+    if (!s) return false;
+    try {
+        const withProto = /^https?:\/\//i.test(s) ? s : `http://${s}`;
+        const u = new URL(withProto);
+        const h = u.hostname.toLowerCase();
+        return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+    } catch {
+        return /\blocalhost\b|127\.0\.0\.1/i.test(s);
+    }
+}
+
 /**
  * 對外站台基底網址（驗證信、重設密碼、通知內連結）。
- * 請在 .env 設定 SITE_URL（或 FRONTEND_URL）；未設定時生產環境預設 https://www.actc-tw.org，開發預設本機。
+ * 請在 .env 設定 SITE_URL（或 FRONTEND_URL）；生產環境若誤設 localhost 會自動改為正式網域。
  */
 function siteBaseUrl() {
     const fromEnv = (process.env.SITE_URL || process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+    const isProd = process.env.NODE_ENV === 'production';
+
+    if (isProd && fromEnv && looksLikeLocalhostBase(fromEnv)) {
+        console.warn(
+            '[email] SITE_URL/FRONTEND_URL 為本機位址，已改用正式網域供郵件連結：',
+            PROD_PUBLIC_SITE
+        );
+        return PROD_PUBLIC_SITE;
+    }
     if (fromEnv) return fromEnv;
-    if (process.env.NODE_ENV === 'production') {
-        return 'https://www.actc-tw.org';
+    if (isProd) {
+        return PROD_PUBLIC_SITE;
     }
     return 'http://localhost:5001';
 }
