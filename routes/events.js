@@ -13,6 +13,39 @@ const fs = require('fs');
 
 const router = express.Router();
 
+function parseTaipeiLocalToUtc(input) {
+    if (!input) return undefined;
+
+    if (input instanceof Date) {
+        return input;
+    }
+
+    if (typeof input !== 'string') {
+        return new Date(input);
+    }
+
+    // datetime-local (YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss) should be
+    // interpreted as Asia/Taipei local time, then converted to UTC for storage.
+    const localMatch = input.match(
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/
+    );
+
+    if (!localMatch) {
+        return new Date(input);
+    }
+
+    const year = Number(localMatch[1]);
+    const month = Number(localMatch[2]);
+    const day = Number(localMatch[3]);
+    const hour = Number(localMatch[4]);
+    const minute = Number(localMatch[5]);
+    const second = Number(localMatch[6] || 0);
+    const taipeiOffsetMinutes = 8 * 60;
+
+    const utcMs = Date.UTC(year, month - 1, day, hour, minute, second) - (taipeiOffsetMinutes * 60 * 1000);
+    return new Date(utcMs);
+}
+
 // 配置 multer 用於檔案上傳
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -361,8 +394,8 @@ router.post('/', adminAuth, upload.fields([
             type,
             description,
             shortDescription,
-            date: new Date(date),
-            endDate: endDate ? new Date(endDate) : undefined,
+            date: parseTaipeiLocalToUtc(date),
+            endDate: endDate ? parseTaipeiLocalToUtc(endDate) : undefined,
             location,
             virtualLocation,
             link: link || '',
@@ -472,10 +505,10 @@ router.put('/:id', adminAuth, upload.fields([
 
         // 處理日期欄位
         if (updateData.date) {
-            updateData.date = new Date(updateData.date);
+            updateData.date = parseTaipeiLocalToUtc(updateData.date);
         }
         if (updateData.endDate) {
-            updateData.endDate = new Date(updateData.endDate);
+            updateData.endDate = parseTaipeiLocalToUtc(updateData.endDate);
         }
 
         // 處理 JSON 欄位
