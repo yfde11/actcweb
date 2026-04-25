@@ -1,23 +1,21 @@
-# 正式站：Let's Encrypt（Caddy 自動申請與續期）
-# 目前僅列 www：裸網域 actc-tw.org 若無 A/AAAA，與 www 同列會導致整張憑證申請失敗。
-# 日後若 apex 已指向同一主機，可改為：www.actc-tw.org, actc-tw.org { ... }
-# {
-# 	email admin@actc-tw.org
-# }
+# 本機 / 內網 Docker：Caddy 僅在容器內聽 80/443，對外埠由 docker-compose 的 HTTP_PORT/HTTPS_PORT 映射。
+# HTTPS 使用內部 CA 憑證（瀏覽器會顯示不安全，按「進階」繼續即可）。
+# 公網 Let's Encrypt 請參考 Caddyfile.production.example。
 
-# 內網 IP：HTTP 免憑證；HTTPS 使用 Caddy 內部 CA（瀏覽器會提示不安全，按進階／仍要繼續即可）。
-http://192.168.1.156 {
+{
+	auto_https off
+	servers {
+		protocols h1 h2
+	}
+}
+
+:80 {
 	encode gzip
 	reverse_proxy web:5001
 }
 
-https://192.168.1.156 {
+:443 {
 	tls internal
-	encode gzip
-	reverse_proxy web:5001
-}
-
-www.actc-tw.org {
 	encode gzip
 	reverse_proxy web:5001
 }

@@ -191,6 +191,18 @@
                                     <button type="button" @click="openRegistrationModal(event)" class="text-teal-600 hover:text-teal-900">
                                         <i class="fas fa-users mr-1"></i>名單
                                     </button>
+                                    <button type="button" @click="openMaterialsModal(event)" class="text-emerald-700 hover:text-emerald-900">
+                                        <i class="fas fa-folder-open mr-1"></i>活動資料
+                                    </button>
+                                    <button type="button" @click="openSurveyResultModal(event)" class="text-purple-700 hover:text-purple-900">
+                                        <i class="fas fa-square-poll-vertical mr-1"></i>問卷結果
+                                    </button>
+                                    <button type="button" @click="openNotifyModal(event)" class="text-indigo-700 hover:text-indigo-900">
+                                        <i class="fas fa-paper-plane mr-1"></i>發送通知
+                                    </button>
+                                    <button type="button" @click="openSummaryModal(event)" class="text-amber-700 hover:text-amber-900">
+                                        <i class="fas fa-chart-line mr-1"></i>營運總覽
+                                    </button>
                                     <button @click="editEvent(event)" class="text-blue-600 hover:text-blue-900">
                                         <i class="fas fa-edit mr-1"></i>編輯
                                     </button>
@@ -436,25 +448,167 @@
                                 <th class="px-3 py-2 text-left font-medium text-gray-600">姓名</th>
                                 <th class="px-3 py-2 text-left font-medium text-gray-600">Email</th>
                                 <th class="px-3 py-2 text-left font-medium text-gray-600">電話</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">組織</th>
                                 <th class="px-3 py-2 text-left font-medium text-gray-600">狀態</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">出席</th>
                                 <th class="px-3 py-2 text-left font-medium text-gray-600">候補序號</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款資訊</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款後五碼</th>
                                 <th class="px-3 py-2 text-left font-medium text-gray-600">報名時間</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600">操作</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <template x-for="(reg, idx) in regModal.registrations" :key="reg._id || idx">
                                 <tr>
-                                    <td class="px-3 py-2" x-text="reg.name"></td>
-                                    <td class="px-3 py-2 break-all" x-text="reg.email"></td>
-                                    <td class="px-3 py-2" x-text="reg.phone || '—'"></td>
-                                    <td class="px-3 py-2" x-text="reg.status === 'confirmed' ? '正式' : '候補'"></td>
+                                    <td class="px-3 py-2" x-text="reg.participantName || reg.name"></td>
+                                    <td class="px-3 py-2 break-all" x-text="reg.participantEmail || reg.email"></td>
+                                    <td class="px-3 py-2" x-text="reg.participantPhone || reg.phone || '—'"></td>
+                                    <td class="px-3 py-2" x-text="reg.organization || '—'"></td>
+                                    <td class="px-3 py-2" x-text="registrationStatusLabel(reg.status)"></td>
+                                    <td class="px-3 py-2" x-text="paymentStatusLabel(reg.paymentStatus || 'none')"></td>
+                                    <td class="px-3 py-2" x-text="attendanceStatusLabel(reg.attendanceStatus || 'not_checked_in')"></td>
                                     <td class="px-3 py-2" x-text="reg.waitlistPosition != null ? reg.waitlistPosition : '—'"></td>
+                                    <td class="px-3 py-2" x-text="paymentProofLabel(reg)"></td>
+                                    <td class="px-3 py-2" x-text="reg.paymentProof?.lastFiveDigits || '—'"></td>
                                     <td class="px-3 py-2 whitespace-nowrap text-gray-600" x-text="formatRegTime(reg.createdAt)"></td>
+                                    <td class="px-3 py-2 whitespace-nowrap space-x-1">
+                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'paid' })" class="text-xs text-green-700 hover:underline">標記已付款</button>
+                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'payment_rejected' })" class="text-xs text-red-700 hover:underline">付款退回</button>
+                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'attended' })" class="text-xs text-blue-700 hover:underline">標記出席</button>
+                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'no_show' })" class="text-xs text-gray-700 hover:underline">標記 no-show</button>
+                                    </td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showMaterialsModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
+         @keydown.escape.window="closeMaterialsModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden" @click.stop>
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-semibold text-gray-900">活動資料管理</h3>
+                <button type="button" class="text-gray-500 hover:text-gray-800" @click="closeMaterialsModal()" aria-label="關閉"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input type="text" x-model="materialForm.title" placeholder="標題" class="border rounded px-3 py-2">
+                    <select x-model="materialForm.accessLevel" class="border rounded px-3 py-2">
+                        <option value="public">public</option>
+                        <option value="login_required">login_required</option>
+                        <option value="registered_only">registered_only</option>
+                        <option value="paid_only">paid_only</option>
+                        <option value="attended_only">attended_only</option>
+                    </select>
+                    <select x-model="materialForm.category" class="border rounded px-3 py-2">
+                        <option value="pre_event">pre_event</option>
+                        <option value="in_event">in_event</option>
+                        <option value="post_event">post_event</option>
+                        <option value="recording">recording</option>
+                        <option value="certificate_related">certificate_related</option>
+                        <option value="other">other</option>
+                    </select>
+                    <input type="url" x-model="materialForm.externalUrl" placeholder="外部連結（選填）" class="border rounded px-3 py-2">
+                </div>
+                <textarea x-model="materialForm.description" rows="4" class="w-full border rounded px-3 py-2" placeholder="描述（支援長文）"></textarea>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">附件（選擇檔案後，請按下方「上傳送出」）</label>
+                    <input type="file" @change="onMaterialFileChange" class="border rounded px-3 py-2 w-full" />
+                </div>
+                <p class="text-sm text-red-600 min-h-[1.25rem]" x-text="materialMsg"></p>
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-gray-700">已上傳的教材</p>
+                    <template x-for="m in materialItems" :key="m._id">
+                        <div class="border rounded p-3 flex items-center justify-between">
+                            <div>
+                                <p class="font-medium" x-text="m.title"></p>
+                                <p class="text-xs text-gray-500" x-text="m.category + ' / ' + m.accessLevel"></p>
+                            </div>
+                            <button type="button" @click="deleteMaterial(m._id)" class="text-sm text-red-700 hover:underline">刪除</button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 flex flex-wrap items-center justify-end gap-2 shrink-0">
+                <button type="button" @click="closeMaterialsModal()" class="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-100">關閉</button>
+                <button type="button" @click="uploadMaterial" class="px-4 py-2 min-w-[6.5rem] rounded font-medium text-white bg-orange-600 hover:bg-orange-700 shadow-sm">上傳送出</button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showNotifyModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 space-y-3">
+            <h3 class="text-lg font-semibold">發送通知</h3>
+            <select x-model="notifyForm.type" class="w-full border rounded px-3 py-2">
+                <option value="event_reminder">event_reminder</option>
+                <option value="event_day_notice">event_day_notice</option>
+                <option value="post_event_survey">post_event_survey</option>
+                <option value="material_available">material_available</option>
+                <option value="certificate_available">certificate_available</option>
+                <option value="custom">custom</option>
+            </select>
+            <select x-model="notifyForm.target" class="w-full border rounded px-3 py-2">
+                <option value="all_registered">all_registered</option>
+                <option value="paid_only">paid_only</option>
+                <option value="attended_only">attended_only</option>
+                <option value="not_paid">not_paid</option>
+                <option value="not_surveyed">not_surveyed</option>
+            </select>
+            <input type="text" x-model="notifyForm.subject" placeholder="主旨" class="w-full border rounded px-3 py-2">
+            <textarea x-model="notifyForm.message" rows="4" class="w-full border rounded px-3 py-2" placeholder="通知內容"></textarea>
+            <p class="text-sm text-gray-600" x-text="notifyMsg"></p>
+            <div class="flex justify-end gap-2">
+                <button type="button" @click="closeNotifyModal" class="px-4 py-2 border rounded">取消</button>
+                <button type="button" @click="sendNotify" class="px-4 py-2 rounded font-medium text-white bg-orange-600 hover:bg-orange-700 shadow-sm">送出</button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showSurveyResultModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 max-h-[85vh] overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-3">問卷結果</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div class="border rounded p-2">回覆數：<span x-text="surveySummary.totalResponses || 0"></span></div>
+                <div class="border rounded p-2">整體：<span x-text="surveySummary.averageOverallRating || 0"></span></div>
+                <div class="border rounded p-2">講師：<span x-text="surveySummary.averageInstructorRating || 0"></span></div>
+                <div class="border rounded p-2">教材：<span x-text="surveySummary.averageMaterialRating || 0"></span></div>
+            </div>
+            <div class="mt-3 space-y-2">
+                <template x-for="(r, idx) in surveySummary.responses || []" :key="idx">
+                    <div class="border rounded p-3 text-sm">
+                        <p class="font-medium" x-text="(r.user?.fullName || r.user?.username || '匿名') + ' / NPS ' + (r.nps ?? '-')"></p>
+                        <p class="text-gray-600" x-text="r.mostValuable || ''"></p>
+                    </div>
+                </template>
+            </div>
+            <div class="flex justify-end mt-3">
+                <button type="button" @click="closeSurveyResultModal" class="px-4 py-2 border rounded">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showSummaryModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6">
+            <h3 class="text-lg font-semibold mb-3">活動營運總覽</h3>
+            <p class="text-xs text-gray-500 mb-2">「報名數（正式）」與名單中已報名人數一致，不含候補與待審核。付款與出席不含已取消／已拒絕筆。</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div class="border rounded p-2">報名數（正式）：<span x-text="operationSummary?.event?.registeredCount || 0"></span></div>
+                <div class="border rounded p-2">候補數：<span x-text="operationSummary?.waitlistCount || 0"></span></div>
+                <div class="border rounded p-2">待審核：<span x-text="operationSummary?.pendingApprovalCount || 0"></span></div>
+                <div class="border rounded p-2">付款待確認：<span x-text="operationSummary?.payment?.submitted || 0"></span></div>
+                <div class="border rounded p-2">已付款：<span x-text="operationSummary?.payment?.paid || 0"></span></div>
+                <div class="border rounded p-2">出席：<span x-text="operationSummary?.attendance?.attended || 0"></span></div>
+                <div class="border rounded p-2">未出席：<span x-text="operationSummary?.attendance?.noShow || 0"></span></div>
+                <div class="border rounded p-2">教材下載（次）：<span x-text="operationSummary?.materials?.downloads || 0"></span></div>
+                <div class="border rounded p-2">問卷回覆：<span x-text="operationSummary?.survey?.responses || 0"></span></div>
+            </div>
+            <div class="flex justify-end mt-3">
+                <button type="button" @click="closeSummaryModal" class="px-4 py-2 border rounded">關閉</button>
             </div>
         </div>
     </div>
@@ -477,6 +631,11 @@
                 showCreateModal: false,
                 showEditModal: false,
                 showRegModal: false,
+                showMaterialsModal: false,
+                showNotifyModal: false,
+                showSurveyResultModal: false,
+                showSummaryModal: false,
+                selectedEventId: '',
                 regModal: {
                     title: '',
                     loading: false,
@@ -485,6 +644,25 @@
                     confirmedCount: 0,
                     waitlistCount: 0
                 },
+                materialForm: {
+                    title: '',
+                    description: '',
+                    category: 'other',
+                    accessLevel: 'registered_only',
+                    externalUrl: '',
+                    file: null
+                },
+                materialItems: [],
+                materialMsg: '',
+                notifyForm: {
+                    type: 'event_reminder',
+                    target: 'all_registered',
+                    subject: '',
+                    message: ''
+                },
+                notifyMsg: '',
+                surveySummary: {},
+                operationSummary: {},
                 eventForm: {
                     title: '',
                     type: '',
@@ -610,6 +788,53 @@
                     return classes[status] || classes.draft;
                 },
 
+                registrationStatusLabel(status) {
+                    const map = {
+                        registered: '已報名',
+                        waitlisted: '候補',
+                        pending_approval: '待審核',
+                        cancelled: '已取消',
+                        rejected: '已拒絕'
+                    };
+                    return map[status] || status || '—';
+                },
+
+                paymentStatusLabel(status) {
+                    const map = {
+                        none: '無',
+                        payment_pending: '待付款',
+                        payment_submitted: '待審核',
+                        paid: '已付款',
+                        payment_rejected: '退回補件',
+                        refunded: '已退款'
+                    };
+                    return map[status] || status || '—';
+                },
+
+                attendanceStatusLabel(status) {
+                    const map = {
+                        not_checked_in: '未簽到',
+                        attended: '已出席',
+                        no_show: '未出席'
+                    };
+                    return map[status] || status || '—';
+                },
+
+                paymentProofLabel(reg) {
+                    const proof = reg?.paymentProof || {};
+                    const hasFile = !!proof.file?.path;
+                    const hasLastFive = !!String(proof.lastFiveDigits || '').trim();
+                    const hasAmount = proof.amount !== undefined && proof.amount !== null && String(proof.amount) !== '';
+                    const hasNote = !!String(proof.note || '').trim();
+                    if (!hasFile && !hasLastFive && !hasAmount && !hasNote) return '無';
+                    const tags = [];
+                    if (hasFile) tags.push('收據');
+                    if (hasLastFive) tags.push('後五碼');
+                    if (hasAmount) tags.push('金額');
+                    if (hasNote) tags.push('備註');
+                    return `已提供（${tags.join(' / ')}）`;
+                },
+
                 formatForDatetimeLocal(value) {
                     if (!value) return '';
                     const date = new Date(value);
@@ -645,6 +870,7 @@
                 },
 
                 async openRegistrationModal(event) {
+                    this.selectedEventId = event._id;
                     this.showRegModal = true;
                     this.regModal = {
                         title: event.title || '',
@@ -675,6 +901,197 @@
                         this.regModal.loading = false;
                         this.regModal.error = '無法載入名單';
                     }
+                },
+
+                async patchRegistration(reg, payload) {
+                    try {
+                        const response = await fetch(`/api/events/registrations/${reg._id}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            alert(data.message || '更新失敗');
+                            return;
+                        }
+                        await this.openRegistrationModal({ _id: this.selectedEventId, title: this.regModal.title });
+                    } catch (e) {
+                        console.error(e);
+                        alert('更新失敗');
+                    }
+                },
+
+                async openMaterialsModal(event) {
+                    this.selectedEventId = event._id;
+                    this.showMaterialsModal = true;
+                    this.materialMsg = '';
+                    await this.loadMaterialItems();
+                },
+
+                closeMaterialsModal() {
+                    this.showMaterialsModal = false;
+                    this.materialItems = [];
+                    this.materialForm = {
+                        title: '',
+                        description: '',
+                        category: 'other',
+                        accessLevel: 'registered_only',
+                        externalUrl: '',
+                        file: null
+                    };
+                },
+
+                async loadMaterialItems() {
+                    if (!this.selectedEventId) return;
+                    try {
+                        const response = await fetch(`/api/events/${this.selectedEventId}/materials/admin`, {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            }
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        this.materialItems = response.ok ? (data.materials || []) : [];
+                    } catch (e) {
+                        console.error(e);
+                        this.materialItems = [];
+                    }
+                },
+
+                onMaterialFileChange(event) {
+                    this.materialForm.file = event.target.files?.[0] || null;
+                },
+
+                async uploadMaterial() {
+                    if (!this.selectedEventId) return;
+                    this.materialMsg = '';
+                    try {
+                        const fd = new FormData();
+                        fd.append('title', this.materialForm.title || '');
+                        fd.append('description', this.materialForm.description || '');
+                        fd.append('category', this.materialForm.category || 'other');
+                        fd.append('accessLevel', this.materialForm.accessLevel || 'registered_only');
+                        fd.append('externalUrl', this.materialForm.externalUrl || '');
+                        if (this.materialForm.file) fd.append('file', this.materialForm.file);
+                        const response = await fetch(`/api/events/${this.selectedEventId}/materials`, {
+                            method: 'POST',
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            },
+                            body: fd
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            this.materialMsg = data.message || '上傳失敗';
+                            return;
+                        }
+                        this.materialMsg = '上傳成功';
+                        this.materialForm.title = '';
+                        this.materialForm.description = '';
+                        this.materialForm.externalUrl = '';
+                        this.materialForm.file = null;
+                        await this.loadMaterialItems();
+                    } catch (e) {
+                        console.error(e);
+                        this.materialMsg = '上傳失敗';
+                    }
+                },
+
+                async deleteMaterial(materialId) {
+                    if (!confirm('確定要停用此教材？')) return;
+                    try {
+                        const response = await fetch(`/api/events/materials/${materialId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            }
+                        });
+                        if (response.ok) await this.loadMaterialItems();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                openNotifyModal(event) {
+                    this.selectedEventId = event._id;
+                    this.showNotifyModal = true;
+                    this.notifyMsg = '';
+                    this.notifyForm.subject = `活動通知：${event.title}`;
+                    this.notifyForm.message = '';
+                },
+
+                closeNotifyModal() {
+                    this.showNotifyModal = false;
+                },
+
+                async sendNotify() {
+                    if (!this.selectedEventId) return;
+                    try {
+                        const response = await fetch(`/api/events/${this.selectedEventId}/notify`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            },
+                            body: JSON.stringify(this.notifyForm)
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            this.notifyMsg = data.message || '送出失敗';
+                            return;
+                        }
+                        this.notifyMsg = `完成：sent ${data.counts?.sent || 0} / failed ${data.counts?.failed || 0} / skipped ${data.counts?.skipped || 0}`;
+                    } catch (e) {
+                        console.error(e);
+                        this.notifyMsg = '送出失敗';
+                    }
+                },
+
+                async openSurveyResultModal(event) {
+                    this.selectedEventId = event._id;
+                    this.showSurveyResultModal = true;
+                    this.surveySummary = {};
+                    try {
+                        const response = await fetch(`/api/events/${event._id}/survey-results`, {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            }
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (response.ok) this.surveySummary = data;
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                closeSurveyResultModal() {
+                    this.showSurveyResultModal = false;
+                    this.surveySummary = {};
+                },
+
+                async openSummaryModal(event) {
+                    this.selectedEventId = event._id;
+                    this.showSummaryModal = true;
+                    this.operationSummary = {};
+                    try {
+                        const response = await fetch(`/api/events/${event._id}/operation-summary`, {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            }
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (response.ok) this.operationSummary = data;
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                closeSummaryModal() {
+                    this.showSummaryModal = false;
+                    this.operationSummary = {};
                 },
 
                 getPageNumbers() {

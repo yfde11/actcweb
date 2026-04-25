@@ -187,9 +187,50 @@ const eventSchema = new mongoose.Schema({
             max: [59, 'Duration minutes cannot exceed 59']
         }
     },
+    registrationMode: {
+        type: String,
+        enum: ['free', 'paid', 'approval_required'],
+        default: 'free'
+    },
+    paymentMode: {
+        type: String,
+        enum: ['none', 'manual_bank_transfer'],
+        default: 'none'
+    },
     capacity: {
         type: Number,
         min: [1, 'Capacity must be at least 1']
+    },
+    waitlistCapacity: {
+        type: Number,
+        default: 0,
+        min: [0, 'Waitlist capacity cannot be negative']
+    },
+    registrationStartAt: {
+        type: Date
+    },
+    registrationEndAt: {
+        type: Date
+    },
+    surveyEnabled: {
+        type: Boolean,
+        default: false
+    },
+    certificateEnabled: {
+        type: Boolean,
+        default: false
+    },
+    eventAccessPolicy: {
+        materialsAccess: {
+            type: String,
+            enum: ['public', 'login_required', 'registered_only', 'paid_only', 'attended_only'],
+            default: 'public'
+        },
+        recordingAccess: {
+            type: String,
+            enum: ['registered_only', 'paid_only', 'attended_only'],
+            default: 'registered_only'
+        }
     },
     registeredCount: {
         type: Number,
@@ -209,7 +250,34 @@ const eventSchema = new mongoose.Schema({
         isFree: {
             type: Boolean,
             default: true
+        },
+        memberPrice: {
+            type: Number,
+            min: [0, 'Member price cannot be negative']
+        },
+        earlyBirdPrice: {
+            type: Number,
+            min: [0, 'Early bird price cannot be negative']
+        },
+        earlyBirdEndAt: {
+            type: Date
+        },
+        groupPrice: {
+            type: Number,
+            min: [0, 'Group price cannot be negative']
         }
+    },
+    paymentInstructions: {
+        bankName: { type: String, trim: true, maxlength: [100, 'Bank name cannot exceed 100 characters'] },
+        bankCode: { type: String, trim: true, maxlength: [20, 'Bank code cannot exceed 20 characters'] },
+        accountName: { type: String, trim: true, maxlength: [100, 'Account name cannot exceed 100 characters'] },
+        accountNumber: { type: String, trim: true, maxlength: [100, 'Account number cannot exceed 100 characters'] },
+        note: { type: String, trim: true, maxlength: [1000, 'Payment note cannot exceed 1000 characters'] }
+    },
+    postEvent: {
+        surveyUrl: { type: String, trim: true },
+        recordingUrl: { type: String, trim: true },
+        certificateNote: { type: String, trim: true, maxlength: [1000, 'Certificate note cannot exceed 1000 characters'] }
     },
     status: {
         type: String,
@@ -375,7 +443,7 @@ eventSchema.virtual('remainingSpots').get(function() {
 
 // 虛擬字段：格式化價格
 eventSchema.virtual('formattedPrice').get(function() {
-    if (this.price.isFree) return '免費';
+    if (this.price.isFree) return '';
     if (!this.price.amount) return '價格未定';
     
     const currencySymbols = {

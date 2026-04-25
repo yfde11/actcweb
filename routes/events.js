@@ -1,12 +1,20 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Event = require('../models/Event');
 const EventRegistration = require('../models/EventRegistration');
+const EventMaterial = require('../models/EventMaterial');
+const EventSurveyResponse = require('../models/EventSurveyResponse');
+const NotificationLog = require('../models/NotificationLog');
 const {
+    createMemberRegistration,
     enrichEventsWithWaitlistCounts,
-    cancelEventRegistration
+    cancelEventRegistration,
+    recalculateRegisteredCount,
+    normalizeLegacyStatus
 } = require('../services/eventRegistrations');
 const { adminAuth } = require('../middleware/adminAuth');
 const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/contentNotifications');
+const { sendEventNotification } = require('../services/eventNotifications');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -102,10 +110,67 @@ const upload = multer({
     }
 });
 
+const MATERIAL_ALLOWED_MIME_TYPES = new Set([
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/zip',
+    'application/x-zip-compressed',
+    'text/markdown',
+    'text/plain',
+    'image/png',
+    'image/jpeg'
+]);
+
+const materialStorage = multer.diskStorage({
+    destination: function materialDestination(req, file, cb) {
+        const uploadPath = 'uploads/event-materials/';
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: function materialFilename(req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname || '');
+        cb(null, `material-${uniqueSuffix}${ext}`);
+    }
+});
+
+const materialUpload = multer({
+    storage: materialStorage,
+    limits: { fileSize: 50 * 1024 * 1024 },
+    fileFilter: function materialFileFilter(req, file, cb) {
+        if (MATERIAL_ALLOWED_MIME_TYPES.has(file.mimetype)) {
+            return cb(null, true);
+        }
+        cb(new Error('Unsupported material file type'), false);
+    }
+});
+
 const NOTIFY_AUDIENCES = ['none', 'verified_users', 'approved_members'];
 
 function normalizeParticipantEmail(email) {
     return EventRegistration.normalizeEmail(email);
+}
+
+function normalizeRegistrationDoc(reg) {
+    if (!reg) return reg;
+    const plain = typeof reg.toObject === 'function' ? reg.toObject({ virtuals: true }) : { ...reg };
+    plain.status = normalizeLegacyStatus(plain.status);
+    if (plain.participantName == null && plain.name != null) {
+        plain.participantName = plain.name;
+    }
+    if (plain.participantEmail == null && plain.email != null) {
+        plain.participantEmail = EventRegistration.normalizeEmail(plain.email);
+    }
+    if (plain.participantPhone == null && plain.phone != null) {
+        plain.participantPhone = plain.phone;
+    }
+    if (plain.organization == null && plain.org != null) {
+        plain.organization = plain.org;
+    }
+    return plain;
 }
 
 async function notifyIfEventPublished(event, prevStatus) {
@@ -507,8 +572,18 @@ router.put('/:id', adminAuth, upload.fields([
         if (updateData.date) {
             updateData.date = parseTaipeiLocalToUtc(updateData.date);
         }
-        if (updateData.endDate) {
-            updateData.endDate = parseTaipeiLocalToUtc(updateData.endDate);
+        if (Object.prototype.hasOwnProperty.call(updateData, 'endDate')) {
+            if (updateData.endDate && String(updateData.endDate).trim() !== '') {
+                updateData.endDate = parseTaipeiLocalToUtc(updateData.endDate);
+            } else {
+                updateData.endDate = null;
+            }
+        }
+        if (Object.prototype.hasOwnProperty.call(updateData, '_id')) {
+            delete updateData._id;
+        }
+        if (Object.prototype.hasOwnProperty.call(updateData, 'id')) {
+            delete updateData.id;
         }
 
         // 處理 JSON 欄位
@@ -565,11 +640,10 @@ router.put('/:id', adminAuth, upload.fields([
             }
         }
 
-        // 更新活動
-        const updatedEvent = await Event.findByIdAndUpdate(id, updateData, { 
-            new: true, 
-            runValidators: true 
-        });
+        // 使用文件 save() 取代 findByIdAndUpdate，否則 endDate 的 v>=this.date 在「更新驗證」時
+        // 看不到 DB 內的 date，this.date 變成 undefined 會一直誤判。
+        event.set(updateData);
+        const updatedEvent = await event.save();
 
         await notifyIfEventPublished(updatedEvent, prevStatus);
 
@@ -646,26 +720,75 @@ router.delete('/:id', adminAuth, async (req, res) => {
 router.get('/:id/registrations', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
+        const { status, paymentStatus, attendanceStatus, search } = req.query;
+        if (!mongoose.isValidObjectId(id)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
         const event = await Event.findById(id).select('title status');
         if (!event) {
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        const [regs, confirmedCount, waitlistCount] = await Promise.all([
-            EventRegistration.find({ event: id })
+        const query = { event: id };
+        if (status) query.status = status;
+        if (paymentStatus) query.paymentStatus = paymentStatus;
+        if (attendanceStatus) query.attendanceStatus = attendanceStatus;
+        if (search) {
+            query.$or = [
+                { participantName: { $regex: search, $options: 'i' } },
+                { participantEmail: { $regex: search, $options: 'i' } },
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { participantPhone: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } },
+                { organization: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const eventOid = new mongoose.Types.ObjectId(String(id));
+        const aggMatch = { ...query, event: eventOid };
+        const [regs, summaryRaw] = await Promise.all([
+            EventRegistration.find(query)
                 .sort({ status: 1, waitlistPosition: 1, createdAt: 1 })
-                .select('name email phone status waitlistPosition createdAt')
                 .lean(),
-            EventRegistration.countDocuments({ event: id, status: 'confirmed' }),
-            EventRegistration.countDocuments({ event: id, status: 'waitlist' })
+            EventRegistration.aggregate([
+                { $match: aggMatch },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: 1 },
+                        registered: { $sum: { $cond: [{ $in: ['$status', ['registered', 'confirmed']] }, 1, 0] } },
+                        waitlisted: { $sum: { $cond: [{ $in: ['$status', ['waitlisted', 'waitlist']] }, 1, 0] } },
+                        cancelled: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
+                        payment_pending: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'payment_pending'] }, 1, 0] } },
+                        payment_submitted: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'payment_submitted'] }, 1, 0] } },
+                        paid: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0] } },
+                        attended: { $sum: { $cond: [{ $eq: ['$attendanceStatus', 'attended'] }, 1, 0] } },
+                        no_show: { $sum: { $cond: [{ $eq: ['$attendanceStatus', 'no_show'] }, 1, 0] } }
+                    }
+                }
+            ])
         ]);
+
+        const summary = summaryRaw[0] || {
+            total: 0,
+            registered: 0,
+            waitlisted: 0,
+            cancelled: 0,
+            payment_pending: 0,
+            payment_submitted: 0,
+            paid: 0,
+            attended: 0,
+            no_show: 0
+        };
 
         res.json({
             eventId: id,
             title: event.title,
-            registeredCountFromRegistrations: confirmedCount,
-            waitlistCount,
-            registrations: regs
+            registeredCountFromRegistrations: summary.registered || 0,
+            waitlistCount: summary.waitlisted || 0,
+            summary,
+            registrations: regs.map((r) => normalizeRegistrationDoc(r))
         });
     } catch (error) {
         console.error('Get event registrations error:', error);
@@ -777,7 +900,7 @@ router.post('/:id/register', async (req, res) => {
             });
         }
 
-        const dup = await EventRegistration.findOne({ event: event._id, email: emailNorm });
+        const dup = await EventRegistration.findOne({ event: event._id, participantEmail: emailNorm });
         if (dup) {
             return res.status(409).json({
                 message: '此 Email 已報名本活動'
@@ -797,15 +920,15 @@ router.post('/:id/register', async (req, res) => {
             );
             await EventRegistration.create({
                 event: event._id,
-                email: emailNorm,
-                name: nameTrim,
-                phone: phoneTrim,
-                status: 'confirmed'
+                participantEmail: emailNorm,
+                participantName: nameTrim,
+                participantPhone: phoneTrim,
+                status: 'registered'
             });
             const [enriched] = await enrichEventsWithWaitlistCounts([updated]);
             return res.json({
                 message: 'Registration successful',
-                registrationStatus: 'confirmed',
+                registrationStatus: 'registered',
                 event: {
                     id: enriched._id,
                     title: enriched.title,
@@ -828,15 +951,15 @@ router.post('/:id/register', async (req, res) => {
         if (updated) {
             await EventRegistration.create({
                 event: event._id,
-                email: emailNorm,
-                name: nameTrim,
-                phone: phoneTrim,
-                status: 'confirmed'
+                participantEmail: emailNorm,
+                participantName: nameTrim,
+                participantPhone: phoneTrim,
+                status: 'registered'
             });
             const [enriched] = await enrichEventsWithWaitlistCounts([updated]);
             return res.json({
                 message: 'Registration successful',
-                registrationStatus: 'confirmed',
+                registrationStatus: 'registered',
                 event: {
                     id: enriched._id,
                     title: enriched.title,
@@ -847,21 +970,21 @@ router.post('/:id/register', async (req, res) => {
             });
         }
 
-        const wl = await EventRegistration.countDocuments({ event: event._id, status: 'waitlist' });
+        const wl = await EventRegistration.countDocuments({ event: event._id, status: 'waitlisted' });
         const waitlistPosition = wl + 1;
         await EventRegistration.create({
             event: event._id,
-            email: emailNorm,
-            name: nameTrim,
-            phone: phoneTrim,
-            status: 'waitlist',
+            participantEmail: emailNorm,
+            participantName: nameTrim,
+            participantPhone: phoneTrim,
+            status: 'waitlisted',
             waitlistPosition
         });
         const fresh = await Event.findById(event._id);
         const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
         return res.json({
             message: '已加入候補',
-            registrationStatus: 'waitlist',
+            registrationStatus: 'waitlisted',
             waitlistPosition,
             event: {
                 id: enriched._id,
@@ -903,6 +1026,323 @@ router.post('/:id/unregister', async (req, res) => {
         res.status(500).json({
             message: 'Internal server error'
         });
+    }
+});
+
+// 管理員更新單筆報名狀態
+router.patch('/registrations/:registrationId', adminAuth, async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const { status, paymentStatus, attendanceStatus, reviewNote } = req.body;
+
+        if (!mongoose.isValidObjectId(registrationId)) {
+            return res.status(400).json({ message: 'Invalid registration id' });
+        }
+
+        const reg = await EventRegistration.findById(registrationId).populate('event');
+        if (!reg) {
+            return res.status(404).json({ message: 'Registration not found' });
+        }
+
+        const oldPaymentStatus = reg.paymentStatus;
+
+        if (status) reg.status = status;
+        if (paymentStatus) reg.paymentStatus = paymentStatus;
+        if (attendanceStatus) reg.attendanceStatus = attendanceStatus;
+        if (reviewNote !== undefined) {
+            reg.paymentProof = reg.paymentProof || {};
+            reg.paymentProof.reviewNote = String(reviewNote || '').trim();
+            reg.paymentProof.reviewedAt = new Date();
+            reg.paymentProof.reviewedBy = req.user?.userId || null;
+        }
+
+        if (attendanceStatus === 'attended') {
+            reg.checkedInAt = new Date();
+        }
+        if (status === 'cancelled') {
+            reg.cancelledAt = new Date();
+        }
+
+        await reg.save();
+        await recalculateRegisteredCount(reg.event._id);
+
+        if (oldPaymentStatus === 'payment_submitted' && reg.paymentStatus === 'paid') {
+            await sendEventNotification({
+                type: 'payment_confirmed',
+                recipientEmail: reg.participantEmail,
+                event: reg.event,
+                registration: reg
+            });
+        }
+        if (reg.paymentStatus === 'payment_rejected') {
+            await sendEventNotification({
+                type: 'payment_rejected',
+                recipientEmail: reg.participantEmail,
+                event: reg.event,
+                registration: reg
+            });
+        }
+
+        return res.json({
+            message: 'Registration updated',
+            registration: normalizeRegistrationDoc(reg)
+        });
+    } catch (error) {
+        console.error('Patch registration error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+// 管理員上傳活動教材
+router.post('/:eventId/materials', adminAuth, materialUpload.single('file'), async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const {
+            title,
+            description,
+            category = 'other',
+            accessLevel = 'registered_only',
+            externalUrl = '',
+            availableFrom,
+            availableUntil
+        } = req.body;
+
+        if (!mongoose.isValidObjectId(eventId)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
+        const event = await Event.findById(eventId).select('_id title');
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+        if (!title || !String(title).trim()) {
+            return res.status(400).json({ message: 'title is required' });
+        }
+        if (!req.file && !externalUrl) {
+            return res.status(400).json({ message: 'file or externalUrl is required' });
+        }
+
+        const material = await EventMaterial.create({
+            event: event._id,
+            title: String(title).trim(),
+            description: description ? String(description).trim() : '',
+            category,
+            accessLevel,
+            file: req.file
+                ? {
+                      path: `/${req.file.path}`.replace(/\\/g, '/'),
+                      originalName: req.file.originalname,
+                      size: req.file.size,
+                      mimeType: req.file.mimetype
+                  }
+                : undefined,
+            externalUrl: externalUrl ? String(externalUrl).trim() : '',
+            availableFrom: availableFrom ? new Date(availableFrom) : undefined,
+            availableUntil: availableUntil ? new Date(availableUntil) : undefined,
+            createdBy: req.user?.userId || null
+        });
+
+        return res.status(201).json({ message: 'Material uploaded', material });
+    } catch (error) {
+        console.error('Create event material error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+router.get('/:eventId/materials/admin', adminAuth, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        if (!mongoose.isValidObjectId(eventId)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
+        const materials = await EventMaterial.find({ event: eventId }).sort({ createdAt: -1 }).lean();
+        return res.json({ materials });
+    } catch (error) {
+        console.error('Get admin materials error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+router.delete('/materials/:materialId', adminAuth, async (req, res) => {
+    try {
+        const { materialId } = req.params;
+        if (!mongoose.isValidObjectId(materialId)) {
+            return res.status(400).json({ message: 'Invalid material id' });
+        }
+        const material = await EventMaterial.findById(materialId);
+        if (!material) {
+            return res.status(404).json({ message: 'Material not found' });
+        }
+        material.isActive = false;
+        await material.save();
+        return res.json({ message: 'Material deactivated' });
+    } catch (error) {
+        console.error('Delete material error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+router.post('/:eventId/notify', adminAuth, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { type, subject, message, target = 'all_registered' } = req.body;
+        if (!mongoose.isValidObjectId(eventId)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const baseQuery = { event: event._id };
+        if (target === 'all_registered') {
+            baseQuery.status = { $in: ['registered', 'pending_approval'] };
+        } else if (target === 'paid_only') {
+            baseQuery.paymentStatus = 'paid';
+        } else if (target === 'attended_only') {
+            baseQuery.attendanceStatus = 'attended';
+        } else if (target === 'not_paid') {
+            baseQuery.paymentStatus = { $in: ['payment_pending', 'payment_submitted', 'payment_rejected'] };
+        } else if (target === 'not_surveyed') {
+            const surveyUserIds = await EventSurveyResponse.distinct('user', { event: event._id, user: { $ne: null } });
+            baseQuery.user = { $nin: surveyUserIds };
+        }
+
+        const regs = await EventRegistration.find(baseQuery).lean();
+        let sent = 0;
+        let failed = 0;
+        let skipped = 0;
+
+        for (const reg of regs) {
+            // eslint-disable-next-line no-await-in-loop
+            const result = await sendEventNotification({
+                type: type || 'custom',
+                recipientEmail: reg.participantEmail,
+                event,
+                registration: reg,
+                customSubject: subject,
+                customMessage: message
+            });
+            if (result.status === 'sent') sent += 1;
+            else if (result.status === 'failed') failed += 1;
+            else skipped += 1;
+        }
+
+        return res.json({ message: 'Notification job finished', counts: { sent, failed, skipped } });
+    } catch (error) {
+        console.error('Notify error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+router.get('/:eventId/survey-results', adminAuth, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        if (!mongoose.isValidObjectId(eventId)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
+        const responses = await EventSurveyResponse.find({ event: eventId })
+            .populate('user', 'username fullName email')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const count = responses.length;
+        const avg = (key) =>
+            count > 0
+                ? Number(
+                      (
+                          responses.reduce((sum, item) => sum + Number(item[key] || 0), 0) /
+                          count
+                      ).toFixed(2)
+                  )
+                : 0;
+
+        return res.json({
+            totalResponses: count,
+            averageOverallRating: avg('overallRating'),
+            averageInstructorRating: avg('instructorRating'),
+            averageMaterialRating: avg('materialRating'),
+            averageNps: avg('nps'),
+            interestedAdvancedCourseCount: responses.filter((r) => !!r.interestedAdvancedCourse).length,
+            interestedCorporateTrainingCount: responses.filter((r) => !!r.interestedCorporateTraining).length,
+            interestedWorkgroupCount: responses.filter((r) => !!r.interestedWorkgroup).length,
+            responses
+        });
+    } catch (error) {
+        console.error('Survey results error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+router.get('/:eventId/operation-summary', adminAuth, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        if (!mongoose.isValidObjectId(eventId)) {
+            return res.status(400).json({ message: 'Invalid event id' });
+        }
+        const event = await Event.findById(eventId).lean();
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const [regs, materials, surveys] = await Promise.all([
+            EventRegistration.find({ event: event._id }).lean(),
+            EventMaterial.find({ event: event._id, isActive: true }).lean(),
+            EventSurveyResponse.find({ event: event._id }).lean()
+        ]);
+
+        // 與「報名名單」modal 的「正式人數」一致：status 為已報名（含舊欄位 confirmed），不含待審核；勿僅讀 Event.registeredCount（寫入時機與規則不同，易過期或與畫面不一致）
+        const isFormalSlot = (r) => {
+            const s = r && r.status;
+            return s === 'registered' || s === 'confirmed';
+        };
+        const isWaitlist = (r) => {
+            const s = r && r.status;
+            return s === 'waitlisted' || s === 'waitlist';
+        };
+        const isPendingApproval = (r) => (r && r.status) === 'pending_approval';
+        const inPaymentAttendancePool = (r) => {
+            const s = r && r.status;
+            if (!s) return true;
+            return s !== 'cancelled' && s !== 'rejected';
+        };
+        const formalRegisteredCount = regs.filter(isFormalSlot).length;
+        const regPool = (pred) => regs.filter((r) => inPaymentAttendancePool(r) && pred(r));
+        const summary = {
+            event: {
+                _id: event._id,
+                title: event.title,
+                date: event.date,
+                endDate: event.endDate,
+                location: event.location,
+                status: event.status,
+                capacity: event.capacity || null,
+                registeredCount: formalRegisteredCount,
+                registeredCountDenormalized: event.registeredCount != null ? event.registeredCount : 0
+            },
+            waitlistCount: regs.filter(isWaitlist).length,
+            pendingApprovalCount: regs.filter(isPendingApproval).length,
+            payment: {
+                pending: regPool((r) => r.paymentStatus === 'payment_pending').length,
+                submitted: regPool((r) => r.paymentStatus === 'payment_submitted').length,
+                paid: regPool((r) => r.paymentStatus === 'paid').length
+            },
+            attendance: {
+                attended: regPool((r) => r.attendanceStatus === 'attended').length,
+                noShow: regPool((r) => r.attendanceStatus === 'no_show').length
+            },
+            materials: {
+                count: materials.length,
+                downloads: materials.reduce((sum, item) => sum + Number(item.downloadCount || 0), 0)
+            },
+            survey: {
+                responses: surveys.length
+            }
+        };
+
+        return res.json(summary);
+    } catch (error) {
+        console.error('Operation summary error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
 
