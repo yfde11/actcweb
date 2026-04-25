@@ -206,6 +206,12 @@ actcweb/
 
 ## 維運備註
 
+### Remote 備份與還原
+
+- 已提供 remote 自動備份腳本與還原腳本，詳見 [`docs/REMOTE_BACKUP_RUNBOOK.md`](./docs/REMOTE_BACKUP_RUNBOOK.md)。
+- 對應腳本：`scripts/backup-remote.sh`、`scripts/restore-remote.sh`、`scripts/setup-remote-backup-cron.sh`。
+- 可選：備份成功後上傳 **OneDrive**（rclone、OAuth 設定，勿提交帳密）見 [`docs/REMOTE_BACKUP_ONEDRIVE.md`](./docs/REMOTE_BACKUP_ONEDRIVE.md) 與 [env 範例 `env.rclone.example`](./env.rclone.example)。
+
 ### 資料庫備份
 
 ```bash
