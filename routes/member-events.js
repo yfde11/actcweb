@@ -12,11 +12,10 @@ const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/conte
 const {
     createMemberRegistration,
     cancelEventRegistration,
-    isRegistrationOpen,
-    recalculateRegisteredCount,
     enrichEventsWithWaitlistCounts
 } = require('../services/eventRegistrations');
 const { sendEventNotification } = require('../services/eventNotifications');
+const { linkUnclaimedRegistrationsToUser } = require('../services/registrationLinking');
 
 const router = express.Router();
 
@@ -66,6 +65,16 @@ const paymentProofUpload = multer({
     storage: paymentProofStorage,
     limits: { fileSize: 20 * 1024 * 1024 }
 });
+
+function normalizeUploadedFilename(name) {
+    if (!name) return '';
+    const raw = String(name);
+    try {
+        return Buffer.from(raw, 'latin1').toString('utf8');
+    } catch {
+        return raw;
+    }
+}
 
 function normalizePathForComparison(p) {
     return path.resolve(p || '').replace(/\\/g, '/');
@@ -127,9 +136,9 @@ router.post('/:eventId/register', verifiedAuth, async (req, res) => {
         const registration = await createMemberRegistration({
             event,
             user: req.authUser,
-            participantName: req.body.participantName || req.authUser.fullName || req.authUser.username,
-            participantEmail: req.body.participantEmail || req.authUser.email,
-            participantPhone: req.body.participantPhone || req.authUser.phone,
+            participantName: req.authUser.fullName || req.authUser.username,
+            participantEmail: req.authUser.email,
+            participantPhone: req.authUser.phone,
             organization: req.body.organization,
             title: req.body.title
         });
@@ -144,10 +153,19 @@ router.post('/:eventId/register', verifiedAuth, async (req, res) => {
             registration,
             user: req.authUser
         });
-
         return res.status(201).json({
             message: 'Registration created',
-            registration
+            registration,
+            payment: {
+                paymentStatus: registration.paymentStatus,
+                amountDue: registration.amountDue || 0,
+                currency: registration.currency || 'TWD',
+                requiresPaymentProof: registration.paymentStatus === 'payment_pending',
+                instructions:
+                    registration.paymentStatus === 'payment_pending'
+                        ? '請先完成付款，並到會員中心上傳後五碼與繳費憑證。'
+                        : ''
+            }
         });
     } catch (error) {
         if (error.status) {
@@ -163,6 +181,7 @@ router.post('/:eventId/register', verifiedAuth, async (req, res) => {
 
 router.get('/my-registrations', verifiedAuth, async (req, res) => {
     try {
+        await linkUnclaimedRegistrationsToUser(req.authUser);
         const email = EventRegistration.normalizeEmail(req.authUser.email);
         const regs = await EventRegistration.find({ participantEmail: email })
             .populate('event', 'title date endDate location type status surveyEnabled certificateEnabled')
@@ -339,7 +358,7 @@ router.get('/:eventId/materials', verifiedAuth, async (req, res) => {
                 availableFrom: m.availableFrom,
                 availableUntil: m.availableUntil,
                 hasFile: !!m.file?.path,
-                fileName: m.file?.originalName || '',
+                fileName: normalizeUploadedFilename(m.file?.originalName || ''),
                 fileSize: m.file?.size || 0
             }));
         return res.json({ materials: visibleMaterials });
@@ -380,7 +399,10 @@ router.get('/materials/:materialId/download', verifiedAuth, async (req, res) => 
             return res.status(404).json({ message: 'File not found on server' });
         }
         await EventMaterial.updateOne({ _id: material._id }, { $inc: { downloadCount: 1 } });
-        return res.download(resolvedPath, material.file.originalName || path.basename(resolvedPath));
+        const normalizedFilename = normalizeUploadedFilename(
+            material.file.originalName || path.basename(resolvedPath)
+        );
+        return res.download(resolvedPath, normalizedFilename);
     } catch (error) {
         console.error('Download material error:', error);
         return res.status(500).json({ message: 'Internal server error', error: error.message });
@@ -516,7 +538,7 @@ router.post(
             if (req.files?.file) {
                 eventData.file = {
                     path: `/${req.files.file[0].path}`.replace(/\\/g, '/'),
-                    originalName: req.files.file[0].originalname,
+                    originalName: normalizeUploadedFilename(req.files.file[0].originalname),
                     size: req.files.file[0].size,
                     mimeType: req.files.file[0].mimetype
                 };
@@ -576,7 +598,7 @@ router.put(
             if (req.files?.file) {
                 event.file = {
                     path: `/${req.files.file[0].path}`.replace(/\\/g, '/'),
-                    originalName: req.files.file[0].originalname,
+                    originalName: normalizeUploadedFilename(req.files.file[0].originalname),
                     size: req.files.file[0].size,
                     mimeType: req.files.file[0].mimetype
                 };

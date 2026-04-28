@@ -7,7 +7,9 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "migrate:clear-corporate-contacts": "node scripts/clear-corporate-member-contact-fields.js",
-    "seed:partner-corporate-members": "node scripts/seed-partner-corporate-members.js"
+    "seed:partner-corporate-members": "node scripts/seed-partner-corporate-members.js",
+    "migrate:fix-registration-indexes": "node scripts/fix-event-registration-indexes.js",
+    "migrate:backfill-registration-user-links": "node scripts/backfill-registration-user-links.js"
   },
   "keywords": [
     "actc",

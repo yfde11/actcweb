@@ -66,7 +66,7 @@ const verifiedAuth = async (req, res, next) => {
     }
 };
 
-/** 已驗證信箱 + 會員已核准 + 具內容管理權（會員專區 News/Event） */
+/** 僅管理員可存取內容管理 API（會員專區 News/Event） */
 const contributorAuth = async (req, res, next) => {
     try {
         const pair = await attachUserFromJwt(req, res);
@@ -79,10 +79,10 @@ const contributorAuth = async (req, res, next) => {
                 message: '請先完成信箱驗證。'
             });
         }
-        if (user.membershipStatus !== 'approved' || !user.canManageContent) {
+        if (user.role !== 'admin') {
             return res.status(403).json({
                 code: 'NOT_CONTRIBUTOR',
-                message: '需要通過會員審核並具備內容管理權限。請至會員專區申請或聯絡管理員。'
+                message: '僅管理員可使用此功能。'
             });
         }
 

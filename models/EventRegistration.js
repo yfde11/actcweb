@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ACTIVE_DUPLICATE_BLOCK_STATUSES = ['registered', 'waitlisted', 'pending_approval', 'confirmed', 'waitlist'];
 
 const eventRegistrationSchema = new mongoose.Schema({
     event: {
@@ -123,7 +124,16 @@ const eventRegistrationSchema = new mongoose.Schema({
     strict: false
 });
 
-eventRegistrationSchema.index({ event: 1, participantEmail: 1 }, { unique: true });
+eventRegistrationSchema.index(
+    { event: 1, participantEmail: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            participantEmail: { $type: 'string' },
+            status: { $in: ACTIVE_DUPLICATE_BLOCK_STATUSES }
+        }
+    }
+);
 eventRegistrationSchema.index({ event: 1, status: 1, waitlistPosition: 1 });
 eventRegistrationSchema.index({ event: 1, status: 1, createdAt: 1 });
 eventRegistrationSchema.index({ event: 1, status: 1 });
@@ -158,6 +168,7 @@ eventRegistrationSchema.virtual('phone')
 eventRegistrationSchema.statics.normalizeEmail = function normalizeEmail(email) {
     return String(email || '').trim().toLowerCase();
 };
+eventRegistrationSchema.statics.ACTIVE_DUPLICATE_BLOCK_STATUSES = ACTIVE_DUPLICATE_BLOCK_STATUSES;
 
 eventRegistrationSchema.pre('validate', function normalizeRegistrationFields(next) {
     if (this.participantEmail) {

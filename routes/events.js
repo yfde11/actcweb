@@ -6,7 +6,6 @@ const EventMaterial = require('../models/EventMaterial');
 const EventSurveyResponse = require('../models/EventSurveyResponse');
 const NotificationLog = require('../models/NotificationLog');
 const {
-    createMemberRegistration,
     enrichEventsWithWaitlistCounts,
     cancelEventRegistration,
     recalculateRegisteredCount,
@@ -15,6 +14,16 @@ const {
 const { adminAuth } = require('../middleware/adminAuth');
 const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/contentNotifications');
 const { sendEventNotification } = require('../services/eventNotifications');
+
+function normalizeUploadedFilename(name) {
+    if (!name) return '';
+    const raw = String(name);
+    try {
+        return Buffer.from(raw, 'latin1').toString('utf8');
+    } catch {
+        return raw;
+    }
+}
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -485,7 +494,7 @@ router.post('/', adminAuth, upload.fields([
         if (req.files && req.files.file) {
             eventData.file = {
                 path: '/' + req.files.file[0].path,
-                originalName: req.files.file[0].originalname,
+                originalName: normalizeUploadedFilename(req.files.file[0].originalname),
                 size: req.files.file[0].size,
                 mimeType: req.files.file[0].mimetype
             };
@@ -620,7 +629,7 @@ router.put('/:id', adminAuth, upload.fields([
         if (req.files && req.files.file) {
             updateData.file = {
                 path: '/' + req.files.file[0].path,
-                originalName: req.files.file[0].originalname,
+                originalName: normalizeUploadedFilename(req.files.file[0].originalname),
                 size: req.files.file[0].size,
                 mimeType: req.files.file[0].mimetype
             };
@@ -859,12 +868,8 @@ router.get('/:id/download', async (req, res) => {
         event.downloads += 1;
         await event.save();
 
-        // 設定下載標頭
-        res.setHeader('Content-Disposition', `attachment; filename="${event.file.originalName}"`);
-        res.setHeader('Content-Type', event.file.mimeType);
-        
-        // 發送檔案
-        res.sendFile(path.resolve(filePath));
+        const normalizedName = normalizeUploadedFilename(event.file.originalName || path.basename(filePath));
+        return res.download(path.resolve(filePath), normalizedName);
 
     } catch (error) {
         console.error('Download event file error:', error);
@@ -876,135 +881,10 @@ router.get('/:id/download', async (req, res) => {
 
 // 報名活動 (公開)
 router.post('/:id/register', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { participantName, participantEmail, participantPhone } = req.body;
-        const emailNorm = normalizeParticipantEmail(participantEmail);
-
-        if (!participantName || !participantName.toString().trim() || !emailNorm) {
-            return res.status(400).json({
-                message: 'Participant name and email are required'
-            });
-        }
-
-        const event = await Event.findById(id);
-        if (!event) {
-            return res.status(404).json({
-                message: 'Event not found'
-            });
-        }
-
-        if (event.status !== 'registration_open') {
-            return res.status(400).json({
-                message: 'Event registration is not open'
-            });
-        }
-
-        const dup = await EventRegistration.findOne({ event: event._id, participantEmail: emailNorm });
-        if (dup) {
-            return res.status(409).json({
-                message: '此 Email 已報名本活動'
-            });
-        }
-
-        const nameTrim = String(participantName).trim();
-        const phoneTrim = participantPhone ? String(participantPhone).trim() : '';
-
-        const capacity = event.capacity;
-
-        if (!capacity) {
-            const updated = await Event.findByIdAndUpdate(
-                event._id,
-                { $inc: { registeredCount: 1 } },
-                { new: true }
-            );
-            await EventRegistration.create({
-                event: event._id,
-                participantEmail: emailNorm,
-                participantName: nameTrim,
-                participantPhone: phoneTrim,
-                status: 'registered'
-            });
-            const [enriched] = await enrichEventsWithWaitlistCounts([updated]);
-            return res.json({
-                message: 'Registration successful',
-                registrationStatus: 'registered',
-                event: {
-                    id: enriched._id,
-                    title: enriched.title,
-                    registeredCount: enriched.registeredCount,
-                    remainingSpots: enriched.remainingSpots,
-                    waitlistCount: enriched.waitlistCount
-                }
-            });
-        }
-
-        const updated = await Event.findOneAndUpdate(
-            {
-                _id: event._id,
-                $expr: { $lt: ['$registeredCount', '$capacity'] }
-            },
-            { $inc: { registeredCount: 1 } },
-            { new: true }
-        );
-
-        if (updated) {
-            await EventRegistration.create({
-                event: event._id,
-                participantEmail: emailNorm,
-                participantName: nameTrim,
-                participantPhone: phoneTrim,
-                status: 'registered'
-            });
-            const [enriched] = await enrichEventsWithWaitlistCounts([updated]);
-            return res.json({
-                message: 'Registration successful',
-                registrationStatus: 'registered',
-                event: {
-                    id: enriched._id,
-                    title: enriched.title,
-                    registeredCount: enriched.registeredCount,
-                    remainingSpots: enriched.remainingSpots,
-                    waitlistCount: enriched.waitlistCount
-                }
-            });
-        }
-
-        const wl = await EventRegistration.countDocuments({ event: event._id, status: 'waitlisted' });
-        const waitlistPosition = wl + 1;
-        await EventRegistration.create({
-            event: event._id,
-            participantEmail: emailNorm,
-            participantName: nameTrim,
-            participantPhone: phoneTrim,
-            status: 'waitlisted',
-            waitlistPosition
-        });
-        const fresh = await Event.findById(event._id);
-        const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
-        return res.json({
-            message: '已加入候補',
-            registrationStatus: 'waitlisted',
-            waitlistPosition,
-            event: {
-                id: enriched._id,
-                title: enriched.title,
-                registeredCount: enriched.registeredCount,
-                remainingSpots: enriched.remainingSpots,
-                waitlistCount: enriched.waitlistCount
-            }
-        });
-    } catch (error) {
-        if (error && error.code === 11000) {
-            return res.status(409).json({
-                message: '此 Email 已報名本活動'
-            });
-        }
-        console.error('Event registration error:', error);
-        res.status(500).json({
-            message: 'Internal server error'
-        });
-    }
+    return res.status(403).json({
+        code: 'MEMBER_LOGIN_REQUIRED',
+        message: '活動報名需先登入會員並完成信箱驗證，請前往會員專區報名。'
+    });
 });
 
 // 取消報名 (公開)
@@ -1130,7 +1010,7 @@ router.post('/:eventId/materials', adminAuth, materialUpload.single('file'), asy
             file: req.file
                 ? {
                       path: `/${req.file.path}`.replace(/\\/g, '/'),
-                      originalName: req.file.originalname,
+                      originalName: normalizeUploadedFilename(req.file.originalname),
                       size: req.file.size,
                       mimeType: req.file.mimetype
                   }
@@ -1155,7 +1035,16 @@ router.get('/:eventId/materials/admin', adminAuth, async (req, res) => {
             return res.status(400).json({ message: 'Invalid event id' });
         }
         const materials = await EventMaterial.find({ event: eventId }).sort({ createdAt: -1 }).lean();
-        return res.json({ materials });
+        const normalized = materials.map((m) => ({
+            ...m,
+            file: m.file
+                ? {
+                      ...m.file,
+                      originalName: normalizeUploadedFilename(m.file.originalName)
+                  }
+                : m.file
+        }));
+        return res.json({ materials: normalized });
     } catch (error) {
         console.error('Get admin materials error:', error);
         return res.status(500).json({ message: 'Internal server error', error: error.message });

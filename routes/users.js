@@ -54,8 +54,7 @@ router.post('/', adminAuth, async (req, res) => {
             role: roleNorm,
             isFirstLogin: true,
             emailVerified: true,
-            membershipStatus: roleNorm === 'admin' ? 'approved' : 'none',
-            canManageContent: roleNorm === 'admin'
+            membershipStatus: roleNorm === 'admin' ? 'approved' : 'none'
         });
 
         await newUser.save();
@@ -107,7 +106,7 @@ router.get('/:id', adminAuth, async (req, res) => {
 // 更新使用者 (僅管理員)
 router.put('/:id', adminAuth, async (req, res) => {
     try {
-        const { username, email, fullName, role, membershipStatus, canManageContent } = req.body;
+        const { username, email, fullName, role, membershipStatus } = req.body;
         const userId = req.params.id;
 
         // 不允許修改自己的角色
@@ -131,20 +130,11 @@ router.put('/:id', adminAuth, async (req, res) => {
             user.role = role;
         }
 
-        // 僅一般使用者可調整會員審核／內容管理權（避免誤改 admin 帳號）
+        // 僅一般使用者可調整會員審核（避免誤改 admin 帳號）
         if (user.role === 'user') {
             const MS = ['none', 'pending', 'approved', 'rejected'];
             if (membershipStatus !== undefined && MS.includes(String(membershipStatus))) {
                 user.membershipStatus = String(membershipStatus);
-                if (user.membershipStatus !== 'approved') {
-                    user.canManageContent = false;
-                }
-            }
-            if (canManageContent !== undefined) {
-                user.canManageContent = !!canManageContent;
-                if (user.canManageContent) {
-                    user.membershipStatus = 'approved';
-                }
             }
         }
 

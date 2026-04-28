@@ -177,6 +177,20 @@
                     專業的資安培訓課程、工作坊和研討會，助您提升資訊安全技能
                 </p>
             </div>
+            <div class="mb-8 rounded-xl border border-orange-100 bg-orange-50/60 p-5 md:p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">活動報名說明</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
+                    <p>1. 報名前請先登入會員並完成信箱驗證。</p>
+                    <p>2. 未登入點「立即報名」會先導向會員登入。</p>
+                    <p>3. 登入後會回到首頁並確認要報名的活動。</p>
+                    <p>4. 已報名活動會顯示「活動管理」可直達紀錄。</p>
+                    <p>5. 付費活動請至會員專區補上後五碼/繳費憑證。</p>
+                    <p>6. 取消後可再次報名，名額依當下狀態重新計算。</p>
+                </div>
+                <p class="mt-3 text-xs text-gray-500">
+                    小提醒：若帳號尚未填寫電話，報名時會提醒先到會員專區補上，以利活動聯繫。
+                </p>
+            </div>
             <!-- 搜尋和篩選區塊 -->
             <div class="mb-8 bg-white rounded-lg shadow-md p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -210,8 +224,8 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">排序方式</label>
                         <select id="eventsSort" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand">
+                            <option value="date-desc" selected>日期 (遠到近)</option>
                             <option value="date-asc">日期 (近到遠)</option>
-                            <option value="date-desc">日期 (遠到近)</option>
                             <option value="title-asc">標題 (A-Z)</option>
                             <option value="title-desc">標題 (Z-A)</option>
                         </select>
@@ -250,7 +264,7 @@
             <!-- 載入更多按鈕 -->
             <div id="load-more-events-container" class="text-center mt-12 hidden">
                 <button id="load-more-events-btn" class="btn-primary px-8 py-3 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
-                    載入更多活動
+                    查看更多活動（含過往）
                 </button>
             </div>
         </div>
@@ -671,24 +685,48 @@
                 this.itemsPerPage = 6;
                 this.allEvents = [];
                 this.filteredEvents = [];
+                this.registeredEventIds = new Set();
                 this.currentFilters = {
                     search: '',
                     type: '',
                     tags: [],
                     sortBy: 'date',
-                    sortOrder: 'asc'
+                    sortOrder: 'desc'
                 };
                 this.loadEvents();
                 this.addEventListeners();
                 this.setupSearchDebounce();
             }
+            async loadMemberRegistrations() {
+                this.registeredEventIds = new Set();
+                const token = localStorage.getItem('memberToken');
+                if (!token) return;
+                try {
+                    const r = await fetch('/api/member/events/my-registrations', {
+                        headers: { Authorization: `Bearer ${token}` },
+                        cache: 'no-store'
+                    });
+                    if (!r.ok) return;
+                    const d = await r.json().catch(() => ({}));
+                    const regs = Array.isArray(d.registrations) ? d.registrations : [];
+                    regs.forEach((row) => {
+                        const status = row?.status;
+                        const eventId = row?.event?.id;
+                        if (!eventId) return;
+                        if (['registered', 'waitlisted', 'pending_approval'].includes(status)) {
+                            this.registeredEventIds.add(String(eventId));
+                        }
+                    });
+                } catch {
+                    this.registeredEventIds = new Set();
+                }
+            }
             async loadEvents() {
                 try {
                     this.showLoading();
+                    await this.loadMemberRegistrations();
                     // 構建查詢參數
                     const params = new URLSearchParams({
-                        page: this.currentPage,
-                        limit: this.itemsPerPage,
                         sortBy: this.currentFilters.sortBy,
                         sortOrder: this.currentFilters.sortOrder
                     });
@@ -821,6 +859,9 @@
                 const typeLabel = event.typeLabel || event.type;
                 // 檢查活動狀態
                 const statusInfo = this.getStatusInfo(event);
+                const eventId = String(event._id || '');
+                const isRegisteredByCurrentMember = this.registeredEventIds.has(eventId);
+                const memberManageUrl = `/member?eventId=${encodeURIComponent(eventId)}#my-registrations`;
                 return `
                     <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                         <div class="h-48 bg-gradient-to-br from-actc-orange to-actc-orange-dark flex items-center justify-center relative">
@@ -923,12 +964,17 @@
                                 ` : ''}
                                 <!-- 操作按鈕 -->
                                 <div class="flex flex-wrap gap-2 mt-4">
-                                    ${event.canRegister ? `
+                                    ${isRegisteredByCurrentMember ? `
+                                        <a href="${memberManageUrl}" class="flex-1 min-w-[8rem] bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
+                                            活動管理
+                                        </a>
+                                    ` : ''}
+                                    ${event.canRegister && !isRegisteredByCurrentMember ? `
                                         <button type="button" onclick="registerForEvent('${event._id}', false)" class="flex-1 min-w-[8rem] bg-actc-orange hover:bg-actc-orange-dark text-white px-4 py-2 rounded-md transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                             立即報名
                                         </button>
                                     ` : ''}
-                                    ${event.canJoinWaitlist ? `
+                                    ${event.canJoinWaitlist && !isRegisteredByCurrentMember ? `
                                         <button type="button" onclick="registerForEvent('${event._id}', true)" class="flex-1 min-w-[8rem] border border-amber-600 text-amber-800 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-md transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
                                             加入候補
                                         </button>
@@ -1086,6 +1132,7 @@
             new NewsManager();
             new HomeMembersManager();
             new HomeEventsManager();
+            resumePendingRegistrationIntent();
             // 手機選單功能
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const mobileMenu = document.getElementById('mobileMenu');
@@ -1095,110 +1142,165 @@
                 });
             }
         });
+        const PENDING_REGISTRATION_INTENT_KEY = 'pendingEventRegistrationIntent';
+        const PENDING_REGISTRATION_INTENT_TTL_MS = 10 * 60 * 1000;
+
+        function savePendingRegistrationIntent(intent) {
+            try {
+                localStorage.setItem(
+                    PENDING_REGISTRATION_INTENT_KEY,
+                    JSON.stringify({
+                        eventId: String(intent.eventId || ''),
+                        isWaitlist: !!intent.isWaitlist,
+                        returnTo: intent.returnTo || '/',
+                        createdAt: Date.now(),
+                        ttlMs: PENDING_REGISTRATION_INTENT_TTL_MS
+                    })
+                );
+            } catch (error) {
+                console.warn('save pending registration intent failed:', error);
+            }
+        }
+
+        function readPendingRegistrationIntent() {
+            try {
+                const raw = localStorage.getItem(PENDING_REGISTRATION_INTENT_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !parsed.eventId || !parsed.createdAt) return null;
+                return parsed;
+            } catch {
+                return null;
+            }
+        }
+
+        function clearPendingRegistrationIntent() {
+            localStorage.removeItem(PENDING_REGISTRATION_INTENT_KEY);
+        }
+
+        function isPendingRegistrationIntentExpired(intent) {
+            const ttl = Number(intent?.ttlMs || PENDING_REGISTRATION_INTENT_TTL_MS);
+            const createdAt = Number(intent?.createdAt || 0);
+            if (!createdAt) return true;
+            return Date.now() - createdAt > ttl;
+        }
+
+        async function fetchEventTitleById(eventId) {
+            const response = await fetch(`/api/events/${eventId}`, { cache: 'no-store' });
+            if (!response.ok) {
+                throw new Error('活動資料讀取失敗');
+            }
+            const event = await response.json();
+            return event?.title || `活動 ${eventId}`;
+        }
+
+        async function resumePendingRegistrationIntent() {
+            const intent = readPendingRegistrationIntent();
+            if (!intent) return;
+
+            if (isPendingRegistrationIntentExpired(intent)) {
+                clearPendingRegistrationIntent();
+                return;
+            }
+
+            const token = localStorage.getItem('memberToken');
+            if (!token) return;
+
+            let eventTitle = '';
+            try {
+                eventTitle = await fetchEventTitleById(intent.eventId);
+            } catch {
+                clearPendingRegistrationIntent();
+                showNotification('活動資訊已更新，請重新操作報名。', 'warning');
+                return;
+            }
+
+            const actionLabel = intent.isWaitlist ? '候補登記' : '報名';
+            const confirmed = window.confirm(`是否確認${actionLabel}「${eventTitle}」？`);
+            if (!confirmed) {
+                clearPendingRegistrationIntent();
+                return;
+            }
+
+            await submitRegistration(intent.eventId, token, !!intent.isWaitlist, {
+                source: 'intent-resume'
+            });
+        }
+
         // 活動報名功能
         async function registerForEvent(eventId, isWaitlist) {
             try {
-                showRegistrationForm(eventId, !!isWaitlist);
+                const token = localStorage.getItem('memberToken');
+                if (!token) {
+                    savePendingRegistrationIntent({
+                        eventId,
+                        isWaitlist: !!isWaitlist,
+                        returnTo: '/'
+                    });
+                    showNotification('活動報名需先登入會員並完成信箱驗證，將帶您前往會員專區。', 'warning');
+                    window.location.href = '/member#login';
+                    return;
+                }
+                await submitRegistration(eventId, token, !!isWaitlist);
             } catch (error) {
                 console.error('報名失敗:', error);
                 showNotification('報名失敗，請稍後再試', 'error');
             }
         }
-        // 顯示報名表單（isWaitlist：加入候補；後端仍用同一 API，僅介面文案不同）
-        function showRegistrationForm(eventId, isWaitlist) {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
-            modal.id = 'registrationModal';
-            const title = isWaitlist ? '候補登記' : '活動報名';
-            const submitLabel = isWaitlist ? '確認加入候補' : '確認報名';
-            modal.innerHTML = `
-                <div class="relative top-20 mx-auto p-5 border w-96 max-w-[calc(100vw-2rem)] shadow-lg rounded-md bg-white">
-                    <div class="mt-3 text-center">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">${title}</h3>
-                        <form id="registrationForm" class="text-left">
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">姓名 *</label>
-                                <input type="text" id="participantName" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand"
-                                       placeholder="請輸入您的姓名">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件 *</label>
-                                <input type="email" id="participantEmail" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand"
-                                       placeholder="請輸入您的電子郵件">
-                            </div>
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">電話</label>
-                                <input type="text" id="participantPhone"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-actc-sand focus:border-actc-sand"
-                                       placeholder="選填">
-                            </div>
-                            <div class="flex gap-3">
-                                <button type="submit" class="flex-1 bg-actc-orange hover:bg-actc-orange-dark text-white px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
-                                    ${submitLabel}
-                                </button>
-                                <button type="button" onclick="closeRegistrationModal()" class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2">
-                                    取消
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            document.getElementById('registrationForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await submitRegistration(eventId);
-            });
-        }
-        // 提交報名
-        async function submitRegistration(eventId) {
-            const name = document.getElementById('participantName').value.trim();
-            const email = document.getElementById('participantEmail').value.trim();
-            const phoneEl = document.getElementById('participantPhone');
-            const phone = phoneEl ? phoneEl.value.trim() : '';
-            if (!name || !email) {
-                showNotification('請填寫所有必填欄位', 'error');
-                return;
-            }
+        // 提交報名（會員流程：以登入帳號資料為主，不需重填姓名/email/電話）
+        async function submitRegistration(eventId, token, isWaitlist, options = {}) {
             try {
-                const response = await fetch(`/api/events/${eventId}/register`, {
+                const response = await fetch(`/api/member/events/${eventId}/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
                     },
-                    body: JSON.stringify({
-                        participantName: name,
-                        participantEmail: email,
-                        participantPhone: phone || undefined
-                    })
+                    body: JSON.stringify({})
                 });
+
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
+                    if (response.status === 401 || response.status === 403) {
+                        clearPendingRegistrationIntent();
+                        const needsVerify = errorData.code === 'EMAIL_NOT_VERIFIED';
+                        showNotification(
+                            needsVerify
+                                ? '請先完成信箱驗證後再報名，將帶您前往會員專區。'
+                                : '請先登入會員後再報名，將帶您前往會員專區。',
+                            'warning'
+                        );
+                        window.location.href = needsVerify ? '/member#account' : '/member#login';
+                        return;
+                    }
                     throw new Error(errorData.message || '報名失敗');
                 }
                 const result = await response.json();
-                closeRegistrationModal();
-                if (result.registrationStatus === 'waitlist' && result.waitlistPosition) {
-                    showNotification(`已加入候補（第 ${result.waitlistPosition} 號）`, 'success');
+                clearPendingRegistrationIntent();
+                const payment = result.payment || {};
+                if (result.registration?.status === 'waitlisted') {
+                    const pos = result.registration.waitlistPosition;
+                    showNotification(pos ? `已加入候補（第 ${pos} 號）` : '已加入候補', 'success');
+                } else if (payment.requiresPaymentProof) {
+                    const amountText = `${payment.currency || 'TWD'} ${payment.amountDue || 0}`;
+                    showNotification(`報名成功，應繳費用 ${amountText}。請至會員中心上傳後五碼與繳費憑證。`, 'success');
                 } else {
-                    showNotification('報名成功！', 'success');
+                    showNotification(isWaitlist ? '候補登記已送出' : '報名成功！', 'success');
                 }
                 if (window.homeEventsManager) {
                     window.homeEventsManager.loadEvents();
                 }
             } catch (error) {
                 console.error('報名失敗:', error);
+                if (options.source === 'intent-resume') {
+                    clearPendingRegistrationIntent();
+                }
                 showNotification(error.message || '報名失敗，請稍後再試', 'error');
             }
         }
         // 關閉報名表單
         function closeRegistrationModal() {
-            const modal = document.getElementById('registrationModal');
-            if (modal) {
-                modal.remove();
-            }
+            // Legacy no-op: public homepage no longer uses anonymous registration modal.
         }
         // 顯示新聞模態框
         function showNewsModal(title, date, description, category) {

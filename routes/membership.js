@@ -47,7 +47,7 @@ router.get('/admin/pending', adminAuth, async (req, res) => {
 /** 管理員：審核 */
 router.patch('/admin/:userId', adminAuth, async (req, res) => {
     try {
-        const { action, canManageContent, note } = req.body;
+        const { action, note } = req.body;
         if (!['approve', 'reject'].includes(action)) {
             return res.status(400).json({ message: 'action 須為 approve 或 reject' });
         }
@@ -59,12 +59,10 @@ router.patch('/admin/:userId', adminAuth, async (req, res) => {
 
         if (action === 'approve') {
             u.membershipStatus = 'approved';
-            u.canManageContent = !!canManageContent;
             u.membershipReviewedAt = new Date();
             u.membershipReviewNote = note ? String(note).slice(0, 500) : '';
         } else {
             u.membershipStatus = 'rejected';
-            u.canManageContent = false;
             u.membershipReviewedAt = new Date();
             u.membershipReviewNote = note ? String(note).slice(0, 500) : '';
         }

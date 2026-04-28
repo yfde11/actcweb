@@ -6,6 +6,7 @@ const { adminAuth } = require('../middleware/adminAuth');
 const { verifiedAuth } = require('../middleware/memberAuth');
 const { DB_UNAVAILABLE } = require('../middleware/mongoReady');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/email');
+const { linkUnclaimedRegistrationsToUser } = require('../services/registrationLinking');
 
 const router = express.Router();
 
@@ -56,7 +57,6 @@ router.post('/register', async (req, res) => {
             emailVerificationToken: token,
             emailVerificationExpires: expires,
             membershipStatus: 'none',
-            canManageContent: false,
             isFirstLogin: false
         });
         await user.save();
@@ -97,9 +97,8 @@ router.get('/verify-email', async (req, res) => {
         }
 
         const user = await User.findOne({
-            emailVerificationToken: String(token),
-            emailVerificationExpires: { $gt: new Date() }
-        }).select('+emailVerificationToken +emailVerificationExpires');
+            emailVerificationToken: String(token)
+        }).select('+emailVerificationToken +emailVerificationExpires +emailVerified');
 
         if (!user) {
             if (redirect === '1') {
@@ -108,9 +107,22 @@ router.get('/verify-email', async (req, res) => {
             return res.status(400).json({ message: '驗證連結無效或已過期' });
         }
 
+        // 支援重複點擊同一封驗證信：若已驗證完成，回傳友善訊息避免誤判失敗。
+        if (user.emailVerified) {
+            if (redirect === '1') {
+                return res.redirect('/member?verify=already');
+            }
+            return res.json({ message: '此信箱已完成驗證，可直接登入。' });
+        }
+
+        if (!user.emailVerificationExpires || user.emailVerificationExpires <= new Date()) {
+            if (redirect === '1') {
+                return res.redirect('/member?verify=invalid');
+            }
+            return res.status(400).json({ message: '驗證連結無效或已過期' });
+        }
+
         user.emailVerified = true;
-        user.emailVerificationToken = undefined;
-        user.emailVerificationExpires = undefined;
         await user.save();
 
         if (redirect === '1') {
@@ -290,6 +302,7 @@ router.post('/login', async (req, res) => {
         // 更新最後登入時間
         user.lastLogin = new Date();
         await user.save();
+        await linkUnclaimedRegistrationsToUser(user);
 
         // 生成 JWT token
         const token = jwt.sign(
@@ -298,8 +311,7 @@ router.post('/login', async (req, res) => {
                 username: user.username,
                 role: user.role,
                 emailVerified: user.emailVerified,
-                membershipStatus: user.membershipStatus,
-                canManageContent: user.canManageContent
+                membershipStatus: user.membershipStatus
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -315,8 +327,7 @@ router.post('/login', async (req, res) => {
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
                 emailVerified: user.emailVerified,
-                membershipStatus: user.membershipStatus,
-                canManageContent: user.canManageContent
+                membershipStatus: user.membershipStatus
             }
         });
 
@@ -457,8 +468,7 @@ router.get('/verify', verifiedAuth, async (req, res) => {
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
                 emailVerified: user.emailVerified,
-                membershipStatus: user.membershipStatus,
-                canManageContent: user.canManageContent
+                membershipStatus: user.membershipStatus
             }
         });
     } catch (error) {

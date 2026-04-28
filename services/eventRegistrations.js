@@ -2,6 +2,8 @@ const Event = require('../models/Event');
 const EventRegistration = require('../models/EventRegistration');
 
 const ACTIVE_REGISTRATION_STATUSES = ['registered', 'pending_approval'];
+const ACTIVE_DUPLICATE_BLOCK_STATUSES =
+    EventRegistration.ACTIVE_DUPLICATE_BLOCK_STATUSES || ['registered', 'waitlisted', 'pending_approval', 'confirmed', 'waitlist'];
 const ACTIVE_PAYMENT_STATUSES = ['none', 'payment_pending', 'payment_submitted', 'paid'];
 
 function httpError(status, message) {
@@ -105,7 +107,11 @@ async function createMemberRegistration({ event, user, participantName, particip
         throw httpError(400, 'Event registration is not open');
     }
 
-    const dup = await EventRegistration.findOne({ event: event._id, participantEmail: emailNorm });
+    const dup = await EventRegistration.findOne({
+        event: event._id,
+        participantEmail: emailNorm,
+        status: { $in: ACTIVE_DUPLICATE_BLOCK_STATUSES }
+    });
     if (dup) {
         throw httpError(409, '您已報名過此活動');
     }
@@ -168,7 +174,11 @@ async function cancelEventRegistration(eventId, emailNorm) {
         throw httpError(404, 'Event not found');
     }
 
-    const reg = await EventRegistration.findOne({ event: event._id, participantEmail: emailNorm });
+    const reg = await EventRegistration.findOne({
+        event: event._id,
+        participantEmail: emailNorm,
+        status: { $in: ACTIVE_DUPLICATE_BLOCK_STATUSES }
+    }).sort({ createdAt: -1 });
     if (!reg) {
         throw httpError(404, '找不到此 Email 的報名紀錄');
     }
@@ -219,6 +229,7 @@ async function cancelEventRegistration(eventId, emailNorm) {
 
 module.exports = {
     ACTIVE_REGISTRATION_STATUSES,
+    ACTIVE_DUPLICATE_BLOCK_STATUSES,
     ACTIVE_PAYMENT_STATUSES,
     normalizeLegacyStatus,
     normalizeLegacyPaymentStatus,

@@ -158,10 +158,9 @@
                 <h2 class="text-xl font-bold mb-2">帳號狀態</h2>
                 <p class="text-sm text-gray-600">信箱驗證：<span class="font-medium" x-text="me.emailVerified ? '已完成' : '未完成（部分功能受限）'"></span></p>
                 <p class="text-sm text-gray-600">會員審核：<span class="font-medium" x-text="statusLabel(me.membershipStatus)"></span></p>
-                <p class="text-sm text-gray-600">內容管理權（最新消息／活動）：<span class="font-medium" :class="me.canManageContent ? 'text-green-700' : 'text-gray-700'" x-text="me.canManageContent ? '已開通' : '未開通'"></span></p>
                 <p class="text-xs text-gray-500 mt-3 leading-relaxed border-t border-gray-100 pt-3">
-                    管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-700">不會</strong>自動變成「已核准」會員，也不等於內容管理權。
-                    若需發布最新消息／活動，須由管理員在會員審核時勾選開通內容管理權，或日後於使用者管理中調整。
+                    管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-700">不會</strong>自動變成「已核准」會員。
+                    最新消息與活動內容由管理員於管理後台維護。
                 </p>
                 <a href="/admin" x-show="token && me.role === 'admin'" class="inline-flex items-center mt-3 px-3 py-2 rounded bg-gray-900 text-white text-sm hover:bg-black">
                     前往管理後台
@@ -194,7 +193,7 @@
                 <p class="text-sm text-gray-600 mb-4">顯示您的活動報名、付款、出席與教材/問卷操作。MVP 付款為人工審核流程。</p>
                 <p x-show="eventRegsLoading" class="text-sm text-gray-500">載入中…</p>
                 <p x-show="!eventRegsLoading && eventRegs.length === 0" class="text-sm text-gray-500">尚無報名紀錄。</p>
-                <div x-show="!eventRegsLoading && eventRegs.length" class="overflow-x-auto border border-gray-200 rounded-lg">
+                <div x-show="!eventRegsLoading && activeEventRegs.length" class="overflow-x-auto border border-gray-200 rounded-lg">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
@@ -207,8 +206,8 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <template x-for="row in eventRegs" :key="row.registrationId">
-                                <tr>
+                            <template x-for="row in activeEventRegs" :key="row.registrationId">
+                                <tr :id="'event-reg-row-' + row.event.id" :class="highlightedEventId === String(row.event.id) ? 'bg-yellow-50' : ''">
                                     <td class="px-3 py-2">
                                         <div class="font-medium text-gray-900" x-text="row.event.title"></div>
                                         <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
@@ -240,11 +239,41 @@
                                                 @click="openSurveyModal(row)"
                                                 class="text-sm text-purple-700 hover:underline">填寫問卷</button>
                                         <span x-show="!row.actions?.canDownloadCertificate" class="text-xs text-gray-400">證書未開放</span>
+                                        <span x-show="Number(row.amountDue || 0) > 0 && row.paymentStatus === 'payment_pending'" class="block text-xs text-orange-700 mt-1">請先上傳後五碼與繳費憑證</span>
                                     </td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
+                </div>
+                <p x-show="!eventRegsLoading && !activeEventRegs.length && cancelledEventRegs.length" class="text-sm text-gray-500">
+                    目前沒有進行中的報名紀錄。
+                </p>
+                <div x-show="!eventRegsLoading && cancelledEventRegs.length" class="mt-5">
+                    <h3 class="text-base font-semibold text-gray-800 mb-2">已取消</h3>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-600">活動</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-600">時間</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-600">報名狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="row in cancelledEventRegs" :key="'cancelled-' + row.registrationId">
+                                    <tr>
+                                        <td class="px-3 py-2">
+                                            <div class="font-medium text-gray-900" x-text="row.event.title"></div>
+                                            <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-gray-700" x-text="formatEventDate(row.event.date)"></td>
+                                        <td class="px-3 py-2 text-gray-600" x-text="registrationStatusLabel(row.status)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <p class="text-sm text-red-600 mt-2 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
             </div>
@@ -439,33 +468,6 @@
                 </button>
             </div>
 
-            <template x-if="me.canManageContent && me.membershipStatus === 'approved'">
-                <div class="bg-white p-6 rounded-lg shadow space-y-6">
-                    <h2 class="text-xl font-bold">內容管理（最新消息）</h2>
-                    <form class="space-y-2 max-w-xl" @submit.prevent="createNews">
-                        <input x-model="newsForm.title" required placeholder="標題" class="w-full border rounded px-3 py-2" />
-                        <textarea x-model="newsForm.content" required rows="4" placeholder="內文" class="w-full border rounded px-3 py-2"></textarea>
-                        <select x-model="newsForm.status" class="w-full border rounded px-3 py-2">
-                            <option value="draft">草稿</option>
-                            <option value="published">發布</option>
-                        </select>
-                        <select x-model="newsForm.notifyAudience" class="w-full border rounded px-3 py-2">
-                            <option value="none">不寄送通知</option>
-                            <option value="verified_users">通知：所有已驗證信箱帳號</option>
-                            <option value="approved_members">通知：僅已核准會員</option>
-                        </select>
-                        <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded">建立</button>
-                    </form>
-                    <div>
-                        <h3 class="font-semibold mb-2">我的文章</h3>
-                        <ul class="text-sm space-y-1">
-                            <template x-for="n in myNews" :key="n._id">
-                                <li class="border-b py-1" x-text="n.title + '（' + n.status + '）'"></li>
-                            </template>
-                        </ul>
-                    </div>
-                </div>
-            </template>
         </div>
     </main>
 
@@ -478,7 +480,6 @@
                 reg: { username: '', email: '', password: '', fullName: '' },
                 loginForm: { username: '', password: '' },
                 resendEmail: '',
-                myNews: [],
                 verifyMsg: '',
                 registerMsg: '',
                 registerOk: false,
@@ -503,9 +504,12 @@
                 wgPanelMsg: '',
                 wgPanelSaving: false,
                 eventRegs: [],
+                activeEventRegs: [],
+                cancelledEventRegs: [],
                 eventRegsLoading: false,
                 eventRegsMsg: '',
                 eventRegCancellingId: '',
+                highlightedEventId: '',
                 showPaymentModal: false,
                 showMaterialsModal: false,
                 showSurveyModal: false,
@@ -540,6 +544,7 @@
                 async init() {
                     const p = new URLSearchParams(location.search);
                     if (p.get('verify') === 'ok') this.verifyMsg = '信箱驗證成功，請登入。';
+                    if (p.get('verify') === 'already') this.verifyMsg = '此驗證連結已使用，您的信箱已完成驗證，可直接登入。';
                     if (p.get('verify') === 'invalid') this.verifyMsg = '驗證連結無效或已過期。';
                     this.resetTokenFromUrl = p.get('resetToken') || '';
                     if (this.token) await this.loadMe();
@@ -578,7 +583,7 @@
                     if (!ev) return '—';
                     if (ev.formattedPrice) return ev.formattedPrice;
                     const p = ev.price;
-                    if (p && p.isFree) return '免費';
+                    if (p && p.isFree) return '—';
                     if (p && p.amount != null) return `${p.currency || 'TWD'} ${p.amount}`;
                     return '—';
                 },
@@ -652,7 +657,7 @@
                         none: '無',
                         payment_pending: '待付款',
                         payment_submitted: '待審核',
-                        paid: '已付款',
+                        paid: '未付款',
                         payment_rejected: '付款退回',
                         refunded: '已退款'
                     };
@@ -686,11 +691,35 @@
                         if (!r.ok) throw new Error();
                         const d = await r.json();
                         this.eventRegs = d.registrations || [];
+                        this.activeEventRegs = this.eventRegs.filter((row) => row && row.status !== 'cancelled');
+                        this.cancelledEventRegs = this.eventRegs.filter((row) => row && row.status === 'cancelled');
+                        this.focusRegistrationFromUrl();
                     } catch {
                         this.eventRegs = [];
+                        this.activeEventRegs = [];
+                        this.cancelledEventRegs = [];
                     } finally {
                         this.eventRegsLoading = false;
                     }
+                },
+
+                focusRegistrationFromUrl() {
+                    const targetId = new URLSearchParams(window.location.search).get('eventId');
+                    if (!targetId) return;
+                    const hit = this.eventRegs.find((row) => String(row?.event?.id || '') === String(targetId));
+                    if (!hit) return;
+
+                    this.highlightedEventId = String(targetId);
+                    requestAnimationFrame(() => {
+                        const el = document.getElementById(`event-reg-row-${targetId}`);
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
+
+                    setTimeout(() => {
+                        this.highlightedEventId = '';
+                    }, 3500);
                 },
 
                 async cancelMyEventRegistration(eventId) {
@@ -913,13 +942,6 @@
                         this.profile.fullName = d.user.fullName || '';
                         this.profile.phone = d.user.phone || '';
                         this.profile.emailSubscribed = d.user.emailSubscribed !== false;
-                        if (this.me.canManageContent && this.me.membershipStatus === 'approved') {
-                            const nr = await fetch('/api/member/news/mine', { headers: this.authHeaders() });
-                            if (nr.ok) {
-                                const nd = await nr.json();
-                                this.myNews = nd.news || [];
-                            }
-                        }
                         await this.loadWorkingGroupsForMember();
                         await this.loadEventRegistrations();
                     } catch {
@@ -985,8 +1007,9 @@
                     localStorage.removeItem('memberToken');
                     this.token = '';
                     this.me = {};
-                    this.myNews = [];
                     this.eventRegs = [];
+                    this.activeEventRegs = [];
+                    this.cancelledEventRegs = [];
                     this.eventRegsMsg = '';
                     this.closeEventDetailModal();
                     this.wgCatalog = [];
@@ -1084,6 +1107,17 @@
                         await this.loadMe();
                         if (typeof updateMemberNav === 'function') {
                             updateMemberNav();
+                        }
+                        try {
+                            const rawIntent = localStorage.getItem('pendingEventRegistrationIntent');
+                            if (rawIntent) {
+                                const intent = JSON.parse(rawIntent);
+                                const returnTo = intent && intent.returnTo ? String(intent.returnTo) : '/';
+                                window.location.href = returnTo;
+                                return;
+                            }
+                        } catch {
+                            localStorage.removeItem('pendingEventRegistrationIntent');
                         }
                     } catch {
                         this.loginMsg = '網路錯誤或無法連線，請稍後再試。';
@@ -1243,28 +1277,6 @@
                     }
                 },
 
-                newsForm: { title: '', content: '', status: 'draft', notifyAudience: 'none' },
-
-                async createNews() {
-                    const fd = new FormData();
-                    fd.append('title', this.newsForm.title);
-                    fd.append('content', this.newsForm.content);
-                    fd.append('status', this.newsForm.status);
-                    fd.append('notifyAudience', this.newsForm.notifyAudience);
-                    const r = await fetch('/api/member/news', {
-                        method: 'POST',
-                        headers: { Authorization: 'Bearer ' + this.token },
-                        body: fd
-                    });
-                    const d = await r.json();
-                    if (!r.ok) {
-                        alert(d.message || '建立失敗');
-                        return;
-                    }
-                    alert('已建立');
-                    this.newsForm = { title: '', content: '', status: 'draft', notifyAudience: 'none' };
-                    await this.loadMe();
-                }
             };
         }
     </script>

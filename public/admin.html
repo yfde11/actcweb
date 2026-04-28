@@ -308,9 +308,6 @@
                                                 <option value="rejected">未核准</option>
                                             </select>
                                         </div>
-                                        <label class="flex items-center gap-2 text-sm">
-                                            <input type="checkbox" x-model="userForm.canManageContent" /> 開通內容管理權（最新消息／活動）
-                                        </label>
                                     </div>
                                 </template>
                                 <div class="flex space-x-2">
@@ -333,7 +330,7 @@
                             <h2 class="text-2xl font-bold">會員審核</h2>
                             <button @click="refreshMembership()" class="text-sm text-blue-600">重新整理</button>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">核准後可勾選「開通內容管理」以使用 /member 最新消息／活動功能。</p>
+                        <p class="text-sm text-gray-600 mb-4">會員審核僅管理會員資格；內容維護功能僅開放管理員。</p>
                         <table class="min-w-full text-sm">
                             <thead><tr class="bg-gray-50 text-left">
                                 <th class="px-3 py-2">帳號</th>
@@ -348,9 +345,8 @@
                                         <td class="px-3 py-2" x-text="u.email || '-'"></td>
                                         <td class="px-3 py-2 max-w-xs truncate" x-text="u.membershipApplicationNote || '-'"></td>
                                         <td class="px-3 py-2 space-x-2">
-                                            <button @click="reviewMembership(u._id, 'approve', true)" class="text-green-600">核准＋內容權</button>
-                                            <button @click="reviewMembership(u._id, 'approve', false)" class="text-green-700">僅核准</button>
-                                            <button @click="reviewMembership(u._id, 'reject', false)" class="text-red-600">駁回</button>
+                                            <button @click="reviewMembership(u._id, 'approve')" class="text-green-700">核准</button>
+                                            <button @click="reviewMembership(u._id, 'reject')" class="text-red-600">駁回</button>
                                         </td>
                                     </tr>
                                 </template>
@@ -834,7 +830,7 @@
                     }
                 },
 
-                async reviewMembership(userId, action, grantContent) {
+                async reviewMembership(userId, action) {
                     const note = prompt('管理員備註（選填）') || '';
                     const token = localStorage.getItem('adminToken');
                     const r = await fetch(`/api/membership/admin/${userId}`, {
@@ -845,7 +841,6 @@
                         },
                         body: JSON.stringify({
                             action,
-                            canManageContent: action === 'approve' ? grantContent : false,
                             note
                         })
                     });
@@ -978,8 +973,7 @@
                     email: '',
                     fullName: '',
                     role: 'user',
-                    membershipStatus: 'none',
-                    canManageContent: false
+                    membershipStatus: 'none'
                 },
 
                 async init() {
@@ -1035,8 +1029,7 @@
                         email: user.email || '',
                         fullName: user.fullName || '',
                         role: user.role,
-                        membershipStatus: user.membershipStatus || 'none',
-                        canManageContent: !!user.canManageContent
+                        membershipStatus: user.membershipStatus || 'none'
                     };
                     this.showEditModal = true;
                 },
@@ -1051,7 +1044,6 @@
                         };
                         if (this.editingUser.role === 'user') {
                             payload.membershipStatus = this.userForm.membershipStatus;
-                            payload.canManageContent = this.userForm.canManageContent;
                         }
                         const response = await fetch(`/api/users/${this.editingUser._id}`, {
                             method: 'PUT',
@@ -1143,8 +1135,7 @@
                         email: '',
                         fullName: '',
                         role: 'user',
-                        membershipStatus: 'none',
-                        canManageContent: false
+                        membershipStatus: 'none'
                     };
                 }
             }

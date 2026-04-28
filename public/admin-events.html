@@ -423,7 +423,7 @@
          class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50"
          @keydown.escape.window="closeRegistrationModal()"
          role="dialog" aria-modal="true">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" @click.stop>
+        <div class="bg-white rounded-lg shadow-xl w-[96vw] max-w-7xl max-h-[90vh] overflow-hidden flex flex-col" @click.stop>
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-gray-900">報名名單</h3>
                 <button type="button" class="text-gray-500 hover:text-gray-800" @click="closeRegistrationModal()" aria-label="關閉">
@@ -436,49 +436,76 @@
                     正式 <span x-text="regModal.confirmedCount"></span> 人
                     · 候補 <span x-text="regModal.waitlistCount"></span> 人
                 </span>
+                <span class="ml-3 text-gray-500" x-show="!regModal.loading">
+                    · 已取消 <span x-text="cancelledRegistrations.length"></span> 人
+                </span>
             </div>
             <div class="overflow-y-auto flex-1 p-6">
                 <p x-show="regModal.loading" class="text-gray-500">載入中…</p>
                 <p x-show="!regModal.loading && regModal.error" class="text-red-600" x-text="regModal.error"></p>
                 <div x-show="!regModal.loading && !regModal.error && regModal.registrations.length === 0" class="text-gray-500 text-sm">尚無報名資料。</div>
-                <div x-show="!regModal.loading && regModal.registrations.length" class="overflow-x-auto border border-gray-200 rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <div x-show="!regModal.loading && activeRegistrations.length" class="border border-gray-200 rounded-lg">
+                    <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">姓名</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">Email</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">電話</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">組織</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">出席</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">候補序號</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款資訊</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款後五碼</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">報名時間</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">操作</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">姓名</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[18%]">Email</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[10%]">電話</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[14%]">報名狀態</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">付款</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">出席</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">報名時間</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[10%]">操作</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <template x-for="(reg, idx) in regModal.registrations" :key="reg._id || idx">
+                            <template x-for="(reg, idx) in activeRegistrations" :key="reg._id || idx">
                                 <tr>
                                     <td class="px-3 py-2" x-text="reg.participantName || reg.name"></td>
                                     <td class="px-3 py-2 break-all" x-text="reg.participantEmail || reg.email"></td>
                                     <td class="px-3 py-2" x-text="reg.participantPhone || reg.phone || '—'"></td>
-                                    <td class="px-3 py-2" x-text="reg.organization || '—'"></td>
-                                    <td class="px-3 py-2" x-text="registrationStatusLabel(reg.status)"></td>
+                                    <td class="px-3 py-2">
+                                        <div x-text="registrationStatusLabel(reg.status)"></div>
+                                        <div class="text-xs text-gray-500" x-show="reg.waitlistPosition != null" x-text="'候補序號：' + reg.waitlistPosition"></div>
+                                        <div class="text-xs text-gray-500" x-show="reg.organization" x-text="'組織：' + reg.organization"></div>
+                                    </td>
                                     <td class="px-3 py-2" x-text="paymentStatusLabel(reg.paymentStatus || 'none')"></td>
                                     <td class="px-3 py-2" x-text="attendanceStatusLabel(reg.attendanceStatus || 'not_checked_in')"></td>
-                                    <td class="px-3 py-2" x-text="reg.waitlistPosition != null ? reg.waitlistPosition : '—'"></td>
-                                    <td class="px-3 py-2" x-text="paymentProofLabel(reg)"></td>
-                                    <td class="px-3 py-2" x-text="reg.paymentProof?.lastFiveDigits || '—'"></td>
                                     <td class="px-3 py-2 whitespace-nowrap text-gray-600" x-text="formatRegTime(reg.createdAt)"></td>
-                                    <td class="px-3 py-2 whitespace-nowrap space-x-1">
-                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'paid' })" class="text-xs text-green-700 hover:underline">標記已付款</button>
-                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'payment_rejected' })" class="text-xs text-red-700 hover:underline">付款退回</button>
-                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'attended' })" class="text-xs text-blue-700 hover:underline">標記出席</button>
-                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'no_show' })" class="text-xs text-gray-700 hover:underline">標記 no-show</button>
+                                    <td class="px-3 py-2 text-xs space-y-1">
+                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'paid' })" class="block text-green-700 hover:underline">標記未付款</button>
+                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'payment_rejected' })" class="block text-red-700 hover:underline">付款退回</button>
+                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'attended' })" class="block text-blue-700 hover:underline">標記出席</button>
+                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'no_show' })" class="block text-gray-700 hover:underline">標記 no-show</button>
                                     </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                <div x-show="!regModal.loading && !activeRegistrations.length && regModal.registrations.length" class="text-sm text-gray-500">
+                    目前沒有進行中的報名資料。
+                </div>
+                <div x-show="!regModal.loading && cancelledRegistrations.length" class="mt-5 border border-gray-200 rounded-lg">
+                    <div class="px-4 py-2 bg-gray-50 text-sm font-medium text-gray-700">已取消名單</div>
+                    <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[16%]">姓名</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[26%]">Email</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[18%]">電話</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[20%]">報名時間</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[20%]">付款狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="(reg, idx) in cancelledRegistrations" :key="'cancelled-' + (reg._id || idx)">
+                                <tr>
+                                    <td class="px-3 py-2" x-text="reg.participantName || reg.name || '—'"></td>
+                                    <td class="px-3 py-2 break-all" x-text="reg.participantEmail || reg.email || '—'"></td>
+                                    <td class="px-3 py-2" x-text="reg.participantPhone || reg.phone || '—'"></td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-gray-600" x-text="formatRegTime(reg.createdAt)"></td>
+                                    <td class="px-3 py-2" x-text="paymentStatusLabel(reg.paymentStatus || 'none')"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -499,19 +526,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input type="text" x-model="materialForm.title" placeholder="標題" class="border rounded px-3 py-2">
                     <select x-model="materialForm.accessLevel" class="border rounded px-3 py-2">
-                        <option value="public">public</option>
-                        <option value="login_required">login_required</option>
-                        <option value="registered_only">registered_only</option>
-                        <option value="paid_only">paid_only</option>
-                        <option value="attended_only">attended_only</option>
+                        <option value="public">公開（不需登入）</option>
+                        <option value="login_required">需登入即可</option>
+                        <option value="registered_only">僅報名者</option>
+                        <option value="paid_only">僅未付款者</option>
+                        <option value="attended_only">僅已出席者</option>
                     </select>
                     <select x-model="materialForm.category" class="border rounded px-3 py-2">
-                        <option value="pre_event">pre_event</option>
-                        <option value="in_event">in_event</option>
-                        <option value="post_event">post_event</option>
-                        <option value="recording">recording</option>
-                        <option value="certificate_related">certificate_related</option>
-                        <option value="other">other</option>
+                        <option value="pre_event">活動前</option>
+                        <option value="in_event">活動中</option>
+                        <option value="post_event">活動後</option>
+                        <option value="recording">錄影回放</option>
+                        <option value="certificate_related">證書相關</option>
+                        <option value="other">其他</option>
                     </select>
                     <input type="url" x-model="materialForm.externalUrl" placeholder="外部連結（選填）" class="border rounded px-3 py-2">
                 </div>
@@ -527,7 +554,24 @@
                         <div class="border rounded p-3 flex items-center justify-between">
                             <div>
                                 <p class="font-medium" x-text="m.title"></p>
-                                <p class="text-xs text-gray-500" x-text="m.category + ' / ' + m.accessLevel"></p>
+                                <p class="text-xs text-gray-500" x-text="materialCategoryLabel(m.category) + ' / ' + materialAccessLevelLabel(m.accessLevel)"></p>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    下載檔案：
+                                    <a
+                                        x-show="m.file && m.file.path"
+                                        :href="m.file.path"
+                                        :download="m.file.originalName || ''"
+                                        class="text-blue-700 hover:underline"
+                                        x-text="m.file.originalName || '下載檔案'"></a>
+                                    <a
+                                        x-show="(!m.file || !m.file.path) && m.externalUrl"
+                                        :href="m.externalUrl"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-blue-700 hover:underline"
+                                        x-text="m.externalUrl"></a>
+                                    <span x-show="(!m.file || !m.file.path) && !m.externalUrl">—</span>
+                                </p>
                             </div>
                             <button type="button" @click="deleteMaterial(m._id)" class="text-sm text-red-700 hover:underline">刪除</button>
                         </div>
@@ -545,19 +589,19 @@
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 space-y-3">
             <h3 class="text-lg font-semibold">發送通知</h3>
             <select x-model="notifyForm.type" class="w-full border rounded px-3 py-2">
-                <option value="event_reminder">event_reminder</option>
-                <option value="event_day_notice">event_day_notice</option>
-                <option value="post_event_survey">post_event_survey</option>
-                <option value="material_available">material_available</option>
-                <option value="certificate_available">certificate_available</option>
-                <option value="custom">custom</option>
+                <option value="event_reminder">活動行前提醒</option>
+                <option value="event_day_notice">活動當日通知</option>
+                <option value="post_event_survey">會後問卷提醒</option>
+                <option value="material_available">教材上架通知</option>
+                <option value="certificate_available">證書開放通知</option>
+                <option value="custom">自訂通知</option>
             </select>
             <select x-model="notifyForm.target" class="w-full border rounded px-3 py-2">
-                <option value="all_registered">all_registered</option>
-                <option value="paid_only">paid_only</option>
-                <option value="attended_only">attended_only</option>
-                <option value="not_paid">not_paid</option>
-                <option value="not_surveyed">not_surveyed</option>
+                <option value="all_registered">所有已報名者</option>
+                <option value="paid_only">僅未付款者</option>
+                <option value="attended_only">僅已出席者</option>
+                <option value="not_paid">尚未付款者</option>
+                <option value="not_surveyed">尚未填問卷者</option>
             </select>
             <input type="text" x-model="notifyForm.subject" placeholder="主旨" class="w-full border rounded px-3 py-2">
             <textarea x-model="notifyForm.message" rows="4" class="w-full border rounded px-3 py-2" placeholder="通知內容"></textarea>
@@ -601,7 +645,7 @@
                 <div class="border rounded p-2">候補數：<span x-text="operationSummary?.waitlistCount || 0"></span></div>
                 <div class="border rounded p-2">待審核：<span x-text="operationSummary?.pendingApprovalCount || 0"></span></div>
                 <div class="border rounded p-2">付款待確認：<span x-text="operationSummary?.payment?.submitted || 0"></span></div>
-                <div class="border rounded p-2">已付款：<span x-text="operationSummary?.payment?.paid || 0"></span></div>
+                <div class="border rounded p-2">未付款：<span x-text="operationSummary?.payment?.paid || 0"></span></div>
                 <div class="border rounded p-2">出席：<span x-text="operationSummary?.attendance?.attended || 0"></span></div>
                 <div class="border rounded p-2">未出席：<span x-text="operationSummary?.attendance?.noShow || 0"></span></div>
                 <div class="border rounded p-2">教材下載（次）：<span x-text="operationSummary?.materials?.downloads || 0"></span></div>
@@ -804,7 +848,7 @@
                         none: '無',
                         payment_pending: '待付款',
                         payment_submitted: '待審核',
-                        paid: '已付款',
+                        paid: '未付款',
                         payment_rejected: '退回補件',
                         refunded: '已退款'
                     };
@@ -818,6 +862,29 @@
                         no_show: '未出席'
                     };
                     return map[status] || status || '—';
+                },
+
+                materialAccessLevelLabel(level) {
+                    const map = {
+                        public: '公開（不需登入）',
+                        login_required: '需登入即可',
+                        registered_only: '僅報名者',
+                        paid_only: '僅未付款者',
+                        attended_only: '僅已出席者'
+                    };
+                    return map[level] || level || '—';
+                },
+
+                materialCategoryLabel(category) {
+                    const map = {
+                        pre_event: '活動前',
+                        in_event: '活動中',
+                        post_event: '活動後',
+                        recording: '錄影回放',
+                        certificate_related: '證書相關',
+                        other: '其他'
+                    };
+                    return map[category] || category || '—';
                 },
 
                 paymentProofLabel(reg) {
@@ -855,6 +922,14 @@
                     } catch {
                         return '—';
                     }
+                },
+
+                get activeRegistrations() {
+                    return (this.regModal?.registrations || []).filter((reg) => reg && reg.status !== 'cancelled');
+                },
+
+                get cancelledRegistrations() {
+                    return (this.regModal?.registrations || []).filter((reg) => reg && reg.status === 'cancelled');
                 },
 
                 closeRegistrationModal() {

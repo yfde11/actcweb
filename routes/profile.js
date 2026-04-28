@@ -25,7 +25,6 @@ async function userResponsePayload(u) {
         role: u.role,
         emailVerified: u.emailVerified,
         membershipStatus: u.membershipStatus,
-        canManageContent: u.canManageContent,
         emailSubscribed: u.emailSubscribed,
         isFirstLogin: u.isFirstLogin,
         workingGroupIds
