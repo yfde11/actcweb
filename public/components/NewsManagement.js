@@ -45,8 +45,17 @@ function newsTab() {
         
         // 搜尋防抖
         searchTimeout: null,
+        newsDraftSaveTimer: null,
+        newsDraftSaveState: '',
+        newsDraftSaveMessage: '',
+        newsDraftLastSavedPayload: '',
 
         async init() {
+            window.addEventListener('beforeunload', (event) => {
+                if (!this.newsDraftSaveTimer && !['pending', 'saving'].includes(this.newsDraftSaveState)) return;
+                event.preventDefault();
+                event.returnValue = '';
+            });
             await this.loadNews();
             await this.loadAnalyticsStatus();
         },
@@ -194,9 +203,16 @@ function newsTab() {
 
         // Modal 相關
         closeModal() {
+            if (this.newsDraftSaveTimer) {
+                clearTimeout(this.newsDraftSaveTimer);
+                this.newsDraftSaveTimer = null;
+            }
             this.showCreateModal = false;
             this.showEditModal = false;
             this.editingNews = null;
+            this.newsDraftSaveState = '';
+            this.newsDraftSaveMessage = '';
+            this.newsDraftLastSavedPayload = '';
             this.resetForm();
         },
 
@@ -242,6 +258,102 @@ function newsTab() {
             this.newsForm.imageUrl = '';
             this.imageFile = null;
             this.imagePreview = '';
+        },
+
+        buildNewsFormData(includeFiles = false) {
+            const formData = new FormData();
+            formData.append('title', this.newsForm.title);
+            formData.append('content', this.newsForm.content);
+            formData.append('description', this.newsForm.description || '');
+            formData.append('videoUrl', this.newsForm.videoUrl || '');
+            formData.append('publishDate', this.newsForm.publishDate || '');
+            formData.append('status', this.newsForm.status);
+            formData.append('tags', this.newsForm.tags || '');
+            formData.append('featured', this.newsForm.featured);
+
+            if (includeFiles) {
+                if (this.imageFile) {
+                    formData.append('image', this.imageFile);
+                } else if (!this.newsForm.imageUrl && this.editingNews?.imageUrl) {
+                    formData.append('removeImage', 'true');
+                }
+                if (this.attachmentFile) {
+                    formData.append('file', this.attachmentFile);
+                }
+            }
+
+            return formData;
+        },
+
+        newsDraftPayloadKey() {
+            return JSON.stringify({
+                title: this.newsForm.title,
+                content: this.newsForm.content,
+                description: this.newsForm.description || '',
+                imageUrl: this.newsForm.imageUrl || '',
+                videoUrl: this.newsForm.videoUrl || '',
+                publishDate: this.newsForm.publishDate || '',
+                status: this.newsForm.status,
+                tags: this.newsForm.tags || '',
+                featured: !!this.newsForm.featured,
+                file: this.newsForm.file || ''
+            });
+        },
+
+        newsDraftReady() {
+            return Boolean(this.editingNews?._id && this.newsForm.title && this.newsForm.content);
+        },
+
+        newsDraftSaveText() {
+            const texts = {
+                pending: '待自動儲存',
+                saving: '自動儲存中…',
+                saved: '已自動儲存',
+                error: this.newsDraftSaveMessage || '自動儲存失敗'
+            };
+            return texts[this.newsDraftSaveState] || '';
+        },
+
+        queueNewsDraftSave(event) {
+            if (!this.showEditModal || !this.editingNews?._id) return;
+            if (event?.target?.type === 'file') return;
+            if (this.newsDraftSaveTimer) clearTimeout(this.newsDraftSaveTimer);
+            this.newsDraftSaveState = 'pending';
+            this.newsDraftSaveTimer = setTimeout(() => {
+                this.newsDraftSaveTimer = null;
+                this.saveNewsDraft();
+            }, 900);
+        },
+
+        async saveNewsDraft() {
+            if (!this.showEditModal || !this.newsDraftReady()) return;
+            const payloadKey = this.newsDraftPayloadKey();
+            if (payloadKey === this.newsDraftLastSavedPayload) {
+                this.newsDraftSaveState = '';
+                return;
+            }
+            this.newsDraftSaveState = 'saving';
+            this.newsDraftSaveMessage = '';
+            try {
+                const response = await fetch(`/api/news/admin/${this.editingNews._id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: this.buildNewsFormData(false)
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(result.message || '自動儲存失敗');
+                }
+                this.newsDraftLastSavedPayload = this.newsDraftPayloadKey();
+                this.newsDraftSaveState = 'saved';
+                await this.loadNews();
+            } catch (error) {
+                console.error('Auto save news error:', error);
+                this.newsDraftSaveMessage = error.message || '自動儲存失敗';
+                this.newsDraftSaveState = 'error';
+            }
         },
 
         // 創建新聞
@@ -322,6 +434,9 @@ function newsTab() {
                 featured: news.featured || false,
                 file: news.file || ''
             };
+            this.newsDraftLastSavedPayload = this.newsDraftPayloadKey();
+            this.newsDraftSaveState = '';
+            this.newsDraftSaveMessage = '';
             this.showEditModal = true;
         },
 
@@ -331,32 +446,6 @@ function newsTab() {
                 console.log('開始更新新聞，ID:', this.editingNews._id);
                 console.log('表單數據:', this.newsForm);
                 
-                const formData = new FormData();
-                
-                // 基本欄位
-                formData.append('title', this.newsForm.title);
-                formData.append('content', this.newsForm.content);
-                formData.append('description', this.newsForm.description || '');
-                formData.append('videoUrl', this.newsForm.videoUrl || '');
-                formData.append('publishDate', this.newsForm.publishDate || '');
-                formData.append('status', this.newsForm.status);
-                formData.append('tags', this.newsForm.tags || '');
-                formData.append('featured', this.newsForm.featured);
-
-                // 檔案
-                if (this.imageFile) {
-                    console.log('上傳新圖片:', this.imageFile.name);
-                    formData.append('image', this.imageFile);
-                } else if (!this.newsForm.imageUrl && this.editingNews.imageUrl) {
-                    console.log('移除現有圖片');
-                    formData.append('removeImage', 'true');
-                }
-                
-                if (this.attachmentFile) {
-                    console.log('上傳新附件:', this.attachmentFile.name);
-                    formData.append('file', this.attachmentFile);
-                }
-
                 console.log('發送請求到:', `/api/news/admin/${this.editingNews._id}`);
                 
                 const response = await fetch(`/api/news/admin/${this.editingNews._id}`, {
@@ -364,7 +453,7 @@ function newsTab() {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                     },
-                    body: formData
+                    body: this.buildNewsFormData(true)
                 });
 
                 console.log('響應狀態:', response.status);

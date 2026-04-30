@@ -76,7 +76,7 @@
                     <h1 class="text-3xl font-bold text-gray-900">企業會員管理</h1>
                     <p class="text-gray-600 mt-2">管理企業會員資料，控制前端顯示</p>
                 </div>
-                <button @click="showCreateModal = true" 
+                <button @click="openCreateModal()" 
                         class="mt-4 md:mt-0 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
                     <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -272,6 +272,9 @@
                                               x-text="member.isActive ? '啟用' : '停用'"></span>
                                         <span :class="'px-2 py-1 rounded text-xs font-medium ' + (member.isDisplayed ? 'display-shown' : 'display-hidden')"
                                               x-text="member.isDisplayed ? '前端顯示' : '前端隱藏'"></span>
+                                        <span class="text-xs"
+                                              :class="member._saveState === 'error' ? 'text-red-600' : 'text-gray-500'"
+                                              x-text="memberSaveText(member)"></span>
                                     </div>
                                 </td>
                                 
@@ -279,8 +282,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <input type="number" 
                                            :value="member.displayOrder"
-                                           @change="updateDisplayOrder(member._id, $event.target.value)"
-                                           class="w-16 px-2 py-1 border border-gray-300 rounded text-sm">
+                                           @change="updateDisplayOrder(member, $event.target.value)"
+                                           :disabled="member._saving"
+                                           class="w-16 px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100">
                                 </td>
                                 
                                 <!-- 操作 -->
@@ -288,11 +292,13 @@
                                     <div class="flex space-x-2">
                                         <button @click="editMember(member)" 
                                                 class="text-blue-600 hover:text-blue-900">編輯</button>
-                                        <button @click="toggleDisplay(member._id)" 
-                                                class="text-purple-600 hover:text-purple-900"
+                                        <button @click="toggleDisplay(member)"
+                                                :disabled="member._saving"
+                                                class="text-purple-600 hover:text-purple-900 disabled:opacity-50"
                                                 x-text="member.isDisplayed ? '隱藏' : '顯示'"></button>
-                                        <button @click="toggleStatus(member._id)" 
-                                                class="text-green-600 hover:text-green-900"
+                                        <button @click="toggleStatus(member)"
+                                                :disabled="member._saving"
+                                                class="text-green-600 hover:text-green-900 disabled:opacity-50"
                                                 x-text="member.isActive ? '停用' : '啟用'"></button>
                                         <button @click="deleteMember(member._id)" 
                                                 class="text-red-600 hover:text-red-900">刪除</button>
@@ -363,7 +369,10 @@
                 <h3 class="text-lg font-medium text-gray-900 mb-4" 
                     x-text="showCreateModal ? '新增企業會員' : '編輯企業會員'"></h3>
                 
-                <form @submit.prevent="showCreateModal ? createMember() : updateMember()" enctype="multipart/form-data">
+                <form @submit.prevent="showCreateModal ? createMember() : updateMember()"
+                      @input.debounce.900ms="queueCorporateDraftSave($event)"
+                      @change.debounce.900ms="queueCorporateDraftSave($event)"
+                      enctype="multipart/form-data">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- 基本資訊 -->
                         <div class="col-span-2">
@@ -437,7 +446,12 @@
                     </div>
                     
                     <!-- 按鈕 -->
-                    <div class="flex justify-end space-x-4 mt-8">
+                    <div class="flex items-center justify-between gap-4 mt-8">
+                        <p class="text-sm"
+                           :class="corporateDraftSaveState === 'error' ? 'text-red-600' : 'text-gray-500'"
+                           x-show="showEditModal && corporateDraftSaveText()"
+                           x-text="corporateDraftSaveText()"></p>
+                        <div class="flex justify-end space-x-4">
                         <button type="button" @click="closeModal()" 
                                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                             取消
@@ -446,6 +460,7 @@
                                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             <span x-text="showCreateModal ? '創建' : '更新'"></span>
                         </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -503,6 +518,10 @@
                 showCreateModal: false,
                 showEditModal: false,
                 editingMember: null,
+                corporateDraftSaveTimer: null,
+                corporateDraftSaveState: '',
+                corporateDraftSaveMessage: '',
+                corporateDraftLastSavedPayload: '',
                 
                 // 表單狀態
                 memberForm: {
@@ -531,6 +550,11 @@
                     console.log('初始模態框狀態:', {
                         showCreateModal: this.showCreateModal,
                         showEditModal: this.showEditModal
+                    });
+                    window.addEventListener('beforeunload', (event) => {
+                        if (!this.corporateDraftSaveTimer && !['pending', 'saving'].includes(this.corporateDraftSaveState)) return;
+                        event.preventDefault();
+                        event.returnValue = '';
                     });
                     
                     // 確保模態框初始狀態為關閉
@@ -568,7 +592,11 @@
                         const data = await response.json();
                         
                         if (data.success) {
-                            this.members = data.members;
+                            this.members = data.members.map(member => ({
+                                ...member,
+                                _saving: false,
+                                _saveState: ''
+                            }));
                             this.pagination = data.pagination;
                             this.stats = data.stats?.[0] || {};
                         } else {
@@ -591,6 +619,112 @@
                         }
                     } catch (error) {
                         console.error('載入統計失敗:', error);
+                    }
+                },
+
+                memberSaveText(member) {
+                    const map = {
+                        saving: '儲存中…',
+                        saved: '已儲存',
+                        error: '儲存失敗'
+                    };
+                    return map[member?._saveState] || '';
+                },
+
+                setMemberSaveState(member, state) {
+                    if (!member) return;
+                    member._saving = state === 'saving';
+                    member._saveState = state;
+                },
+
+                openCreateModal() {
+                    this.closeModal();
+                    this.showCreateModal = true;
+                },
+
+                buildCorporateFormData(includeLogo = false) {
+                    const formData = new FormData();
+                    Object.keys(this.memberForm).forEach(key => {
+                        if (key !== 'logo') {
+                            formData.append(key, this.memberForm[key]);
+                        }
+                    });
+
+                    if (includeLogo) {
+                        if (this.logoFile) {
+                            formData.append('logo', this.logoFile);
+                        } else if (this.memberForm.logo && typeof this.memberForm.logo === 'string') {
+                            formData.append('logo', this.memberForm.logo);
+                        }
+                    }
+
+                    return formData;
+                },
+
+                corporateDraftPayloadKey() {
+                    const payload = { ...this.memberForm };
+                    delete payload.logo;
+                    return JSON.stringify(payload);
+                },
+
+                corporateDraftReady() {
+                    return Boolean(this.editingMember?._id && this.memberForm.companyName);
+                },
+
+                corporateDraftSaveText() {
+                    const texts = {
+                        pending: '待自動儲存',
+                        saving: '自動儲存中…',
+                        saved: '已自動儲存',
+                        error: this.corporateDraftSaveMessage || '自動儲存失敗'
+                    };
+                    return texts[this.corporateDraftSaveState] || '';
+                },
+
+                queueCorporateDraftSave(event) {
+                    if (!this.showEditModal || !this.editingMember?._id) return;
+                    if (event?.target?.type === 'file') return;
+                    if (this.corporateDraftSaveTimer) clearTimeout(this.corporateDraftSaveTimer);
+                    this.corporateDraftSaveState = 'pending';
+                    this.corporateDraftSaveTimer = setTimeout(() => {
+                        this.corporateDraftSaveTimer = null;
+                        this.saveCorporateDraft();
+                    }, 900);
+                },
+
+                async saveCorporateDraft() {
+                    if (!this.showEditModal || !this.corporateDraftReady()) return;
+                    const payloadKey = this.corporateDraftPayloadKey();
+                    if (payloadKey === this.corporateDraftLastSavedPayload) {
+                        this.corporateDraftSaveState = '';
+                        return;
+                    }
+                    this.corporateDraftSaveState = 'saving';
+                    this.corporateDraftSaveMessage = '';
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const response = await fetch(`/api/corporate-members/admin/${this.editingMember._id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: this.buildCorporateFormData(false)
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!data.success) {
+                            throw new Error(data.message || '自動儲存失敗');
+                        }
+                        this.corporateDraftLastSavedPayload = this.corporateDraftPayloadKey();
+                        this.corporateDraftSaveState = 'saved';
+                        if (data.member) {
+                            this.editingMember = data.member;
+                        }
+                        await this.loadMembers();
+                        await this.loadStats();
+                    } catch (error) {
+                        console.error('企業會員自動儲存失敗:', error);
+                        this.corporateDraftSaveMessage = error.message || '自動儲存失敗';
+                        this.corporateDraftSaveState = 'error';
                     }
                 },
                 
@@ -663,6 +797,9 @@
                         isDisplayed: member.isDisplayed !== undefined ? member.isDisplayed : false,
                         logo: member.logo || ''
                     };
+                    this.corporateDraftLastSavedPayload = this.corporateDraftPayloadKey();
+                    this.corporateDraftSaveState = '';
+                    this.corporateDraftSaveMessage = '';
                     this.showEditModal = true;
                 },
                 
@@ -670,33 +807,15 @@
                 async updateMember() {
                     try {
                         const token = localStorage.getItem('adminToken');
-                        const formData = new FormData();
-                        
                         console.log('🔍 更新會員資料:', this.memberForm);
                         console.log('🔍 檔案上傳:', this.logoFile);
-                        
-                        // 添加表單數據（排除logo，稍後單獨處理）
-                        Object.keys(this.memberForm).forEach(key => {
-                            if (key !== 'logo') {
-                                formData.append(key, this.memberForm[key]);
-                            }
-                        });
-                        
-                        // 處理logo：優先檔案上傳，否則使用URL
-                        if (this.logoFile) {
-                            console.log('🔍 使用檔案上傳');
-                            formData.append('logo', this.logoFile);
-                        } else if (this.memberForm.logo && typeof this.memberForm.logo === 'string') {
-                            console.log('🔍 使用圖片URL:', this.memberForm.logo);
-                            formData.append('logo', this.memberForm.logo);
-                        }
                         
                         const response = await fetch(`/api/corporate-members/admin/${this.editingMember._id}`, {
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: formData
+                            body: this.buildCorporateFormData(true)
                         });
                         
                         console.log('🔍 HTTP狀態:', response.status);
@@ -719,7 +838,10 @@
                 },
                 
                 // 切換顯示狀態
-                async toggleDisplay(memberId) {
+                async toggleDisplay(member) {
+                    const memberId = typeof member === 'string' ? member : member._id;
+                    const target = typeof member === 'string' ? this.members.find(item => item._id === memberId) : member;
+                    this.setMemberSaveState(target, 'saving');
                     try {
                         const token = localStorage.getItem('adminToken');
                         
@@ -733,20 +855,28 @@
                         const data = await response.json();
                         
                         if (data.success) {
+                            if (target && data.member) {
+                                Object.assign(target, data.member);
+                            }
+                            this.setMemberSaveState(target, 'saved');
                             this.showToast('success', data.message);
-                            this.loadMembers();
                             this.loadStats();
                         } else {
+                            this.setMemberSaveState(target, 'error');
                             this.showToast('error', data.message);
                         }
                     } catch (error) {
                         console.error('切換顯示狀態失敗:', error);
+                        this.setMemberSaveState(target, 'error');
                         this.showToast('error', '切換顯示狀態失敗');
                     }
                 },
                 
                 // 切換啟用狀態
-                async toggleStatus(memberId) {
+                async toggleStatus(member) {
+                    const memberId = typeof member === 'string' ? member : member._id;
+                    const target = typeof member === 'string' ? this.members.find(item => item._id === memberId) : member;
+                    this.setMemberSaveState(target, 'saving');
                     try {
                         const token = localStorage.getItem('adminToken');
                         
@@ -760,20 +890,28 @@
                         const data = await response.json();
                         
                         if (data.success) {
+                            if (target && data.member) {
+                                Object.assign(target, data.member);
+                            }
+                            this.setMemberSaveState(target, 'saved');
                             this.showToast('success', data.message);
-                            this.loadMembers();
                             this.loadStats();
                         } else {
+                            this.setMemberSaveState(target, 'error');
                             this.showToast('error', data.message);
                         }
                     } catch (error) {
                         console.error('切換啟用狀態失敗:', error);
+                        this.setMemberSaveState(target, 'error');
                         this.showToast('error', '切換啟用狀態失敗');
                     }
                 },
                 
                 // 更新顯示順序
-                async updateDisplayOrder(memberId, order) {
+                async updateDisplayOrder(member, order) {
+                    const memberId = typeof member === 'string' ? member : member._id;
+                    const target = typeof member === 'string' ? this.members.find(item => item._id === memberId) : member;
+                    this.setMemberSaveState(target, 'saving');
                     try {
                         const token = localStorage.getItem('adminToken');
                         
@@ -789,12 +927,18 @@
                         const data = await response.json();
                         
                         if (data.success) {
+                            if (target && data.member) {
+                                Object.assign(target, data.member);
+                            }
+                            this.setMemberSaveState(target, 'saved');
                             this.showToast('success', '顯示順序更新成功');
                         } else {
+                            this.setMemberSaveState(target, 'error');
                             this.showToast('error', data.message);
                         }
                     } catch (error) {
                         console.error('更新顯示順序失敗:', error);
+                        this.setMemberSaveState(target, 'error');
                         this.showToast('error', '更新顯示順序失敗');
                     }
                 },
@@ -949,10 +1093,17 @@
                 // 關閉模態框
                 closeModal() {
                     console.log('關閉模態框');
+                    if (this.corporateDraftSaveTimer) {
+                        clearTimeout(this.corporateDraftSaveTimer);
+                        this.corporateDraftSaveTimer = null;
+                    }
                     this.showCreateModal = false;
                     this.showEditModal = false;
                     this.editingMember = null;
                     this.logoFile = null;
+                    this.corporateDraftSaveState = '';
+                    this.corporateDraftSaveMessage = '';
+                    this.corporateDraftLastSavedPayload = '';
                     this.memberForm = {
                         companyName: '',
                         companyNameEn: '',

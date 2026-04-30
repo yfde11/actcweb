@@ -264,7 +264,10 @@
                     </button>
                 </div>
                 
-                <form @submit.prevent="showEditModal ? updateNews() : createNews()" enctype="multipart/form-data">
+                <form @submit.prevent="showEditModal ? updateNews() : createNews()"
+                      @input.debounce.900ms="queueNewsDraftSave($event)"
+                      @change.debounce.900ms="queueNewsDraftSave($event)"
+                      enctype="multipart/form-data">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- 左欄：基本資訊 -->
                         <div class="space-y-4">
@@ -355,7 +358,12 @@
                     </div>
                     
                     <!-- 操作按鈕 -->
-                    <div class="flex justify-end space-x-3 mt-6 pt-6 border-t">
+                    <div class="flex items-center justify-between gap-3 mt-6 pt-6 border-t">
+                        <p class="text-sm"
+                           :class="newsDraftSaveState === 'error' ? 'text-red-600' : 'text-gray-500'"
+                           x-show="showEditModal && newsDraftSaveText()"
+                           x-text="newsDraftSaveText()"></p>
+                        <div class="flex justify-end space-x-3">
                         <button type="button" @click="closeModal" 
                                 class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                             取消
@@ -364,6 +372,7 @@
                                 class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                             <span x-text="showEditModal ? '更新新聞' : '創建新聞'"></span>
                         </button>
+                        </div>
                     </div>
                 </form>
             </div>

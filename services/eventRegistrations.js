@@ -158,6 +158,41 @@ async function createMemberRegistration({ event, user, participantName, particip
     return registration;
 }
 
+async function renumberWaitlist(eventId) {
+    const waitlist = await EventRegistration.find({
+        event: eventId,
+        status: { $in: ['waitlisted', 'waitlist'] }
+    }).sort({ waitlistPosition: 1, createdAt: 1 });
+
+    await Promise.all(waitlist.map((reg, index) => {
+        reg.waitlistPosition = index + 1;
+        return reg.save();
+    }));
+}
+
+function summarizeEventRegistration(event) {
+    return {
+        id: event._id,
+        title: event.title,
+        registeredCount: event.registeredCount,
+        remainingSpots: event.remainingSpots,
+        waitlistCount: event.waitlistCount
+    };
+}
+
+async function deleteEventRegistrationRecord(event, reg) {
+    await EventRegistration.deleteOne({ _id: reg._id });
+    await renumberWaitlist(event._id);
+    await recalculateRegisteredCount(event._id);
+
+    const fresh = await Event.findById(event._id);
+    const [enriched] = await enrichEventsWithWaitlistCounts([fresh]);
+    return {
+        registrationStatus: 'cancelled',
+        event: summarizeEventRegistration(enriched)
+    };
+}
+
 /**
  * 取消單筆報名或候補；邏輯與公開 POST /api/events/:id/unregister 一致。
  * @param {string} eventId
@@ -217,13 +252,7 @@ async function cancelEventRegistration(eventId, emailNorm) {
     return {
         message: 'Unregistration successful',
         registrationStatus: 'cancelled',
-        event: {
-            id: enriched._id,
-            title: enriched.title,
-            registeredCount: enriched.registeredCount,
-            remainingSpots: enriched.remainingSpots,
-            waitlistCount: enriched.waitlistCount
-        }
+        event: summarizeEventRegistration(enriched)
     };
 }
 
@@ -239,5 +268,7 @@ module.exports = {
     createMemberRegistration,
     enrichEventsWithWaitlistCounts,
     cancelEventRegistration,
+    deleteEventRegistrationRecord,
+    renumberWaitlist,
     httpError
 };

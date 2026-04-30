@@ -117,6 +117,12 @@ const eventRegistrationSchema = new mongoose.Schema({
     },
     cancelledAt: {
         type: Date
+    },
+    adminNote: {
+        type: String,
+        trim: true,
+        maxlength: [1000, 'Admin note cannot exceed 1000 characters'],
+        default: ''
     }
 }, {
     timestamps: true,

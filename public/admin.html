@@ -11,6 +11,7 @@
     <style>[x-cloak]{display:none!important}</style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
     <script src="/components/NewsManagement.js"></script>
+    <script src="/components/MembersManagement.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
     <nav class="bg-white shadow-lg sticky top-0 z-40" aria-label="全站與管理後台導覽">
@@ -170,17 +171,10 @@
             <aside class="w-64 bg-gray-800 min-h-screen">
                 <nav class="mt-8">
                     <template x-if="currentUser.role === 'admin'">
-                        <a @click="currentTab = 'users'" 
+                        <a @click="currentTab = 'users'"
                            :class="currentTab === 'users' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                            class="flex items-center px-6 py-3 cursor-pointer">
-                            <span>使用者管理</span>
-                        </a>
-                    </template>
-                    <template x-if="currentUser.role === 'admin'">
-                        <a @click="openMembershipTab()" 
-                           :class="currentTab === 'membership' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
-                           class="flex items-center px-6 py-3 cursor-pointer">
-                            <span>會員審核</span>
+                            <span>會員管理</span>
                         </a>
                     </template>
                     <a @click="currentTab = 'news'" 
@@ -213,146 +207,522 @@
 
             <!-- 主要內容區域 -->
             <main class="flex-1 p-8">
-                <!-- 使用者管理 -->
-                <div x-show="currentTab === 'users'" x-data="usersTab()">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold">使用者管理</h2>
-                        <button @click="showCreateModal = true" class="bg-blue-600 text-white px-4 py-2 rounded">
-                            新增使用者
-                        </button>
+                <!-- ============================================================ -->
+                <!-- MemberDashboardPage：會員管理儀表板                          -->
+                <!-- 內含：MemberSummaryCards / MemberFilterBar / MemberTable /  -->
+                <!--      MemberInsightPanel / MemberBatchActionBar             -->
+                <!-- ============================================================ -->
+                <div x-show="currentTab === 'users'" x-data="usersTab()" class="-m-8 p-6 lg:p-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
+
+                    <!-- ====== Header (sticky) ====== -->
+                    <div class="sticky top-0 z-20 -mx-6 lg:-mx-8 px-6 lg:px-8 py-4 bg-slate-50/95 backdrop-blur border-b border-slate-200 mb-6">
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900">會員管理</h2>
+                                <p class="text-sm text-slate-500 mt-1">管理會員資料、審核狀態與互動情況</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" @click="exportFilteredAsCsv()"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-sm font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
+                                    匯出會員資料
+                                </button>
+                                <button type="button" @click="openCreateModal()"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 text-sm font-medium shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    新增會員
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- 使用者列表 -->
-                    <div class="bg-white rounded-lg shadow overflow-hidden">
-                        <table class="min-w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用者名稱</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">電子郵件</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">角色</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">會員審核</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">最後登入</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <template x-for="user in users" :key="user._id">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900" x-text="user.username"></div>
-                                            <div class="text-sm text-gray-500" x-text="user.fullName || '-'"></div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="user.email || '-'"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'"
-                                                  class="px-2 py-1 text-xs font-semibold rounded-full" x-text="user.role"></span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-700" x-text="user.role === 'admin' ? '—' : (user.membershipStatus === 'approved' ? '已核准' : user.membershipStatus === 'pending' ? '審核中' : user.membershipStatus === 'rejected' ? '未核准' : '一般')"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                                                  class="px-2 py-1 text-xs font-semibold rounded-full" x-text="user.isActive ? '啟用' : '停用'"></span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" 
-                                            x-text="user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '-'"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                            <button @click="editUser(user)" class="text-blue-600 hover:text-blue-900">編輯</button>
-                                            <button @click="toggleUserStatus(user)" 
-                                                    :class="user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
-                                                    x-text="user.isActive ? '停用' : '啟用'"></button>
-                                            <button @click="resetPassword(user)" class="text-yellow-600 hover:text-yellow-900">重設密碼</button>
-                                            <button @click="deleteUser(user)" class="text-red-600 hover:text-red-900">刪除</button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                    <!-- ====== 主內容 grid（1440+ 雙欄；以下單欄） ====== -->
+                    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                        <div class="space-y-6 min-w-0">
+
+                            <!-- ====== MemberSummaryCards ====== -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                                <!-- 會員總數 -->
+                                <div class="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-slate-100">
+                                    <div class="flex items-start justify-between">
+                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                        </div>
+                                        <span class="text-xs font-medium px-2 py-0.5 rounded-full"
+                                              :class="monthOverMonthGrowth >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
+                                              x-text="(monthOverMonthGrowth >= 0 ? '+' : '') + monthOverMonthGrowth + '%'"></span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="text-3xl font-bold text-slate-900" x-text="totalCount.toLocaleString()"></div>
+                                        <div class="text-sm text-slate-500 mt-1">會員總數</div>
+                                        <div class="text-xs text-slate-400 mt-2">較上月成長率</div>
+                                    </div>
+                                </div>
+                                <!-- 待審核 -->
+                                <div class="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-slate-100">
+                                    <div class="flex items-start justify-between">
+                                        <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        </div>
+                                        <button type="button" @click="setFilter('pending')"
+                                                class="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 hover:bg-orange-100">前往處理</button>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="text-3xl font-bold text-slate-900" x-text="pendingCount.toLocaleString()"></div>
+                                        <div class="text-sm text-slate-500 mt-1">待審核</div>
+                                        <div class="text-xs text-slate-400 mt-2">需管理員審查申請</div>
+                                    </div>
+                                </div>
+                                <!-- 近 30 天活躍 -->
+                                <div class="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-slate-100">
+                                    <div class="flex items-start justify-between">
+                                        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 8-8"/></svg>
+                                        </div>
+                                        <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">活躍中</span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="text-3xl font-bold text-slate-900" x-text="activeRecentCount.toLocaleString()"></div>
+                                        <div class="text-sm text-slate-500 mt-1">近 30 天活躍</div>
+                                        <div class="text-xs text-slate-400 mt-2">最近 30 天有登入紀錄</div>
+                                    </div>
+                                </div>
+                                <!-- 待關心會員 -->
+                                <div class="bg-white rounded-2xl shadow-sm p-5 ring-1 ring-slate-100">
+                                    <div class="flex items-start justify-between">
+                                        <div class="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"/></svg>
+                                        </div>
+                                        <button type="button" @click="setFilter('attention')"
+                                                class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100">查看名單</button>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="text-3xl font-bold text-slate-900" x-text="attentionCount.toLocaleString()"></div>
+                                        <div class="text-sm text-slate-500 mt-1">待關心會員</div>
+                                        <div class="text-xs text-slate-400 mt-2">久未登入、低互動或資料不完整</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ====== MemberFilterBar ====== -->
+                            <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-5 space-y-4">
+                                <!-- 搜尋 + 排序 -->
+                                <div class="flex flex-col md:flex-row md:items-center gap-3">
+                                    <div class="relative flex-1">
+                                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/></svg>
+                                        <input type="search" x-model="searchTerm"
+                                               placeholder="搜尋姓名、Email、公司、標籤..."
+                                               class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-xs text-slate-500 whitespace-nowrap">排序</label>
+                                        <select x-model="sortKey" @change="page = 1"
+                                                class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm">
+                                            <option value="lastLogin">最近登入</option>
+                                            <option value="joined">加入時間</option>
+                                            <option value="activity">活躍度</option>
+                                            <option value="pendingFirst">待審核優先</option>
+                                            <option value="dormantFirst">久未登入優先</option>
+                                        </select>
+                                        <button type="button" @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
+                                                class="px-2 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-50"
+                                                :title="sortDir === 'asc' ? '由小至大' : '由大至小'">
+                                            <span x-text="sortDir === 'asc' ? '▲' : '▼'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 快速篩選 chips -->
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="chip in [
+                                        { key: 'all', label: '全部會員' },
+                                        { key: 'pending', label: '待審核' },
+                                        { key: 'new7d', label: '新加入 7 天' },
+                                        { key: 'active', label: '活躍會員' },
+                                        { key: 'attention', label: '待關心' },
+                                        { key: 'admin', label: '管理員' },
+                                        { key: 'disabled', label: '停用帳號' }
+                                    ]" :key="chip.key">
+                                        <button type="button"
+                                                @click="setFilter(chip.key)"
+                                                :class="activeFilter === chip.key
+                                                    ? 'bg-blue-700 text-white border-blue-700'
+                                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
+                                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition">
+                                            <span x-text="chip.label"></span>
+                                            <span :class="activeFilter === chip.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                                                  class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                                                  x-text="filterCount(chip.key).toLocaleString()"></span>
+                                        </button>
+                                    </template>
+                                </div>
+
+                                <!-- 日期區間 -->
+                                <div class="flex flex-col md:flex-row md:items-center gap-3 pt-2 border-t border-slate-100">
+                                    <span class="text-xs text-slate-500 whitespace-nowrap md:mr-2">加入日期</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="r in [
+                                            { key: 'all', label: '全部' },
+                                            { key: '7d', label: '最近 7 天' },
+                                            { key: '30d', label: '最近 30 天' },
+                                            { key: '90d', label: '最近 90 天' },
+                                            { key: 'thisMonth', label: '本月' },
+                                            { key: 'lastMonth', label: '上月' },
+                                            { key: 'custom', label: '自訂' }
+                                        ]" :key="r.key">
+                                            <button type="button" @click="setDateRange(r.key)"
+                                                    :class="dateRange === r.key
+                                                        ? 'bg-slate-900 text-white border-slate-900'
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+                                                    class="px-2.5 py-1 rounded-md border text-xs"
+                                                    x-text="r.label"></button>
+                                        </template>
+                                    </div>
+                                    <template x-if="dateRange === 'custom'">
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <input type="date" x-model="customStart" @change="page = 1"
+                                                   class="px-2 py-1 rounded-md border border-slate-200 text-xs" />
+                                            <span class="text-slate-400">~</span>
+                                            <input type="date" x-model="customEnd" @change="page = 1"
+                                                   class="px-2 py-1 rounded-md border border-slate-200 text-xs" />
+                                        </div>
+                                    </template>
+                                    <button type="button" @click="clearFilters()"
+                                            class="ml-auto text-xs text-slate-500 hover:text-slate-700 underline">清除全部</button>
+                                </div>
+                            </div>
+
+                            <!-- ====== MemberBatchActionBar ====== -->
+                            <div x-show="selectedMemberIds.length > 0"
+                                 x-transition
+                                 class="sticky top-[88px] z-10 bg-blue-700 text-white rounded-xl shadow-md px-4 py-3 flex flex-wrap items-center gap-3">
+                                <span class="text-sm font-medium">
+                                    已選取 <span x-text="selectedMemberIds.length"></span> 位會員
+                                </span>
+                                <div class="flex flex-wrap gap-2 ml-auto">
+                                    <button type="button" @click="batchAction('approve')"
+                                            class="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-xs font-medium">批次通過</button>
+                                    <button type="button" @click="batchAction('deactivate')"
+                                            class="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-xs font-medium">批次停用</button>
+                                    <button type="button" @click="batchAction('notify')"
+                                            class="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-xs font-medium">批次寄送通知</button>
+                                    <button type="button" @click="batchAction('tag')"
+                                            class="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-xs font-medium">批次加標籤</button>
+                                    <button type="button" @click="batchAction('export')"
+                                            class="px-3 py-1.5 rounded-md bg-white text-blue-700 text-xs font-medium hover:bg-slate-50">匯出選取資料</button>
+                                    <button type="button" @click="clearSelection()"
+                                            class="px-2 py-1.5 rounded-md text-xs hover:bg-white/15" title="取消選取">✕</button>
+                                </div>
+                            </div>
+
+                            <!-- ====== MemberTable ====== -->
+                            <div id="memberTableSection" class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 overflow-hidden">
+                                <div class="px-5 py-3 flex items-center justify-between border-b border-slate-100">
+                                    <div class="text-sm text-slate-500">
+                                        共 <span class="font-semibold text-slate-700" x-text="sortedMembers.length.toLocaleString()"></span> 筆
+                                        <span x-show="loading" class="ml-2 text-xs text-slate-400">載入中…</span>
+                                        <span x-show="loadError" class="ml-2 text-xs text-red-500" x-text="loadError"></span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs text-slate-500">
+                                        <span>每頁</span>
+                                        <select x-model.number="pageSize" @change="page = 1"
+                                                class="px-2 py-1 rounded border border-slate-200 text-xs">
+                                            <option :value="10">10</option>
+                                            <option :value="20">20</option>
+                                            <option :value="50">50</option>
+                                            <option :value="100">100</option>
+                                        </select>
+                                        <span>筆</span>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-[1100px] w-full text-sm">
+                                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left w-10">
+                                                    <input type="checkbox" class="rounded border-slate-300"
+                                                           :checked="isAllOnPageSelected"
+                                                           @change="toggleSelectAllOnPage()" />
+                                                </th>
+                                                <th class="px-4 py-3 text-left">會員</th>
+                                                <th class="px-4 py-3 text-left">Email</th>
+                                                <th class="px-4 py-3 text-left">會員類型</th>
+                                                <th class="px-4 py-3 text-left">審核狀態</th>
+                                                <th class="px-4 py-3 text-left">帳號狀態</th>
+                                                <th class="px-4 py-3 text-left">活躍度</th>
+                                                <th class="px-4 py-3 text-left">最後登入</th>
+                                                <th class="px-4 py-3 text-left">關注</th>
+                                                <th class="px-4 py-3 text-right">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            <template x-for="m in paginatedMembers" :key="m.id">
+                                                <tr class="hover:bg-slate-50/60">
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <input type="checkbox" class="rounded border-slate-300"
+                                                               :checked="selectedMemberIds.includes(m.id)"
+                                                               @change="toggleSelect(m.id)" />
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <div class="flex items-center gap-3">
+                                                            <div :class="'w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ' + avatarColor(m)"
+                                                                 x-text="avatarText(m)"></div>
+                                                            <div class="min-w-0">
+                                                                <div class="text-sm font-medium text-slate-900 truncate" x-text="m.name"></div>
+                                                                <template x-if="m.subline">
+                                                                    <div class="text-xs text-slate-500 truncate" x-text="m.subline"></div>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle text-sm text-slate-700">
+                                                        <span x-text="m.email || '—'"></span>
+                                                        <template x-if="m.email && !m.emailVerified">
+                                                            <span class="ml-1 text-xs text-orange-600" title="email 未驗證">⚠</span>
+                                                        </template>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <span :class="memberTypeBadgeClass(m.memberType)" x-text="memberTypeLabel(m.memberType)"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <span :class="reviewStatusBadgeClass(m.reviewStatus)" x-text="reviewStatusLabel(m.reviewStatus)"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <span :class="accountStatusBadgeClass(m.accountStatus)"
+                                                              x-text="m.accountStatus === 'active' ? '啟用' : '停用'"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <span :class="activityBadgeClass(m.activityLevel)" x-text="activityLabel(m.activityLevel)"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle text-sm text-slate-600 whitespace-nowrap">
+                                                        <span x-text="formatDateTime(m.lastLoginAt)"></span>
+                                                        <template x-if="m.inactiveDays >= 30">
+                                                            <div class="text-xs text-orange-600 mt-0.5" x-text="'未登入 ' + m.inactiveDays + ' 天'"></div>
+                                                        </template>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle">
+                                                        <button type="button" @click="toggleStar(m)"
+                                                                :class="m.needsAttention ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400'"
+                                                                :title="m.needsAttention ? '已標記需追蹤' : '加入需追蹤'">
+                                                            <svg class="w-5 h-5" :fill="m.needsAttention ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.075 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.52-4.673z"/></svg>
+                                                        </button>
+                                                        <template x-if="m.inactiveDays >= 60">
+                                                            <span class="block text-[10px] text-orange-600 mt-0.5">需追蹤</span>
+                                                        </template>
+                                                    </td>
+                                                    <td class="px-4 py-3.5 align-middle text-right">
+                                                        <div class="inline-flex items-center gap-1 relative">
+                                                            <button type="button" @click="viewMember(m)"
+                                                                    title="查看"
+                                                                    class="p-1.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                            </button>
+                                                            <button type="button" @click="editMember(m)"
+                                                                    title="編輯"
+                                                                    class="p-1.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 112.828 2.828L11.828 13.828A4 4 0 019 15H7v-2a4 4 0 011.172-2.828z"/></svg>
+                                                            </button>
+                                                            <button type="button" @click="toggleActionMenu(m.id)"
+                                                                    title="更多"
+                                                                    class="p-1.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
+                                                            </button>
+                                                            <!-- MemberActionMenu -->
+                                                            <div x-show="actionMenuOpenId === m.id"
+                                                                 x-transition
+                                                                 @click.outside="closeActionMenu()"
+                                                                 class="absolute right-0 top-full mt-1 z-30 w-48 bg-white border border-slate-200 rounded-lg shadow-lg py-1 text-left">
+                                                                <button type="button" @click="resetPassword(m)"
+                                                                        class="w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left">重設密碼</button>
+                                                                <template x-if="m.reviewStatus === 'pending'">
+                                                                    <button type="button" @click="approveMember(m)"
+                                                                            class="w-full px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50 text-left">通過審核</button>
+                                                                </template>
+                                                                <button type="button" @click="toggleMemberStatus(m)"
+                                                                        class="w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left"
+                                                                        x-text="m.accountStatus === 'active' ? '停用帳號' : '啟用帳號'"></button>
+                                                                <button type="button" @click="sendReminder(m)"
+                                                                        class="w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left">寄送提醒信</button>
+                                                                <div class="border-t border-slate-100 my-1"></div>
+                                                                <button type="button" @click="deleteMember(m)"
+                                                                        class="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-left">刪除會員</button>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <template x-if="!loading && paginatedMembers.length === 0">
+                                                <tr>
+                                                    <td colspan="10" class="px-4 py-12 text-center text-sm text-slate-400">
+                                                        無符合條件的會員
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- 分頁 -->
+                                <div class="px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100">
+                                    <div class="text-xs text-slate-500">
+                                        第 <span x-text="page"></span> / <span x-text="totalPages"></span> 頁
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" @click="goToPage(page - 1)" :disabled="page <= 1"
+                                                class="px-2.5 py-1 rounded border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40">上一頁</button>
+                                        <template x-for="(p, i) in pageNumbers" :key="i">
+                                            <button type="button" @click="goToPage(p)"
+                                                    :class="p === page ? 'bg-blue-700 text-white border-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'"
+                                                    class="px-2.5 py-1 rounded border text-xs"
+                                                    x-text="p"></button>
+                                        </template>
+                                        <button type="button" @click="goToPage(page + 1)" :disabled="page >= totalPages"
+                                                class="px-2.5 py-1 rounded border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-40">下一頁</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ====== MemberInsightPanel (xl 右欄；以下移到下方) ====== -->
+                        <aside class="space-y-4 min-w-0">
+                            <!-- 最新加入 -->
+                            <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-sm font-semibold text-slate-800">最新加入會員</h3>
+                                    <button type="button" @click="focusInsight('latest')"
+                                            class="text-xs text-blue-700 hover:underline">查看全部</button>
+                                </div>
+                                <ul class="space-y-3">
+                                    <template x-for="m in insightLatestJoined" :key="'lj-' + m.id">
+                                        <li class="flex items-start gap-3">
+                                            <div :class="'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ' + avatarColor(m)"
+                                                 x-text="avatarText(m)"></div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-sm font-medium text-slate-800 truncate" x-text="m.name"></div>
+                                                <div class="text-xs text-slate-500 truncate" x-text="m.email || '—'"></div>
+                                            </div>
+                                            <div class="text-xs text-slate-400 whitespace-nowrap" x-text="formatDate(m.joinedAt)"></div>
+                                        </li>
+                                    </template>
+                                    <template x-if="insightLatestJoined.length === 0">
+                                        <li class="text-xs text-slate-400">目前沒有資料</li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <!-- 30 天未登入 -->
+                            <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-sm font-semibold text-slate-800">近期未登入 30 天以上</h3>
+                                    <button type="button" @click="focusInsight('dormant')"
+                                            class="text-xs text-blue-700 hover:underline">查看全部</button>
+                                </div>
+                                <ul class="space-y-3">
+                                    <template x-for="m in insightDormant" :key="'dm-' + m.id">
+                                        <li class="flex items-start gap-3">
+                                            <div :class="'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ' + avatarColor(m)"
+                                                 x-text="avatarText(m)"></div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-sm font-medium text-slate-800 truncate" x-text="m.name"></div>
+                                                <div class="text-xs text-slate-500 truncate" x-text="m.email || '—'"></div>
+                                            </div>
+                                            <div class="text-xs text-orange-600 whitespace-nowrap" x-text="m.inactiveDays + ' 天'"></div>
+                                        </li>
+                                    </template>
+                                    <template x-if="insightDormant.length === 0">
+                                        <li class="text-xs text-slate-400">目前沒有資料</li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <!-- 待審核優先 -->
+                            <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-sm font-semibold text-slate-800">待審核優先處理</h3>
+                                    <button type="button" @click="focusInsight('pending')"
+                                            class="text-xs text-blue-700 hover:underline">查看全部</button>
+                                </div>
+                                <ul class="space-y-3">
+                                    <template x-for="m in insightPendingPriority" :key="'pp-' + m.id">
+                                        <li class="flex items-start gap-3">
+                                            <div :class="'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ' + avatarColor(m)"
+                                                 x-text="avatarText(m)"></div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-sm font-medium text-slate-800 truncate" x-text="m.name"></div>
+                                                <div class="text-xs text-slate-500 truncate" x-text="m.email || '—'"></div>
+                                            </div>
+                                            <div class="text-xs whitespace-nowrap"
+                                                 :class="m.pendingDays >= 3 ? 'text-orange-600' : 'text-slate-500'"
+                                                 x-text="m.pendingDays > 0 ? '已等候 ' + m.pendingDays + ' 天' : (m.membershipAppliedAt ? formatDate(m.membershipAppliedAt) : '—')"></div>
+                                        </li>
+                                    </template>
+                                    <template x-if="insightPendingPriority.length === 0">
+                                        <li class="text-xs text-slate-400">目前沒有待審核會員</li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </aside>
                     </div>
 
-                    <!-- 新增/編輯使用者 Modal -->
-                    <div x-show="showCreateModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" role="dialog" aria-modal="true">
-                        <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                            <h3 class="text-lg font-semibold mb-4" x-text="showEditModal ? '編輯使用者' : '新增使用者'"></h3>
-                            <form @submit.prevent="showEditModal ? updateUser() : createUser()">
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2">使用者名稱</label>
-                                    <input type="text" x-model="userForm.username" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <!-- ====== Toast ====== -->
+                    <div x-show="toastMsg" x-transition
+                         class="fixed bottom-6 right-6 z-50 max-w-sm rounded-lg shadow-lg px-4 py-3 text-sm"
+                         :class="toastType === 'success' ? 'bg-emerald-600 text-white'
+                             : toastType === 'error' ? 'bg-red-600 text-white'
+                             : 'bg-slate-800 text-white'"
+                         x-text="toastMsg"
+                         role="status" aria-live="polite"></div>
+
+                    <!-- ====== 新增/編輯會員 Modal ====== -->
+                    <div x-show="showCreateModal || showEditModal" x-cloak
+                         class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" role="dialog" aria-modal="true">
+                        <div class="bg-white p-6 rounded-2xl max-w-md w-full mx-4 shadow-xl">
+                            <h3 class="text-lg font-semibold mb-4 text-slate-800" x-text="showEditModal ? '編輯會員' : '新增會員'"></h3>
+                            <form @submit.prevent="showEditModal ? updateUser() : createUser()" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-slate-700">使用者名稱</label>
+                                    <input type="text" x-model="userForm.username" required
+                                           class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
                                 </div>
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2">電子郵件</label>
-                                    <input type="email" x-model="userForm.email" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-slate-700">電子郵件</label>
+                                    <input type="email" x-model="userForm.email"
+                                           class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
                                 </div>
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2">全名</label>
-                                    <input type="text" x-model="userForm.fullName" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-slate-700">姓名</label>
+                                    <input type="text" x-model="userForm.fullName"
+                                           class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
                                 </div>
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2">角色</label>
-                                    <select x-model="userForm.role" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                                        <option value="user">一般使用者</option>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-slate-700">角色</label>
+                                    <select x-model="userForm.role"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                        <option value="user">一般會員</option>
                                         <option value="admin">管理員</option>
                                     </select>
                                 </div>
                                 <template x-if="showEditModal && editingUser && editingUser.role === 'user'">
-                                    <div class="mb-4 space-y-3 border-t border-gray-100 pt-3">
-                                        <p class="text-xs text-gray-500">與「會員審核」相同欄位；若前端仍顯示審核中，可在此改為已核准並儲存。</p>
-                                        <div>
-                                            <label class="block text-sm font-medium mb-2">會員審核狀態</label>
-                                            <select x-model="userForm.membershipStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                                                <option value="none">一般（未申請）</option>
-                                                <option value="pending">審核中</option>
-                                                <option value="approved">已核准</option>
-                                                <option value="rejected">未核准</option>
-                                            </select>
-                                        </div>
+                                    <div class="space-y-2 border-t border-slate-100 pt-3">
+                                        <p class="text-xs text-slate-500">會員審核狀態（即時更新）</p>
+                                        <select x-model="userForm.membershipStatus"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                            <option value="none">一般（未申請）</option>
+                                            <option value="pending">審核中</option>
+                                            <option value="approved">已通過</option>
+                                            <option value="rejected">已拒絕</option>
+                                        </select>
                                     </div>
                                 </template>
-                                <div class="flex space-x-2">
-                                    <button type="submit" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-                                        <span x-text="showEditModal ? '更新' : '創建'"></span>
+                                <div class="flex gap-2 pt-2">
+                                    <button type="submit"
+                                            class="flex-1 bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-800 text-sm font-medium">
+                                        <span x-text="showEditModal ? '更新' : '建立'"></span>
                                     </button>
-                                    <button type="button" @click="closeModal" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400">
+                                    <button type="button" @click="closeModal"
+                                            class="flex-1 bg-slate-100 text-slate-700 py-2 px-4 rounded-md hover:bg-slate-200 text-sm font-medium">
                                         取消
                                     </button>
                                 </div>
                             </form>
                         </div>
-                    </div>
-                </div>
-
-                <!-- 會員審核（僅 admin） -->
-                <div x-show="currentTab === 'membership' && currentUser && currentUser.role === 'admin'">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-2xl font-bold">會員審核</h2>
-                            <button @click="refreshMembership()" class="text-sm text-blue-600">重新整理</button>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-4">會員審核僅管理會員資格；內容維護功能僅開放管理員。</p>
-                        <table class="min-w-full text-sm">
-                            <thead><tr class="bg-gray-50 text-left">
-                                <th class="px-3 py-2">帳號</th>
-                                <th class="px-3 py-2">Email</th>
-                                <th class="px-3 py-2">申請說明</th>
-                                <th class="px-3 py-2">操作</th>
-                            </tr></thead>
-                            <tbody>
-                                <template x-for="u in membershipPending" :key="u._id">
-                                    <tr class="border-t">
-                                        <td class="px-3 py-2" x-text="u.username"></td>
-                                        <td class="px-3 py-2" x-text="u.email || '-'"></td>
-                                        <td class="px-3 py-2 max-w-xs truncate" x-text="u.membershipApplicationNote || '-'"></td>
-                                        <td class="px-3 py-2 space-x-2">
-                                            <button @click="reviewMembership(u._id, 'approve')" class="text-green-700">核准</button>
-                                            <button @click="reviewMembership(u._id, 'reject')" class="text-red-600">駁回</button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                        <p x-show="membershipPending.length === 0" class="text-gray-500 mt-4">目前無待審申請</p>
                     </div>
                 </div>
 
@@ -732,7 +1102,6 @@
                 isLoading: false,
                 currentUser: null,
                 currentTab: 'users',
-                membershipPending: [],
                 showForcePasswordChange: false,
                 newPassword: '',
                 confirmPassword: '',
@@ -809,44 +1178,6 @@
                     } finally {
                         this.myPasswordSending = false;
                     }
-                },
-
-                async openMembershipTab() {
-                    this.currentTab = 'membership';
-                    await this.refreshMembership();
-                },
-
-                async refreshMembership() {
-                    try {
-                        const token = localStorage.getItem('adminToken');
-                        const r = await fetch('/api/membership/admin/pending', {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                        if (!r.ok) return;
-                        const d = await r.json();
-                        this.membershipPending = d.users || [];
-                    } catch (e) {
-                        console.error(e);
-                    }
-                },
-
-                async reviewMembership(userId, action) {
-                    const note = prompt('管理員備註（選填）') || '';
-                    const token = localStorage.getItem('adminToken');
-                    const r = await fetch(`/api/membership/admin/${userId}`, {
-                        method: 'PATCH',
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            action,
-                            note
-                        })
-                    });
-                    const d = await r.json();
-                    alert(d.message || (r.ok ? '完成' : '失敗'));
-                    await this.refreshMembership();
                 },
 
                 async checkAuth() {
@@ -962,184 +1293,7 @@
             }
         }
 
-        function usersTab() {
-            return {
-                users: [],
-                showCreateModal: false,
-                showEditModal: false,
-                editingUser: null,
-                userForm: {
-                    username: '',
-                    email: '',
-                    fullName: '',
-                    role: 'user',
-                    membershipStatus: 'none'
-                },
-
-                async init() {
-                    await this.loadUsers();
-                },
-
-                async loadUsers() {
-                    try {
-                        const response = await fetch('/api/users', {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                            }
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.users = data.users;
-                        }
-                    } catch (error) {
-                        console.error('Load users failed:', error);
-                    }
-                },
-
-                async createUser() {
-                    try {
-                        const response = await fetch('/api/users', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                            },
-                            body: JSON.stringify(this.userForm)
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            await this.loadUsers();
-                            this.closeModal();
-                            alert('使用者創建成功！預設密碼為 "user"');
-                        } else {
-                            alert('創建失敗：' + data.message);
-                        }
-                    } catch (error) {
-                        alert('創建錯誤：' + error.message);
-                    }
-                },
-
-                editUser(user) {
-                    this.editingUser = user;
-                    this.userForm = {
-                        username: user.username,
-                        email: user.email || '',
-                        fullName: user.fullName || '',
-                        role: user.role,
-                        membershipStatus: user.membershipStatus || 'none'
-                    };
-                    this.showEditModal = true;
-                },
-
-                async updateUser() {
-                    try {
-                        const payload = {
-                            username: this.userForm.username,
-                            email: this.userForm.email,
-                            fullName: this.userForm.fullName,
-                            role: this.userForm.role
-                        };
-                        if (this.editingUser.role === 'user') {
-                            payload.membershipStatus = this.userForm.membershipStatus;
-                        }
-                        const response = await fetch(`/api/users/${this.editingUser._id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                            },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            await this.loadUsers();
-                            this.closeModal();
-                            alert('使用者更新成功！');
-            } else {
-                            alert('更新失敗：' + data.message);
-                        }
-                    } catch (error) {
-                        alert('更新錯誤：' + error.message);
-                    }
-                },
-
-                async toggleUserStatus(user) {
-                    if (!confirm(`確定要${user.isActive ? '停用' : '啟用'}此使用者嗎？`)) return;
-
-                    try {
-                        const response = await fetch(`/api/users/${user._id}/toggle-status`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                            }
-                        });
-
-                        if (response.ok) {
-                            await this.loadUsers();
-                        }
-                    } catch (error) {
-                        alert('操作失敗：' + error.message);
-                    }
-                },
-
-                async resetPassword(user) {
-                    if (!confirm('確定要重設此使用者的密碼嗎？密碼將重設為 "user"')) return;
-
-                    try {
-                        const response = await fetch(`/api/users/${user._id}/reset-password`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                            }
-                        });
-
-                        if (response.ok) {
-                            alert('密碼重設成功！新密碼為 "user"');
-                        }
-                    } catch (error) {
-                        alert('密碼重設失敗：' + error.message);
-                    }
-                },
-
-                async deleteUser(user) {
-                    if (!confirm(`確定要刪除使用者 "${user.username}" 嗎？此操作無法復原！`)) return;
-
-                    try {
-                        const response = await fetch(`/api/users/${user._id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                            }
-                        });
-
-                        if (response.ok) {
-                            await this.loadUsers();
-                            alert('使用者刪除成功！');
-                        }
-                    } catch (error) {
-                        alert('刪除失敗：' + error.message);
-                    }
-                },
-
-                closeModal() {
-                    this.showCreateModal = false;
-                    this.showEditModal = false;
-                    this.editingUser = null;
-                    this.userForm = {
-                        username: '',
-                        email: '',
-                        fullName: '',
-                        role: 'user',
-                        membershipStatus: 'none'
-                    };
-                }
-            }
-        }
+        // usersTab() 已搬移至 /components/MembersManagement.js
 
         function workingGroupsTab() {
             return {

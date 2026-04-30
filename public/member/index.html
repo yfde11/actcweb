@@ -174,16 +174,16 @@
 
             <div class="bg-white p-6 rounded-lg shadow">
                 <h2 class="text-xl font-bold mb-4">個人資料</h2>
-                <form class="space-y-3 max-w-md" @submit.prevent="saveProfile">
+                <form class="space-y-3 max-w-md" @submit.prevent="saveProfile(false)">
                     <div><label class="text-sm text-gray-600">Email</label><p class="font-mono text-sm" x-text="me.email || '-'"></p></div>
-                    <input x-model="profile.fullName" placeholder="姓名" class="w-full border rounded px-3 py-2" />
-                    <input x-model="profile.phone" placeholder="電話（選填）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="姓名" class="w-full border rounded px-3 py-2" />
+                    <input x-model="profile.phone" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="電話（選填）" class="w-full border rounded px-3 py-2" />
                     <label class="flex items-center gap-2 text-sm">
-                        <input type="checkbox" x-model="profile.emailSubscribed" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
+                        <input type="checkbox" x-model="profile.emailSubscribed" @change="saveProfile(true)" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
                     </label>
-                    <p class="text-sm min-h-[1.25rem]" :class="profileOk ? 'text-green-600' : 'text-red-600'" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
-                    <button type="submit" :disabled="profileSending" class="px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-60 disabled:cursor-not-allowed">
-                        <span x-text="profileSending ? '儲存中…' : '儲存'"></span>
+                    <p class="text-sm min-h-[1.25rem]" :class="profileSending ? 'text-gray-500' : (profileOk ? 'text-green-600' : 'text-red-600')" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="profileSending" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="profileSending ? '儲存中…' : '立即同步'"></span>
                     </button>
                 </form>
             </div>
@@ -453,7 +453,7 @@
                 <div class="space-y-3 mb-4" x-show="wgCatalog.length">
                     <template x-for="g in wgCatalog" :key="g._id">
                         <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">
-                            <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" />
+                            <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" @change="saveWorkingGroups(true)" />
                             <span>
                                 <span class="font-medium text-gray-900" x-text="g.title"></span>
                                 <span class="block text-sm text-gray-600 mt-0.5" x-text="g.description"></span>
@@ -462,9 +462,9 @@
                     </template>
                 </div>
                 <p x-show="token && me.membershipStatus === 'approved' && wgCatalog.length === 0" class="text-sm text-gray-500">目前無可加入的工作小組。</p>
-                <p class="text-sm min-h-[1.25rem]" :class="wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600'" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
-                <button type="button" @click="saveWorkingGroups()" :disabled="wgPanelSaving" class="px-4 py-2 bg-orange-600 text-white rounded text-sm disabled:opacity-60">
-                    <span x-text="wgPanelSaving ? '儲存中…' : '儲存選擇'"></span>
+                <p class="text-sm min-h-[1.25rem]" :class="wgPanelSaving ? 'text-gray-500' : (wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600')" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
+                <button type="button" @click="saveWorkingGroups(false)" :disabled="wgPanelSaving" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
+                    <span x-text="wgPanelSaving ? '儲存中…' : '重試儲存'"></span>
                 </button>
             </div>
 
@@ -499,10 +499,12 @@
                 profileMsg: '',
                 profileOk: false,
                 profileSending: false,
+                profileLastSavedPayload: '',
                 wgCatalog: [],
                 wgSelectedIds: [],
                 wgPanelMsg: '',
                 wgPanelSaving: false,
+                wgLastSavedPayload: '',
                 eventRegs: [],
                 activeEventRegs: [],
                 cancelledEventRegs: [],
@@ -552,6 +554,11 @@
                     window.addEventListener('hashchange', () => this.scrollToHashTarget());
                     window.addEventListener('actc-member-logout', () => {
                         this.logout();
+                    });
+                    window.addEventListener('beforeunload', (event) => {
+                        if (!this.profileSending && !this.wgPanelSaving) return;
+                        event.preventDefault();
+                        event.returnValue = '';
                     });
                     if (typeof updateMemberNav === 'function') {
                         updateMemberNav();
@@ -942,6 +949,7 @@
                         this.profile.fullName = d.user.fullName || '';
                         this.profile.phone = d.user.phone || '';
                         this.profile.emailSubscribed = d.user.emailSubscribed !== false;
+                        this.profileLastSavedPayload = JSON.stringify(this.profile);
                         await this.loadWorkingGroupsForMember();
                         await this.loadEventRegistrations();
                     } catch {
@@ -962,19 +970,24 @@
                         if (!r.ok) throw new Error();
                         this.wgCatalog = d.groups || [];
                         this.wgSelectedIds = [...(this.me.workingGroupIds || [])];
+                        this.wgLastSavedPayload = JSON.stringify(this.wgSelectedIds);
                     } catch {
                         this.wgCatalog = [];
                         this.wgSelectedIds = [...(this.me.workingGroupIds || [])];
+                        this.wgLastSavedPayload = JSON.stringify(this.wgSelectedIds);
                     }
                 },
 
-                async saveWorkingGroups() {
+                async saveWorkingGroups(isAuto = false) {
                     this.wgPanelMsg = '';
                     if (this.me.membershipStatus !== 'approved') {
                         this.wgPanelMsg = '僅已核准會員可設定工作小組。';
                         return;
                     }
+                    const payloadKey = JSON.stringify(this.wgSelectedIds);
+                    if (isAuto && payloadKey === this.wgLastSavedPayload) return;
                     this.wgPanelSaving = true;
+                    this.wgPanelMsg = '儲存中…';
                     try {
                         const r = await fetch('/api/profile/me/working-groups', {
                             method: 'PUT',
@@ -995,6 +1008,7 @@
                         }
                         this.me = d.user;
                         this.wgSelectedIds = [...(d.user.workingGroupIds || [])];
+                        this.wgLastSavedPayload = JSON.stringify(this.wgSelectedIds);
                         this.wgPanelMsg = d.message || '已儲存';
                     } catch {
                         this.wgPanelMsg = '網路錯誤或無法連線。';
@@ -1235,15 +1249,23 @@
                     await this.loadMe();
                 },
 
-                async saveProfile() {
+                async saveProfile(isAuto = false) {
+                    const payload = {
+                        fullName: this.profile.fullName,
+                        phone: this.profile.phone,
+                        emailSubscribed: this.profile.emailSubscribed
+                    };
+                    const payloadKey = JSON.stringify(payload);
+                    if (isAuto && payloadKey === this.profileLastSavedPayload) return;
                     this.profileMsg = '';
                     this.profileOk = false;
                     this.profileSending = true;
+                    this.profileMsg = '儲存中…';
                     try {
                         const r = await fetch('/api/profile/me', {
                             method: 'PATCH',
                             headers: this.authHeaders(),
-                            body: JSON.stringify(this.profile)
+                            body: JSON.stringify(payload)
                         });
                         const text = await r.text();
                         let d = {};
@@ -1269,6 +1291,7 @@
                             this.profile.fullName = d.user.fullName || '';
                             this.profile.phone = d.user.phone || '';
                             this.profile.emailSubscribed = d.user.emailSubscribed !== false;
+                            this.profileLastSavedPayload = JSON.stringify(this.profile);
                         }
                     } catch {
                         this.profileMsg = '網路錯誤或無法連線，請稍後再試。';

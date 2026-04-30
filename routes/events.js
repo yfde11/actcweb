@@ -9,7 +9,8 @@ const {
     enrichEventsWithWaitlistCounts,
     cancelEventRegistration,
     recalculateRegisteredCount,
-    normalizeLegacyStatus
+    normalizeLegacyStatus,
+    deleteEventRegistrationRecord
 } = require('../services/eventRegistrations');
 const { adminAuth } = require('../middleware/adminAuth');
 const { notifyAudienceByEmail, buildEventEmailDoc } = require('../services/contentNotifications');
@@ -29,6 +30,7 @@ const path = require('path');
 const fs = require('fs');
 
 const router = express.Router();
+const PAYMENT_STATUSES = ['none', 'payment_pending', 'payment_submitted', 'paid', 'payment_rejected', 'refunded'];
 
 function parseTaipeiLocalToUtc(input) {
     if (!input) return undefined;
@@ -178,6 +180,9 @@ function normalizeRegistrationDoc(reg) {
     }
     if (plain.organization == null && plain.org != null) {
         plain.organization = plain.org;
+    }
+    if (plain.adminNote == null) {
+        plain.adminNote = '';
     }
     return plain;
 }
@@ -805,6 +810,80 @@ router.get('/:id/registrations', adminAuth, async (req, res) => {
     }
 });
 
+// 更新單筆報名紀錄（管理員）
+router.patch('/:eventId/registrations/:registrationId', adminAuth, async (req, res) => {
+    try {
+        const { eventId, registrationId } = req.params;
+        const event = await Event.findById(eventId).select('_id');
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const reg = await EventRegistration.findOne({ _id: registrationId, event: event._id });
+        if (!reg) {
+            return res.status(404).json({ message: 'Registration not found' });
+        }
+
+        const update = {};
+        if (Object.prototype.hasOwnProperty.call(req.body, 'paymentStatus')) {
+            if (!PAYMENT_STATUSES.includes(req.body.paymentStatus)) {
+                return res.status(400).json({
+                    message: 'Invalid paymentStatus. Must be one of: ' + PAYMENT_STATUSES.join(', ')
+                });
+            }
+            update.paymentStatus = req.body.paymentStatus;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'adminNote')) {
+            update.adminNote = String(req.body.adminNote || '').trim();
+        }
+
+        if (Object.keys(update).length === 0) {
+            return res.status(400).json({ message: 'No valid fields to update' });
+        }
+
+        Object.assign(reg, update);
+        await reg.save();
+
+        res.json({
+            message: 'Registration updated successfully',
+            registration: normalizeRegistrationDoc(reg)
+        });
+    } catch (error) {
+        console.error('Update event registration error:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 移除單筆報名紀錄（管理員）
+router.delete('/:eventId/registrations/:registrationId', adminAuth, async (req, res) => {
+    try {
+        const { eventId, registrationId } = req.params;
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const reg = await EventRegistration.findOne({ _id: registrationId, event: event._id });
+        if (!reg) {
+            return res.status(404).json({ message: 'Registration not found' });
+        }
+
+        const result = await deleteEventRegistrationRecord(event, reg);
+        res.json({
+            message: 'Registration removed successfully',
+            registrationStatus: result.registrationStatus,
+            event: result.event
+        });
+    } catch (error) {
+        console.error('Delete event registration error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // 獲取單個活動 (公開)
 router.get('/:id', async (req, res) => {
     try {
@@ -913,7 +992,7 @@ router.post('/:id/unregister', async (req, res) => {
 router.patch('/registrations/:registrationId', adminAuth, async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const { status, paymentStatus, attendanceStatus, reviewNote } = req.body;
+        const { status, paymentStatus, attendanceStatus, reviewNote, adminNote } = req.body;
 
         if (!mongoose.isValidObjectId(registrationId)) {
             return res.status(400).json({ message: 'Invalid registration id' });
@@ -929,6 +1008,9 @@ router.patch('/registrations/:registrationId', adminAuth, async (req, res) => {
         if (status) reg.status = status;
         if (paymentStatus) reg.paymentStatus = paymentStatus;
         if (attendanceStatus) reg.attendanceStatus = attendanceStatus;
+        if (adminNote !== undefined) {
+            reg.adminNote = String(adminNote || '').trim();
+        }
         if (reviewNote !== undefined) {
             reg.paymentProof = reg.paymentProof || {};
             reg.paymentProof.reviewNote = String(reviewNote || '').trim();

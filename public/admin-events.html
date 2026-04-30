@@ -117,21 +117,21 @@
         <!-- 活動列表 -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="w-full min-w-[960px] table-fixed divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">活動資訊</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">講師</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">時間地點</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">狀態</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">檔案</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[30%]">活動資訊</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[13%]">講師</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">時間地點</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[11%]">狀態</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[16%]">檔案</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">操作</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <template x-for="event in filteredEvents" :key="event._id">
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4 align-top">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12">
                                             <img x-show="event.image" :src="event.image" :alt="event.title" 
@@ -140,14 +140,14 @@
                                                 <i class="fas fa-calendar text-gray-400"></i>
                                             </div>
                                         </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900" x-text="event.title"></div>
-                                            <div class="text-sm text-gray-500" x-text="event.typeLabel"></div>
-                                            <div class="text-xs text-gray-400" x-text="event.shortDescription || event.description.substring(0, 50) + '...'"></div>
+                                        <div class="ml-4 min-w-0">
+                                            <div class="truncate text-sm font-medium text-gray-900" :title="event.title" x-text="event.title"></div>
+                                            <div class="truncate text-sm text-gray-500" x-text="event.typeLabel"></div>
+                                            <div class="truncate text-xs text-gray-400" :title="event.shortDescription || event.description" x-text="event.shortDescription || event.description.substring(0, 50) + '...'"></div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4 align-top">
                                     <div x-show="event.instructor && event.instructor.name">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-8 w-8">
@@ -157,20 +157,20 @@
                                                     <i class="fas fa-user text-gray-400 text-sm"></i>
                                                 </div>
                                             </div>
-                                            <div class="ml-3">
-                                                <div class="text-sm font-medium text-gray-900" x-text="event.instructor.name"></div>
-                                                <div class="text-sm text-gray-500" x-text="event.instructor.title || event.instructor.company"></div>
+                                            <div class="ml-3 min-w-0">
+                                                <div class="truncate text-sm font-medium text-gray-900" x-text="event.instructor.name"></div>
+                                                <div class="truncate text-sm text-gray-500" x-text="event.instructor.title || event.instructor.company"></div>
                                             </div>
                                         </div>
                                     </div>
                                     <div x-show="!event.instructor || !event.instructor.name" class="text-sm text-gray-500">未設定</div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4 align-top">
                                     <div class="text-sm text-gray-900" x-text="new Date(event.date).toLocaleDateString('zh-TW')"></div>
-                                    <div class="text-sm text-gray-500" x-text="event.location"></div>
+                                    <div class="break-words text-sm text-gray-500" x-text="event.location"></div>
                                     <div x-show="event.duration" class="text-xs text-gray-400" x-text="event.formattedDuration"></div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4 align-top">
                                     <span :class="getStatusClass(event.status)" 
                                           class="px-2 py-1 text-xs font-semibold rounded-full" 
                                           x-text="event.statusLabel"></span>
@@ -179,39 +179,46 @@
                                         <div x-show="event.waitlistCount" class="text-amber-700" x-text="`候補 ${event.waitlistCount} 人`"></div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div x-show="event.hasFile" class="flex items-center space-x-2">
+                                <td class="px-4 py-4 align-top">
+                                    <div x-show="event.hasFile" class="flex min-w-0 items-center space-x-2">
                                         <i class="fas fa-file-alt text-blue-500"></i>
-                                        <span class="text-sm text-gray-600" x-text="event.file.originalName"></span>
-                                        <span class="text-xs text-gray-400" x-text="event.formattedFileSize"></span>
+                                        <span class="min-w-0 truncate text-sm text-gray-600" :title="event.file.originalName" x-text="event.file.originalName"></span>
+                                        <span class="shrink-0 text-xs text-gray-400" x-text="event.formattedFileSize"></span>
                                     </div>
                                     <div x-show="!event.hasFile" class="text-sm text-gray-400">無檔案</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm font-medium space-x-2 flex flex-wrap gap-y-1">
-                                    <button type="button" @click="openRegistrationModal(event)" class="text-teal-600 hover:text-teal-900">
-                                        <i class="fas fa-users mr-1"></i>名單
-                                    </button>
-                                    <button type="button" @click="openMaterialsModal(event)" class="text-emerald-700 hover:text-emerald-900">
-                                        <i class="fas fa-folder-open mr-1"></i>活動資料
-                                    </button>
-                                    <button type="button" @click="openSurveyResultModal(event)" class="text-purple-700 hover:text-purple-900">
-                                        <i class="fas fa-square-poll-vertical mr-1"></i>問卷結果
-                                    </button>
-                                    <button type="button" @click="openNotifyModal(event)" class="text-indigo-700 hover:text-indigo-900">
-                                        <i class="fas fa-paper-plane mr-1"></i>發送通知
-                                    </button>
-                                    <button type="button" @click="openSummaryModal(event)" class="text-amber-700 hover:text-amber-900">
-                                        <i class="fas fa-chart-line mr-1"></i>營運總覽
-                                    </button>
-                                    <button @click="editEvent(event)" class="text-blue-600 hover:text-blue-900">
-                                        <i class="fas fa-edit mr-1"></i>編輯
-                                    </button>
-                                    <button @click="deleteEvent(event)" class="text-red-600 hover:text-red-900">
-                                        <i class="fas fa-trash mr-1"></i>刪除
-                                    </button>
-                                    <button @click="toggleEventStatus(event)" 
-                                            :class="event.status === 'published' ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'"
-                                            x-text="event.status === 'published' ? '下架' : '發布'"></button>
+                                <td class="px-4 py-4 align-top text-sm font-medium">
+                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                        <button type="button" @click="openRegistrationModal(event)" class="whitespace-nowrap text-teal-600 hover:text-teal-900">
+                                            <i class="fas fa-users mr-1"></i>名單
+                                        </button>
+                                        <button type="button" @click="editEvent(event)" class="whitespace-nowrap text-blue-600 hover:text-blue-900">
+                                            <i class="fas fa-edit mr-1"></i>編輯
+                                        </button>
+                                        <div class="w-full text-xs">
+                                            <button type="button"
+                                                    @click="toggleEventActions(event)"
+                                                    class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50">
+                                                更多
+                                                <i class="fas fa-chevron-down ml-1 text-[10px]"></i>
+                                            </button>
+                                            <div x-show="event._actionsOpen"
+                                                 x-transition
+                                                 @click.outside="event._actionsOpen = false"
+                                                 class="mt-2 w-32 rounded-md border border-gray-200 bg-white p-2 shadow-lg">
+                                                <button type="button" @click="openMaterialsModal(event); event._actionsOpen = false" class="block w-full py-1 text-left text-emerald-700 hover:underline">活動資料</button>
+                                                <button type="button" @click="openSurveyResultModal(event); event._actionsOpen = false" class="block w-full py-1 text-left text-purple-700 hover:underline">問卷結果</button>
+                                                <button type="button" @click="openNotifyModal(event); event._actionsOpen = false" class="block w-full py-1 text-left text-indigo-700 hover:underline">發送通知</button>
+                                                <button type="button" @click="openSummaryModal(event); event._actionsOpen = false" class="block w-full py-1 text-left text-amber-700 hover:underline">營運總覽</button>
+                                                <button type="button"
+                                                        @click="toggleEventStatus(event); event._actionsOpen = false"
+                                                        :class="event.status === 'published' ? 'text-yellow-700' : 'text-green-700'"
+                                                        class="block w-full py-1 text-left hover:underline"
+                                                        x-text="event.status === 'published' ? '下架' : '發布'"></button>
+                                                <button type="button" @click="deleteEvent(event); event._actionsOpen = false" class="block w-full py-1 text-left text-red-600 hover:underline">刪除</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         </template>
@@ -249,7 +256,10 @@
         <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6">
                 <h3 class="text-lg font-semibold mb-4" x-text="showEditModal ? '編輯活動' : '新增活動'"></h3>
-                <form @submit.prevent="showEditModal ? updateEvent() : createEvent()" class="space-y-6">
+                <form @submit.prevent="showEditModal ? updateEvent() : createEvent()"
+                      @input.debounce.900ms="queueEventDraftSave($event)"
+                      @change.debounce.900ms="queueEventDraftSave($event)"
+                      class="space-y-6">
                     <!-- 基本資訊 -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -402,7 +412,12 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end space-x-3 pt-6 border-t">
+                    <div class="flex items-center justify-between gap-3 pt-6 border-t">
+                        <p class="text-sm"
+                           :class="eventDraftSaveState === 'error' ? 'text-red-600' : 'text-gray-500'"
+                           x-show="showEditModal && eventDraftSaveText()"
+                           x-text="eventDraftSaveText()"></p>
+                        <div class="flex justify-end space-x-3">
                         <button type="button" @click="closeModal" 
                                 class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
                             取消
@@ -411,6 +426,7 @@
                                 class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                             <span x-text="showEditModal ? '更新' : '創建'"></span>
                         </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -444,39 +460,130 @@
                 <p x-show="regModal.loading" class="text-gray-500">載入中…</p>
                 <p x-show="!regModal.loading && regModal.error" class="text-red-600" x-text="regModal.error"></p>
                 <div x-show="!regModal.loading && !regModal.error && regModal.registrations.length === 0" class="text-gray-500 text-sm">尚無報名資料。</div>
-                <div x-show="!regModal.loading && activeRegistrations.length" class="border border-gray-200 rounded-lg">
+                <div x-show="!regModal.loading && activeRegistrations.length" class="border border-gray-200 rounded-lg overflow-hidden">
                     <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
+                        <thead class="hidden lg:table-header-group bg-gray-50">
                             <tr>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">姓名</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[18%]">Email</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[10%]">電話</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[14%]">報名狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">付款</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">出席</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">報名時間</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[10%]">操作</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">
+                                    <button type="button" @click="setRegistrationSort('name')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        姓名 <span class="text-xs" x-text="registrationSortIcon('name')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[17%]">
+                                    <button type="button" @click="setRegistrationSort('email')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        Email <span class="text-xs" x-text="registrationSortIcon('email')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[9%]">
+                                    <button type="button" @click="setRegistrationSort('phone')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        電話 <span class="text-xs" x-text="registrationSortIcon('phone')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">
+                                    <button type="button" @click="setRegistrationSort('status')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        報名狀態 <span class="text-xs" x-text="registrationSortIcon('status')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[12%]">
+                                    <button type="button" @click="setRegistrationSort('paymentStatus')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        付款 <span class="text-xs" x-text="registrationSortIcon('paymentStatus')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[8%]">
+                                    <button type="button" @click="setRegistrationSort('attendanceStatus')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        出席 <span class="text-xs" x-text="registrationSortIcon('attendanceStatus')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[14%]">管理備註</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[8%]">
+                                    <button type="button" @click="setRegistrationSort('createdAt')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        報名時間 <span class="text-xs" x-text="registrationSortIcon('createdAt')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[8%]">操作</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <template x-for="(reg, idx) in activeRegistrations" :key="reg._id || idx">
-                                <tr>
-                                    <td class="px-3 py-2" x-text="reg.participantName || reg.name"></td>
-                                    <td class="px-3 py-2 break-all" x-text="reg.participantEmail || reg.email"></td>
-                                    <td class="px-3 py-2" x-text="reg.participantPhone || reg.phone || '—'"></td>
-                                    <td class="px-3 py-2">
-                                        <div x-text="registrationStatusLabel(reg.status)"></div>
+                        <tbody class="block divide-y divide-gray-100 lg:table-row-group">
+                            <template x-for="(reg, idx) in sortedActiveRegistrations" :key="reg._id || idx">
+                                <tr class="block p-3 space-y-3 lg:table-row lg:p-0 lg:space-y-0">
+                                    <td class="block px-0 py-0 align-top break-words lg:table-cell lg:px-3 lg:py-2">
+                                        <div class="font-medium text-gray-900 lg:font-normal" x-text="reg.participantName || reg.name"></div>
+                                        <div class="mt-1 space-y-0.5 text-xs text-gray-500 lg:hidden">
+                                            <div class="break-all" x-text="reg.participantEmail || reg.email || '—'"></div>
+                                            <div x-text="reg.participantPhone || reg.phone || '—'"></div>
+                                        </div>
+                                    </td>
+                                    <td class="hidden px-3 py-2 align-top break-all lg:table-cell" x-text="reg.participantEmail || reg.email"></td>
+                                    <td class="hidden px-3 py-2 align-top break-words lg:table-cell" x-text="reg.participantPhone || reg.phone || '—'"></td>
+                                    <td class="block px-0 py-0 align-top lg:table-cell lg:px-3 lg:py-2">
+                                        <label class="block text-xs font-medium text-gray-500 lg:hidden">報名狀態</label>
+                                        <select x-model="reg.status"
+                                                @change="patchRegistration(reg, { status: reg.status })"
+                                                :disabled="reg._saving"
+                                                class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 lg:mt-0">
+                                            <option value="registered">已報名</option>
+                                            <option value="waitlisted">候補</option>
+                                            <option value="pending_approval">待審核</option>
+                                            <option value="cancelled">已取消</option>
+                                            <option value="rejected">已拒絕</option>
+                                        </select>
                                         <div class="text-xs text-gray-500" x-show="reg.waitlistPosition != null" x-text="'候補序號：' + reg.waitlistPosition"></div>
                                         <div class="text-xs text-gray-500" x-show="reg.organization" x-text="'組織：' + reg.organization"></div>
                                     </td>
-                                    <td class="px-3 py-2" x-text="paymentStatusLabel(reg.paymentStatus || 'none')"></td>
-                                    <td class="px-3 py-2" x-text="attendanceStatusLabel(reg.attendanceStatus || 'not_checked_in')"></td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-gray-600" x-text="formatRegTime(reg.createdAt)"></td>
-                                    <td class="px-3 py-2 text-xs space-y-1">
-                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'paid' })" class="block text-green-700 hover:underline">標記未付款</button>
-                                        <button type="button" @click="patchRegistration(reg, { paymentStatus: 'payment_rejected' })" class="block text-red-700 hover:underline">付款退回</button>
-                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'attended' })" class="block text-blue-700 hover:underline">標記出席</button>
-                                        <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'no_show' })" class="block text-gray-700 hover:underline">標記 no-show</button>
+                                    <td class="block px-0 py-0 align-top lg:table-cell lg:px-3 lg:py-2">
+                                        <label class="block text-xs font-medium text-gray-500 lg:hidden">付款</label>
+                                        <select x-model="reg.paymentStatus"
+                                                @change="patchRegistration(reg, { paymentStatus: reg.paymentStatus })"
+                                                :disabled="reg._saving"
+                                                class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 lg:mt-0">
+                                            <option value="none">無</option>
+                                            <option value="payment_pending">待付款</option>
+                                            <option value="payment_submitted">待審核</option>
+                                            <option value="paid">已付款</option>
+                                            <option value="payment_rejected">退回補件</option>
+                                            <option value="refunded">已退款</option>
+                                        </select>
+                                        <template x-if="reg.paymentProof && (reg.paymentProof.lastFiveDigits || reg.paymentProof.amount || reg.paymentProof.note || reg.paymentProof.file?.path)">
+                                            <div class="mt-1 space-y-0.5 text-xs text-gray-600">
+                                                <div x-show="reg.paymentProof.lastFiveDigits">
+                                                    <span class="text-gray-500">後五碼：</span>
+                                                    <span class="font-mono tracking-wider text-gray-800" x-text="reg.paymentProof.lastFiveDigits"></span>
+                                                </div>
+                                                <div class="text-gray-500" x-text="paymentProofLabel(reg)"></div>
+                                            </div>
+                                        </template>
+                                    </td>
+                                    <td class="block px-0 py-0 align-top lg:table-cell lg:px-3 lg:py-2">
+                                        <span class="text-xs font-medium text-gray-500 lg:hidden">出席：</span>
+                                        <span x-text="attendanceStatusLabel(reg.attendanceStatus || 'not_checked_in')"></span>
+                                    </td>
+                                    <td class="block px-0 py-0 align-top lg:table-cell lg:px-3 lg:py-2">
+                                        <label class="block text-xs font-medium text-gray-500 lg:hidden">管理備註</label>
+                                        <textarea x-model="reg.adminNote"
+                                                  @input="debounceSaveRegistrationNote(reg)"
+                                                  rows="2"
+                                                  maxlength="1000"
+                                                  placeholder="管理備註"
+                                                  class="mt-1 w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 lg:mt-0"></textarea>
+                                        <div class="text-xs mt-1"
+                                             :class="reg._saveState === 'error' ? 'text-red-600' : 'text-gray-500'"
+                                             x-text="getRegistrationSaveText(reg)"></div>
+                                    </td>
+                                    <td class="block px-0 py-0 align-top text-gray-600 lg:table-cell lg:px-3 lg:py-2">
+                                        <span class="text-xs font-medium text-gray-500 lg:hidden">報名時間：</span>
+                                        <span x-text="formatRegTime(reg.createdAt)"></span>
+                                    </td>
+                                    <td class="block px-0 py-0 align-top text-xs lg:table-cell lg:px-3 lg:py-2">
+                                        <div class="flex flex-wrap gap-x-3 gap-y-1">
+                                            <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'attended' })" class="whitespace-nowrap text-blue-700 hover:underline">出席</button>
+                                            <button type="button" @click="patchRegistration(reg, { attendanceStatus: 'no_show' })" class="whitespace-nowrap text-gray-700 hover:underline">No-show</button>
+                                            <button type="button"
+                                                    @click="removeRegistration(reg)"
+                                                    :disabled="reg._removing"
+                                                    class="whitespace-nowrap text-red-600 hover:text-red-900 disabled:text-gray-400">
+                                                <span x-text="reg._removing ? '移除中' : '移除'"></span>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </template>
@@ -486,26 +593,64 @@
                 <div x-show="!regModal.loading && !activeRegistrations.length && regModal.registrations.length" class="text-sm text-gray-500">
                     目前沒有進行中的報名資料。
                 </div>
-                <div x-show="!regModal.loading && cancelledRegistrations.length" class="mt-5 border border-gray-200 rounded-lg">
+                <div x-show="!regModal.loading && cancelledRegistrations.length" class="mt-5 border border-gray-200 rounded-lg overflow-hidden">
                     <div class="px-4 py-2 bg-gray-50 text-sm font-medium text-gray-700">已取消名單</div>
                     <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
+                        <thead class="hidden lg:table-header-group bg-gray-50">
                             <tr>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[16%]">姓名</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[26%]">Email</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[18%]">電話</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[20%]">報名時間</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[20%]">付款狀態</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[20%]">
+                                    <button type="button" @click="setRegistrationSort('name')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        姓名 <span class="text-xs" x-text="registrationSortIcon('name')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[30%]">
+                                    <button type="button" @click="setRegistrationSort('email')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        Email <span class="text-xs" x-text="registrationSortIcon('email')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[18%]">
+                                    <button type="button" @click="setRegistrationSort('phone')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        電話 <span class="text-xs" x-text="registrationSortIcon('phone')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[17%]">
+                                    <button type="button" @click="setRegistrationSort('createdAt')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        報名時間 <span class="text-xs" x-text="registrationSortIcon('createdAt')"></span>
+                                    </button>
+                                </th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-600 w-[15%]">
+                                    <button type="button" @click="setRegistrationSort('paymentStatus')" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                        付款狀態 <span class="text-xs" x-text="registrationSortIcon('paymentStatus')"></span>
+                                    </button>
+                                </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <template x-for="(reg, idx) in cancelledRegistrations" :key="'cancelled-' + (reg._id || idx)">
-                                <tr>
-                                    <td class="px-3 py-2" x-text="reg.participantName || reg.name || '—'"></td>
-                                    <td class="px-3 py-2 break-all" x-text="reg.participantEmail || reg.email || '—'"></td>
-                                    <td class="px-3 py-2" x-text="reg.participantPhone || reg.phone || '—'"></td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-gray-600" x-text="formatRegTime(reg.createdAt)"></td>
-                                    <td class="px-3 py-2" x-text="paymentStatusLabel(reg.paymentStatus || 'none')"></td>
+                        <tbody class="block divide-y divide-gray-100 lg:table-row-group">
+                            <template x-for="(reg, idx) in sortedCancelledRegistrations" :key="'cancelled-' + (reg._id || idx)">
+                                <tr class="block p-3 space-y-1 lg:table-row lg:p-0 lg:space-y-0">
+                                    <td class="block px-0 py-0 break-words lg:table-cell lg:px-3 lg:py-2">
+                                        <div class="font-medium text-gray-900 lg:font-normal" x-text="reg.participantName || reg.name || '—'"></div>
+                                        <div class="mt-1 space-y-0.5 text-xs text-gray-500 lg:hidden">
+                                            <div class="break-all" x-text="reg.participantEmail || reg.email || '—'"></div>
+                                            <div x-text="reg.participantPhone || reg.phone || '—'"></div>
+                                        </div>
+                                    </td>
+                                    <td class="hidden px-3 py-2 break-all lg:table-cell" x-text="reg.participantEmail || reg.email || '—'"></td>
+                                    <td class="hidden px-3 py-2 break-words lg:table-cell" x-text="reg.participantPhone || reg.phone || '—'"></td>
+                                    <td class="block px-0 py-0 text-gray-600 lg:table-cell lg:px-3 lg:py-2">
+                                        <span class="text-xs font-medium text-gray-500 lg:hidden">報名時間：</span>
+                                        <span x-text="formatRegTime(reg.createdAt)"></span>
+                                    </td>
+                                    <td class="block px-0 py-0 lg:table-cell lg:px-3 lg:py-2">
+                                        <span class="text-xs font-medium text-gray-500 lg:hidden">付款：</span>
+                                        <span x-text="paymentStatusLabel(reg.paymentStatus || 'none')"></span>
+                                        <template x-if="reg.paymentProof && reg.paymentProof.lastFiveDigits">
+                                            <div class="text-xs text-gray-600">
+                                                <span class="text-gray-500">後五碼：</span>
+                                                <span class="font-mono tracking-wider text-gray-800" x-text="reg.paymentProof.lastFiveDigits"></span>
+                                            </div>
+                                        </template>
+                                    </td>
                                 </tr>
                             </template>
                         </tbody>
@@ -681,6 +826,7 @@
                 showSummaryModal: false,
                 selectedEventId: '',
                 regModal: {
+                    eventId: '',
                     title: '',
                     loading: false,
                     error: '',
@@ -707,6 +853,13 @@
                 notifyMsg: '',
                 surveySummary: {},
                 operationSummary: {},
+                registrationSaveTimers: {},
+                registrationSortKey: 'createdAt',
+                registrationSortDirection: 'asc',
+                eventDraftSaveTimer: null,
+                eventDraftSaveState: '',
+                eventDraftSaveMessage: '',
+                eventDraftLastSavedPayload: '',
                 eventForm: {
                     title: '',
                     type: '',
@@ -740,6 +893,11 @@
                 },
 
                 async init() {
+                    window.addEventListener('beforeunload', (event) => {
+                        if (!this.eventDraftSaveTimer && !['pending', 'saving'].includes(this.eventDraftSaveState)) return;
+                        event.preventDefault();
+                        event.returnValue = '';
+                    });
                     await this.checkAuth();
                     await this.loadStats();
                     await this.loadEvents();
@@ -808,12 +966,22 @@
 
                         if (response.ok) {
                             const data = await response.json();
-                            this.events = data.events;
+                            this.events = data.events.map(event => ({
+                                ...event,
+                                _actionsOpen: false
+                            }));
                             this.pagination = data.pagination;
                         }
                     } catch (error) {
                         console.error('Failed to load events:', error);
                     }
+                },
+
+                toggleEventActions(selectedEvent) {
+                    const nextState = !selectedEvent._actionsOpen;
+                    this.events.forEach(event => {
+                        event._actionsOpen = event._id === selectedEvent._id ? nextState : false;
+                    });
                 },
 
                 get filteredEvents() {
@@ -928,13 +1096,92 @@
                     return (this.regModal?.registrations || []).filter((reg) => reg && reg.status !== 'cancelled');
                 },
 
+                get sortedActiveRegistrations() {
+                    return this.sortRegistrations(this.activeRegistrations);
+                },
+
                 get cancelledRegistrations() {
                     return (this.regModal?.registrations || []).filter((reg) => reg && reg.status === 'cancelled');
                 },
 
+                get sortedCancelledRegistrations() {
+                    return this.sortRegistrations(this.cancelledRegistrations);
+                },
+
+                setRegistrationSort(key) {
+                    if (this.registrationSortKey === key) {
+                        this.registrationSortDirection = this.registrationSortDirection === 'asc' ? 'desc' : 'asc';
+                        return;
+                    }
+                    this.registrationSortKey = key;
+                    this.registrationSortDirection = 'asc';
+                },
+
+                registrationSortIcon(key) {
+                    if (this.registrationSortKey !== key) return '';
+                    return this.registrationSortDirection === 'asc' ? '↑' : '↓';
+                },
+
+                registrationSortValue(reg, key) {
+                    if (!reg) return '';
+                    const textValue = (value) => String(value || '').trim().toLocaleLowerCase('zh-TW');
+                    if (key === 'name') return textValue(reg.participantName || reg.name);
+                    if (key === 'email') return textValue(reg.participantEmail || reg.email);
+                    if (key === 'phone') return textValue(reg.participantPhone || reg.phone);
+                    if (key === 'status') return textValue(this.registrationStatusLabel(reg.status));
+                    if (key === 'paymentStatus') return textValue(this.paymentStatusLabel(reg.paymentStatus || 'none'));
+                    if (key === 'attendanceStatus') return textValue(this.attendanceStatusLabel(reg.attendanceStatus || 'not_checked_in'));
+                    if (key === 'createdAt') {
+                        const time = new Date(reg.createdAt || 0).getTime();
+                        return Number.isNaN(time) ? 0 : time;
+                    }
+                    return '';
+                },
+
+                sortRegistrations(registrations) {
+                    const key = this.registrationSortKey;
+                    const direction = this.registrationSortDirection === 'desc' ? -1 : 1;
+                    return [...(registrations || [])].sort((a, b) => {
+                        const av = this.registrationSortValue(a, key);
+                        const bv = this.registrationSortValue(b, key);
+                        if (typeof av === 'number' || typeof bv === 'number') {
+                            return ((av || 0) - (bv || 0)) * direction;
+                        }
+                        return String(av).localeCompare(String(bv), 'zh-TW', { numeric: true, sensitivity: 'base' }) * direction;
+                    });
+                },
+
+                decorateRegistration(reg) {
+                    return {
+                        ...reg,
+                        paymentStatus: reg.paymentStatus || 'none',
+                        adminNote: reg.adminNote || '',
+                        _saving: false,
+                        _removing: false,
+                        _saveState: ''
+                    };
+                },
+
+                getRegistrationSaveText(reg) {
+                    const texts = {
+                        pending: '待儲存',
+                        saving: '儲存中…',
+                        saved: '已儲存',
+                        error: '儲存失敗'
+                    };
+                    return texts[reg._saveState] || '';
+                },
+
+                clearRegistrationSaveTimers() {
+                    Object.values(this.registrationSaveTimers).forEach((timer) => clearTimeout(timer));
+                    this.registrationSaveTimers = {};
+                },
+
                 closeRegistrationModal() {
+                    this.clearRegistrationSaveTimers();
                     this.showRegModal = false;
                     this.regModal = {
+                        eventId: '',
                         title: '',
                         loading: false,
                         error: '',
@@ -946,8 +1193,10 @@
 
                 async openRegistrationModal(event) {
                     this.selectedEventId = event._id;
+                    this.clearRegistrationSaveTimers();
                     this.showRegModal = true;
                     this.regModal = {
+                        eventId: event._id,
                         title: event.title || '',
                         loading: true,
                         error: '',
@@ -955,8 +1204,14 @@
                         confirmedCount: 0,
                         waitlistCount: 0
                     };
+                    await this.loadRegistrations(event._id);
+                },
+
+                async loadRegistrations(eventId) {
+                    this.regModal.loading = true;
+                    this.regModal.error = '';
                     try {
-                        const response = await fetch(`/api/events/${event._id}/registrations`, {
+                        const response = await fetch(`/api/events/${eventId}/registrations`, {
                             headers: {
                                 Authorization: `Bearer ${localStorage.getItem('adminToken')}`
                             }
@@ -968,7 +1223,7 @@
                             return;
                         }
                         this.regModal.loading = false;
-                        this.regModal.registrations = data.registrations || [];
+                        this.regModal.registrations = (data.registrations || []).map((reg) => this.decorateRegistration(reg));
                         this.regModal.confirmedCount = data.registeredCountFromRegistrations ?? 0;
                         this.regModal.waitlistCount = data.waitlistCount ?? 0;
                     } catch (e) {
@@ -978,7 +1233,11 @@
                     }
                 },
 
-                async patchRegistration(reg, payload) {
+                async updateRegistration(reg, payload) {
+                    if (!reg._id) return;
+
+                    reg._saving = true;
+                    reg._saveState = 'saving';
                     try {
                         const response = await fetch(`/api/events/registrations/${reg._id}`, {
                             method: 'PATCH',
@@ -990,13 +1249,70 @@
                         });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) {
-                            alert(data.message || '更新失敗');
-                            return;
+                            throw new Error(data.message || `更新失敗 (${response.status})`);
                         }
-                        await this.openRegistrationModal({ _id: this.selectedEventId, title: this.regModal.title });
-                    } catch (e) {
-                        console.error(e);
-                        alert('更新失敗');
+
+                        Object.assign(reg, data.registration || {});
+                        reg.paymentStatus = reg.paymentStatus || 'none';
+                        reg.adminNote = reg.adminNote || '';
+                        reg._saving = false;
+                        reg._saveState = 'saved';
+                    } catch (error) {
+                        console.error(error);
+                        reg._saving = false;
+                        reg._saveState = 'error';
+                    }
+                },
+
+                async patchRegistration(reg, payload) {
+                    await this.updateRegistration(reg, payload);
+                    if (this.regModal.eventId) {
+                        await this.loadRegistrations(this.regModal.eventId);
+                    }
+                },
+
+                debounceSaveRegistrationNote(reg) {
+                    if (!reg._id) return;
+                    if (this.registrationSaveTimers[reg._id]) {
+                        clearTimeout(this.registrationSaveTimers[reg._id]);
+                    }
+                    reg._saveState = 'pending';
+                    this.registrationSaveTimers[reg._id] = setTimeout(() => {
+                        delete this.registrationSaveTimers[reg._id];
+                        this.updateRegistration(reg, { adminNote: reg.adminNote || '' });
+                    }, 500);
+                },
+
+                async removeRegistration(reg) {
+                    if (!this.regModal.eventId || !reg._id) return;
+                    if (!confirm(`確定要移除 ${reg.name || reg.email} 的報名紀錄嗎？`)) {
+                        return;
+                    }
+
+                    if (this.registrationSaveTimers[reg._id]) {
+                        clearTimeout(this.registrationSaveTimers[reg._id]);
+                        delete this.registrationSaveTimers[reg._id];
+                    }
+                    reg._removing = true;
+                    try {
+                        const response = await fetch(`/api/events/${this.regModal.eventId}/registrations/${reg._id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                            }
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw new Error(data.message || `移除失敗 (${response.status})`);
+                        }
+
+                        await this.loadRegistrations(this.regModal.eventId);
+                        await this.loadEvents();
+                        await this.loadStats();
+                    } catch (error) {
+                        console.error(error);
+                        reg._removing = false;
+                        alert('移除失敗：' + error.message);
                     }
                 },
 
@@ -1199,6 +1515,100 @@
                     this.uploadedFiles.instructorPhoto = event.target.files[0];
                 },
 
+                eventDraftSaveText() {
+                    const texts = {
+                        pending: '待自動儲存',
+                        saving: '自動儲存中…',
+                        saved: '已自動儲存',
+                        error: this.eventDraftSaveMessage || '自動儲存失敗'
+                    };
+                    return texts[this.eventDraftSaveState] || '';
+                },
+
+                buildEventFormData(includeFiles = false) {
+                    const formData = new FormData();
+                    Object.keys(this.eventForm).forEach(key => {
+                        if (key === 'instructor' || key === 'duration' || key === 'price' || key === 'tags' || key === 'materials') {
+                            formData.append(key, JSON.stringify(this.eventForm[key]));
+                        } else {
+                            formData.append(key, this.eventForm[key]);
+                        }
+                    });
+
+                    if (includeFiles) {
+                        if (this.uploadedFiles.image) formData.append('image', this.uploadedFiles.image);
+                        if (this.uploadedFiles.file) formData.append('file', this.uploadedFiles.file);
+                        if (this.uploadedFiles.instructorPhoto) formData.append('instructorPhoto', this.uploadedFiles.instructorPhoto);
+                    }
+
+                    return formData;
+                },
+
+                eventDraftPayloadKey() {
+                    const payload = {
+                        ...this.eventForm,
+                        instructor: { ...this.eventForm.instructor },
+                        duration: { ...this.eventForm.duration },
+                        tags: [...(this.eventForm.tags || [])],
+                        materials: [...(this.eventForm.materials || [])]
+                    };
+                    return JSON.stringify(payload);
+                },
+
+                eventDraftReady() {
+                    return Boolean(
+                        this.eventForm._id &&
+                        this.eventForm.title &&
+                        this.eventForm.type &&
+                        this.eventForm.date &&
+                        this.eventForm.location &&
+                        this.eventForm.description
+                    );
+                },
+
+                queueEventDraftSave(event) {
+                    if (!this.showEditModal || !this.eventForm._id) return;
+                    if (event?.target?.type === 'file') return;
+                    if (this.eventDraftSaveTimer) clearTimeout(this.eventDraftSaveTimer);
+                    this.eventDraftSaveState = 'pending';
+                    this.eventDraftSaveTimer = setTimeout(() => {
+                        this.eventDraftSaveTimer = null;
+                        this.saveEventDraft();
+                    }, 900);
+                },
+
+                async saveEventDraft() {
+                    if (!this.showEditModal || !this.eventDraftReady()) return;
+                    const payloadKey = this.eventDraftPayloadKey();
+                    if (payloadKey === this.eventDraftLastSavedPayload) {
+                        this.eventDraftSaveState = '';
+                        return;
+                    }
+                    this.eventDraftSaveState = 'saving';
+                    this.eventDraftSaveMessage = '';
+                    try {
+                        const response = await fetch(`/api/events/${this.eventForm._id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                            },
+                            body: this.buildEventFormData(false)
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw new Error(data.message || '自動儲存失敗');
+                        }
+                        this.eventDraftLastSavedPayload = this.eventDraftPayloadKey();
+                        this.eventDraftSaveState = 'saved';
+                        await this.loadEvents();
+                        await this.loadStats();
+                    } catch (error) {
+                        console.error('Auto save event failed:', error);
+                        this.eventDraftSaveMessage = error.message || '自動儲存失敗';
+                        this.eventDraftSaveState = 'error';
+                    }
+                },
+
                 async createEvent() {
                     try {
                         const formData = new FormData();
@@ -1248,34 +1658,12 @@
 
                 async updateEvent() {
                     try {
-                        const formData = new FormData();
-                        
-                        // 添加基本資料
-                        Object.keys(this.eventForm).forEach(key => {
-                            if (key === 'instructor' || key === 'duration' || key === 'price' || key === 'tags' || key === 'materials') {
-                                formData.append(key, JSON.stringify(this.eventForm[key]));
-                            } else {
-                                formData.append(key, this.eventForm[key]);
-                            }
-                        });
-
-                        // 添加檔案
-                        if (this.uploadedFiles.image) {
-                            formData.append('image', this.uploadedFiles.image);
-                        }
-                        if (this.uploadedFiles.file) {
-                            formData.append('file', this.uploadedFiles.file);
-                        }
-                        if (this.uploadedFiles.instructorPhoto) {
-                            formData.append('instructorPhoto', this.uploadedFiles.instructorPhoto);
-                        }
-
                         const response = await fetch(`/api/events/${this.eventForm._id}`, {
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                             },
-                            body: formData
+                            body: this.buildEventFormData(true)
                         });
 
                         if (response.ok) {
@@ -1322,6 +1710,9 @@
                         materials: event.materials || []
                     };
                     this.uploadedFiles = { image: null, file: null, instructorPhoto: null };
+                    this.eventDraftLastSavedPayload = this.eventDraftPayloadKey();
+                    this.eventDraftSaveState = '';
+                    this.eventDraftSaveMessage = '';
                     this.showEditModal = true;
                 },
 
@@ -1380,6 +1771,10 @@
                 },
 
                 closeModal() {
+                    if (this.eventDraftSaveTimer) {
+                        clearTimeout(this.eventDraftSaveTimer);
+                        this.eventDraftSaveTimer = null;
+                    }
                     this.showCreateModal = false;
                     this.showEditModal = false;
                     this.eventForm = {
@@ -1409,6 +1804,9 @@
                         materials: []
                     };
                     this.uploadedFiles = { image: null, file: null, instructorPhoto: null };
+                    this.eventDraftSaveState = '';
+                    this.eventDraftSaveMessage = '';
+                    this.eventDraftLastSavedPayload = '';
                 },
 
                 logout() {
