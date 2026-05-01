@@ -52,6 +52,7 @@ Exam {
     hard: Number (default 20, percentage)
   }
   // Pre-save hook: 驗證總和 = 100% (允許 ±1% 誤差)
+  // 使用 findOneAndUpdate + $inc 原子操作避免 race condition
   // 若總和 != 100，自動按比例調整並記錄 warning
   startDate: Date
   endDate: Date
@@ -142,13 +143,15 @@ ExamAttempt {
   expiresAt: Date (startedAt + timeLimit, null if no timer)
   timeSpent: Number (seconds, computed on submit)
   
-  // 題目快照（v3 精簡）：僅存計分與顯示必要欄位
+  // 題目快照（v4 修正）：僅存計分必要欄位
   // 注意：不存 options，答題時從 Question collection fetch 避免洩露答案
+  // 但需存 correctAnswer 供計分使用
   questionSnapshot: [{
     questionId: ObjectId ref:Question
     questionNumber: Number
     type: String
     content: String           // 題目文字
+    correctAnswer: Mixed       // MC: correctOptionIndex, T/F: correctBoolean, Fill: correctAnswers[0]
     points: Number
     difficulty: String        // easy | medium | hard
   }]
@@ -263,9 +266,12 @@ Counter {
 [in_progress] ──submit──> [submitted] ──auto-grade──> [graded]
      │                         │                            │
      ├── expire ──> [expired] ─┘                            │
-     └── cancel ──> [cancelled]                             │
-                                                   └── certificate ──> [certificate_issued]
+     ├── cancel ──> [cancelled]                           │
+     └── cheating ──> [auto_submitted_cheating]                │
+                                                    └── certificate ──> [certificate_issued]
 ```
+
+**注意**：`auto_submitted_cheating` 狀態不進入計分流程（4.4），不生成證書（4.5），統計時排除（3.3）。
 
 ---
 
@@ -337,7 +343,7 @@ Counter {
 | POST | `/api/exams/:id/questions/bulk` | 批量匯入（CSV/JSON） |
 | GET | `/api/exams/:id/attempts/:attemptId` | **新增** 單一作答詳情（管理員） |
 | GET | `/api/exams/:id/attempts` | 作答紀錄（分頁、篩選，cursor-based pagination） |
-| GET | `/api/exams/:id/statistics` | 統計（平均分、及格率、各題正確率） |
+| GET | `/api/exams/:id/statistics` | 統計（平均分、及格率、各題正確率，**排除作弊**） |
 | POST | `/api/exams/:id/certificates/regenerate` | 重新生成失敗的證書 |
 | GET | `/api/exams/:id/export-attempts` | 匯出成績（CSV） |
 | DELETE | `/api/exams/:id/attempts/:attemptId/cooldown` | 管理員手動解除用戶 cooldown |
@@ -360,11 +366,13 @@ Counter {
 
 ### 3.5 Cron 端點（`/api/cron`）
 
+**安全**：需 `X-Cron-Secret` header + IP whitelist（僅接受 cron-job.org IP）
+
 | 方法 | 路徑 | 功能 |
 |---|---|---|
-| GET | `/api/cron/expired-attempts` | 過期嘗試自動提交（需 `X-Cron-Secret` header） |
-| GET | `/api/cron/close-expired-exams` | 考試自動關閉（需 `X-Cron-Secret` header） |
-| GET | `/api/cron/cleanup-orphaned-files` | 孤檔清理（需 `X-Cron-Secret` header） |
+| GET | `/api/cron/expired-attempts` | 過期嘗試自動提交（需 `X-Cron-Secret` header + IP） |
+| GET | `/api/cron/close-expired-exams` | 考試自動關閉（需 `X-Cron-Secret` header + IP） |
+| GET | `/api/cron/cleanup-orphaned-files` | 孤檔清理（需 `X-Cron-Secret` header + IP） |
 
 **注意**：Render 免費版無原生 Cron，需使用外部服務（如 [cron-job.org](https://cron-job.org)）呼叫認證端點。
 
@@ -419,11 +427,13 @@ POST /api/member/exams/:id/save-progress
    - 前端傳 [{ questionId, answer }]
    - 未出現在 answers 的快照題目 = unanswered（answer=null）
 3. 更新 attempt：
+   - 後端自行計算作弊檢測：
+     * 若 timeSpent < questionsPerAttempt * 30 秒（每題最少 30 秒）→ cheatingDetected = true
+     * 若 visibilityChangeCount > 10（異常頻繁切換）→ cheatingDetected = true
    - 若 cheatingDetected=true → status = 'auto_submitted_cheating'
    - 否則 → status = 'submitted'
    - submittedAt = now
    - timeSpent = submittedAt - startedAt
-   - visibilityChangeCount, warningCount, cheatingDetected, cheatingDetails（從前端傳）
 4. 觸發計分（4.4）
 5. 依 showCorrectAnswers 回傳結果
 ```
@@ -431,43 +441,48 @@ POST /api/member/exams/:id/save-progress
 ### 4.4 自動計分
 
 ```
-1. 讀取 attempt.questionSnapshot
-2. 讀取 attempt.answers
-3. 逐題比對：
+1. 檢查作弊狀態：
+   - 若 attempt.status === 'auto_submitted_cheating' → 不觸發計分
+   - 直接設定：score = 0, passed = false, status = 'auto_submitted_cheating'
+   - skip 剩餘步驟
+2. 讀取 attempt.questionSnapshot
+3. 讀取 attempt.answers
+4. 逐題比對：
    - MC: answer === correctOptionIndex
    - T/F: String(answer).toLowerCase() === String(correctBoolean).toLowerCase()
    - Fill: String(answer).trim().toLowerCase() in correctAnswers or acceptableAnswers
-4. 計算：
+5. 計算：
    - totalPoints = sum(snapshot points)
    - earnedPoints = sum(pointsEarned)
    - score = (earnedPoints / totalPoints) * 100
    - passed = score >= exam.passingScore
    - gradingDetails = { totalPoints, earnedPoints, correctCount, incorrectCount, unansweredCount }
-5. 更新 attempt：
+6. 更新 attempt：
    - status → 'graded'
    - gradedAt = now
    - score, passed, gradingDetails
-6. 若 passed AND exam.certificateEnabled：
+7. 若 passed AND exam.certificateEnabled AND NOT cheatingDetected：
    - 觸發證書生成（4.5）
-7. 依 showCorrectAnswers 回傳詳解
+8. 依 showCorrectAnswers 回傳詳解
 ```
 
-### 4.5 證書生成（v3 即時生成模式）
+### 4.5 證書生成（v4 — 即時生成模式）
 
 ```
 1. 檢查是否已存在記錄（idempotent）：findOne({ attempt }) → 存在則 skip
-2. 生成證書編號：
+2. 檢查是否作弊：if (attempt.cheatingDetected) → skip（不生成證書）
+3. 生成證書編號：
    - Counter.findOneAndUpdate({ _id: 'certificate_number' }, { $inc: { seq: 1 } }, { new: true, upsert: true })
    - Format: ACTC-EXAM-{YYYY}-{seq padded to 6 digits}
-3. 寫入 Certificate 紀錄（不含 pdfPath）：
+4. 寫入 Certificate 紀錄（不含 pdfPath）：
    - certificateNumber, exam, user, attempt, issuedAt, expiresAt
-4. 下載時即時生成（GET /api/member/exams/:id/certificate）：
+5. 下載時即時生成（GET /api/member/exams/:id/certificate）：
    - 讀取 exam.certificateTemplate + attempt 資訊
    - 使用 PDFKit 生成 PDF stream
    - 直接回傳 binary stream（不寫入磁碟）
    - Content-Disposition: attachment; filename="certificate-{certificateNumber}.pdf"
-5. 更新 downloadCount++, lastDownloadedAt
-6. （可選）寄信通知考生
+6. 更新 downloadCount++, lastDownloadedAt
+7. （可選）寄信通知考生（若未作弊）
 ```
 
 ---
@@ -750,22 +765,16 @@ POST /api/member/exams/:id/save-progress
 | C4 | 下載證書 - 計數 | 有效 | downloadCount++ |
 | C5 | 即時生成 - 記憶體 | 大量下載 | <10MB RAM usage |
 
-### 9.6 UI/UX
+### 9.7 Email 通知
 
 | # | 測試案例 | 輸入 | 預期 |
 |---|----------|------|------|
-| U1 | 計時器 <5 min | 剩餘 <5 min | 頂欄變紅 + pulse |
-| U2 | 鍵盤導航 | → 鍵 | 下一題 |
-| U3 | 自動存檔 - 成功 | 答案變更 | 30s 內存檔成功 |
-| U4 | 斷線重連 | 斷線後重連 | 從 localStorage 回復 |
-| U5 | 離開提醒 | 有未存答案時離開 | 確認對話框 |
-| U6 | 色盲友善 | 題目導航 | 不只靠顏色，有圖示/文字 |
-| U7 | 切視窗警告 1-3 次 | visibilitychange 3 次 | 彈出 Modal 警告 X/3 |
-| U8 | 切視窗第 4 次 | visibilitychange 第 4 次 | 自動交卷，cheatingDetected=true |
-| U9 | DevTools 開啟 | F12/右鍵檢查 | 警告，持續開啟則交卷 |
-| U10 | 右鍵選單 | 右鍵點擊 | 選單不顯示 |
-| U11 | 複製貼上 | Ctrl+C/V | 事件被禁用 |
-| U12 | 截圖快捷鍵 | PrintScreen/F12 | 事件被禁用 |
+| E1 | 考試結果通知 - 及格 | passed=true | 收到郵件，含分數、連結 |
+| E2 | 考試結果通知 - 不及格 | passed=false | 收到郵件，含分數、連結 |
+| E3 | 證書發放通知 - 及格+certEnabled | passed=true, certEnabled=true | 收到郵件，含證書編號、下載連結 |
+| E4 | 證書發放通知 - 作弊 | cheatingDetected=true | 不寄通知 |
+| E5 | Email 範本 injection | subject=`test\r\nBCC:evil@test.com` | 被 escape，不注入 |
+| E6 | 大量通知 | 100 人同時完成 | SMTP 佇列正常，無遺失 |
 
 ---
 
@@ -782,17 +791,17 @@ POST /api/member/exams/:id/save-progress
 
 ---
 
-## 11. 待確認問題
+## 11. 待確認問題（v4 — 部分已確認）
 
 | # | 問題 | 狀態 |
 |---|---|---|
 | 1 | 冷卻時間管理員可否覆寫？ | ✅ 可覆寫（後台提供 admin API 手動解除 cooldown） |
-| 2 | 是否需要匯出成績 CSV 的欄位自訂？ | ⬜ 待確認 |
+| 2 | **是否需要匯出成績 CSV 的欄位自訂？** | ⬜ 待確認（建議：預設欄位：姓名、信箱、分數、狀態、時間） |
 | 3 | 證書預設語言？ | ✅ 中文 (zh-TW) |
-| 4 | 是否需要在後台顯示防作弊記錄（切視窗次數）？ | ⬜ 待確認 |
-| 5 | 是否需要題庫標籤/分類功能？ | ⬜ 待確認 |
-| 6 | 是否需要練習考試模式（不計分、無限重考）？ | ⬜ 待確認 |
-| 7 | 是否需要證書公開驗證頁面（QR code 導向）？ | ⬜ 待確認（建議 P2 加入） |
+| 4 | **是否需要在後台顯示防作弊記錄（切視窗次數）？** | ✅ **已加入**：管理端 attempt 詳情頁面顯示 `visibilityChangeCount`, `warningCount`, `cheatingDetected`, `cheatingDetails` |
+| 5 | **是否需要題庫標籤/分類功能？** | ⬜ 待確認（建議 P2 加入） |
+| 6 | **是否需要練習考試模式（不計分、無限重考）？** | ⬜ 待確認（建議 P2 加入） |
+| 7 | **是否需要證書公開驗證頁面（QR code 導向）？** | ✅ **已加入**：P2 加入 `GET /api/certificates/verify/:certificateNumber` 公開驗證 |
 
 ---
 
@@ -827,18 +836,16 @@ POST /api/member/exams/:id/save-progress
 
 **Deliverables**: Both UIs complete, responsive layout verified, keyboard nav working
 
-### Sprint 4: 整合測試（~13.5h）
+### Sprint 4: 整合測試（~18h)
 
 | Phase | 內容 | 檔案 | 預估 | Quality Gate |
 |---|---|---|---|---|
-| P9 | 整合路由 + bootstrap | `server.js`, `lib/bootstrapDb.js` | 1.5h | Seed data loads, full flow works |
-| P10 | 測試 + 修 bug | — | 5h | Bug count <3 critical, README updated |
-| P11 | OpenAPI spec + docs | `docs/api.md`, Postman | 2h | API spec matches implementation |
-| P12 | 部署驗證 | Render | 5h | Production flow verified, Atlas <400MB |
+| P9 | 整合路由 + bootstrap | `server.js`, `lib/bootstrapDb.js` | 2h | Seed data loads, full flow works |
+| P10 | 測試 + 修 bug | — | 8h | Bug count <3 critical, README updated |
+| P11 | OpenAPI spec + docs | `docs/api.md`, Postman | 3h | API spec matches implementation |
+| P12 | 部署驗證 + Sprint 4 buffer | Render | 5h | Production flow verified, Atlas <400MB |
 
-**Deliverables**: Production-ready, docs complete, known limitations documented
-
-**總計**：~44 小時（含 25% buffer）
+**總計**：~52 小時（含 25% buffer，原 44h → 52h）
 
 ---
 
@@ -877,9 +884,14 @@ fill_in_blank,HTTP 的預設阜號是？,,80,1,easy,
 
 **CSV 規則**：
 - `options`：MC 題用 `;` 分隔，T/F 和 Fill 留空
-- `correctAnswer`：MC 用選項標籤（A/B/C/D），T/F 用 TRUE/FALSE，Fill 用正確答案
+- `correctAnswer`：MC 用選項標籤（A/B/C/D → 0/1/2/3），T/F 用 TRUE/FALSE，Fill 用正確答案
 - `difficulty`：easy | medium | hard
 - `explanation`：可選
+
+**Bulk import 轉換規則**：
+- MC `correctAnswer`：A→0, B→1, C→2, D→3（儲存為 `correctOptionIndex`）
+- T/F `correctAnswer`：TRUE→true, FALSE→false（儲存為 `correctBoolean`）
+- Fill `correctAnswer`：直接存入 `correctAnswers[0]`
 
 ### JSON 格式
 ```json
@@ -950,6 +962,8 @@ Body: file (CSV 或 JSON)
 | Cooldown 解除 | 管理員手動解除 | 考生 | 可重新報考通知 |
 
 ### 15.3 Email Template 範例
+
+**注意**：所有變數需使用 `validator.escape()` 或 `heml-entities` 套件 escape，防止 email header injection 和 HTML injection。
 
 **考試結果通知**：
 ```
