@@ -21,7 +21,7 @@
 | 證書儲存 | **即時生成不儲存**（下載時動態渲染，省空間）；記錄 Certificate 文件僅存 metadata |
 | 證書編號 | MongoDB 原子計數器（非隨機，防碰撞） |
 | 題目快照 | ExamAttempt 儲存精簡快照（questionId, questionNumber, type, content, options, points） |
-| 防作弊 | 前端 `visibilitychange` 偵測切視窗，記錄次數（非強制阻擋） |
+| 防作弊 | 切視窗 3 次警告 + 第 4 次自動交卷 | DevTools 檢測 + 持續開啟則交卷 | 禁用 copy/cut/paste/contextmenu | 前端禁用截圖快捷鍵 |
 | 冷卻時間覆寫 | 管理員可手動解除用戶 cooldown 限制（後台 API） |
 | 難度分層 | 每題標記 `easy | medium | hard`，抽題依比例分層 |
 | 證書語言 | 中文 (zh-TW) |
@@ -171,6 +171,13 @@ ExamAttempt {
   
   // 防作弊記錄
   visibilityChangeCount: Number (default 0)
+  warningCount: Number (default 0)                    // 切視窗警告次數，達 3 次後第 4 次自動交卷
+  cheatingDetected: Boolean (default false)           // 是否觸发作弊判定
+  cheatingDetails: [{                                 // 作弊事件日誌
+    type: 'visibility_change' | 'devtools' | 'screenshot',
+    timestamp: Date,
+    warningNumber: Number
+  }]
   
   ipAddress: String (audit)
   userAgent: String (audit)
@@ -407,10 +414,11 @@ POST /api/member/exams/:id/save-progress
    - 前端傳 [{ questionId, answer }]
    - 未出現在 answers 的快照題目 = unanswered（answer=null）
 3. 更新 attempt：
-   - status → 'submitted'
+   - 若 cheatingDetected=true → status = 'auto_submitted_cheating'
+   - 否則 → status = 'submitted'
    - submittedAt = now
    - timeSpent = submittedAt - startedAt
-   - visibilityChangeCount（從前端傳）
+   - visibilityChangeCount, warningCount, cheatingDetected, cheatingDetails（從前端傳）
 4. 觸發計分（4.4）
 5. 依 showCorrectAnswers 回傳結果
 ```
@@ -471,6 +479,8 @@ POST /api/member/exams/:id/save-progress
 | **證書生成失敗** | 記錄錯誤，admin 可透過 `/certificates/regenerate` 重試 |
 | **Race Condition on start** | Partial unique index + catch DuplicateKey error → resume |
 | **提交衝突（timer + manual）** | expiresAt < now 時拒絕 manual submit，走 expire flow |
+| **防作弊觸發** | 前端警告 3 次（visibilitychange），第 4 次自動提交 + 標記 cheatingDetected=true |
+| **DevTools 開啟** | 警告，持續開啟（resize 檢測）則自動提交 |
 | **題目被修改後查看成績** | 使用精簡 questionSnapshot，不影響已 grading 的結果 |
 | **PDFKit 記憶體溢出** | 限制 PDF 大小 <10MB，使用 stream 模式 |
 | **MongoDB Atlas 空間不足** | Cron 定期清理 >30 天的 attempt；不儲存 PDF binary |
@@ -574,6 +584,15 @@ POST /api/member/exams/:id/save-progress
 **自動存檔**：每 30 秒 + 答案變更 debounce 500ms；斷線 fallback localStorage
 
 **離開提醒**：`beforeunload` 事件，未儲存時顯示確認
+
+**防作弊機制**：
+- 事件監聽：`visibilitychange`, `blur`, `focus`, `resize`（DevTools 檢測）, `copy`, `cut`, `paste`, `contextmenu`, `keydown`（PrintScreen/F12）
+- 切視窗警告：第 1-3 次彈出 Modal「檢測到切視窗行為（X/3），再次違規將自動交卷」
+- 第 4 次觸发自動交卷：顯示「因違反考試規則，試卷已自動提交」→ 3 秒後跳轉結果頁
+- DevTools 檢測：`window.outerHeight - window.innerHeight > 200` 或 `window.outerWidth - window.innerWidth > 200`
+- 右鍵選單/複製貼上：`preventDefault()` 禁用
+- 截圖快捷鍵：攔截 `keydown` 中 `PrintScreen`、`Ctrl+Shift+I`、`F12`
+- 自動交卷後狀態設為 `auto_submitted_cheating`，管理端可標記
 
 **鍵盤導航**：
 - ← / →：上一題 / 下一題
@@ -736,6 +755,12 @@ POST /api/member/exams/:id/save-progress
 | U4 | 斷線重連 | 斷線後重連 | 從 localStorage 回復 |
 | U5 | 離開提醒 | 有未存答案時離開 | 確認對話框 |
 | U6 | 色盲友善 | 題目導航 | 不只靠顏色，有圖示/文字 |
+| U7 | 切視窗警告 1-3 次 | visibilitychange 3 次 | 彈出 Modal 警告 X/3 |
+| U8 | 切視窗第 4 次 | visibilitychange 第 4 次 | 自動交卷，cheatingDetected=true |
+| U9 | DevTools 開啟 | F12/右鍵檢查 | 警告，持續開啟則交卷 |
+| U10 | 右鍵選單 | 右鍵點擊 | 選單不顯示 |
+| U11 | 複製貼上 | Ctrl+C/V | 事件被禁用 |
+| U12 | 截圖快捷鍵 | PrintScreen/F12 | 事件被禁用 |
 
 ---
 
