@@ -1,8 +1,8 @@
 # Exam System — Complete Workflow Specification
-**Version**: 3.0 (Revised after 7-Agent Review)  
+**Version**: 4.0 (Fixed Critical Issues)  
 **Date**: 2026-05-01  
-**Authors**: Workflow Architect, Software Architect, Backend Architect, UX Architect, Database Optimizer, Product Manager, Technical Writer, UX Researcher, UI Designer, Corporate Training Designer, Senior Project Manager  
-**Status**: Approved (Post-Review v3)  
+**Authors**: Workflow Architect, Software Architect, Backend Architect, UX Architect, Database Optimizer, Product Manager, Technical Writer, UX Researcher, UI Designer, Corporate Training Designer, Senior Project Manager, Security Engineer  
+**Status**: Approved (Post-Review v4)  
 **Project**: ACTC Website (Node.js + Express + MongoDB + Alpine.js)  
 **Deployment**: Render (Free Tier) + MongoDB Atlas (512MB)
 
@@ -38,7 +38,7 @@ Exam {
   title: String (required, max 200)
   description: String (required, max 2000)
   shortDescription: String (max 200)
-  status: 'draft' | 'published' | 'active' | 'closed' | 'archived' (default 'draft')
+  status: 'draft' | 'published' | 'active' | 'closed' | 'archived' | 'deleted' (default 'draft')
   examType: 'quiz' | 'certification' (default 'quiz')
   timeLimit: Number (minutes, 0=no timer, min 0, max 480)
   passingScore: Number (percentage 0-100, default 70, min 0, max 100)
@@ -51,6 +51,8 @@ Exam {
     medium: Number (default 60, percentage),
     hard: Number (default 20, percentage)
   }
+  // Pre-save hook: 驗證總和 = 100% (允許 ±1% 誤差)
+  // 若總和 != 100，自動按比例調整並記錄 warning
   startDate: Date
   endDate: Date
   shuffleQuestions: Boolean (default false)
@@ -133,7 +135,7 @@ Question {
 ExamAttempt {
   exam: ObjectId ref:Exam (required, index: true)
   user: ObjectId ref:User (required, index: true)
-  status: 'in_progress' | 'submitted' | 'graded' | 'expired' | 'cancelled'
+  status: 'in_progress' | 'submitted' | 'graded' | 'expired' | 'cancelled' | 'auto_submitted_cheating'
   attemptNumber: Number (required, min 1, auto-incremented per user+exam)
   startedAt: Date (required)
   submittedAt: Date
@@ -141,12 +143,12 @@ ExamAttempt {
   timeSpent: Number (seconds, computed on submit)
   
   // 題目快照（v3 精簡）：僅存計分與顯示必要欄位
+  // 注意：不存 options，答題時從 Question collection fetch 避免洩露答案
   questionSnapshot: [{
     questionId: ObjectId ref:Question
     questionNumber: Number
     type: String
     content: String           // 題目文字
-    options: [{ text: String, label: String }]  // MC only
     points: Number
     difficulty: String        // easy | medium | hard
   }]
@@ -218,6 +220,7 @@ Certificate {
 - `{ certificateNumber: 1 }` (unique)
 - `{ user: 1, exam: 1 }`
 - `{ issuedAt: -1 }`
+- `{ attempt: 1 }` (unique, for idempotent check)
 
 ### 1.5 Counter（原子計數器）— 新增
 
@@ -332,6 +335,7 @@ Counter {
 | DELETE | `/api/exams/:id/questions/:qid` | 刪除題目（自動重新編號） |
 | PATCH | `/api/exams/:id/questions/reorder` | 批量重排題目 |
 | POST | `/api/exams/:id/questions/bulk` | 批量匯入（CSV/JSON） |
+| GET | `/api/exams/:id/attempts/:attemptId` | **新增** 單一作答詳情（管理員） |
 | GET | `/api/exams/:id/attempts` | 作答紀錄（分頁、篩選，cursor-based pagination） |
 | GET | `/api/exams/:id/statistics` | 統計（平均分、及格率、各題正確率） |
 | POST | `/api/exams/:id/certificates/regenerate` | 重新生成失敗的證書 |
@@ -351,6 +355,7 @@ Counter {
 | POST | `/api/member/exams/:id/cancel` | 取消進行中考試 |
 | GET | `/api/member/exams/:id/result` | 查看成績（可指定 attemptId） |
 | GET | `/api/member/exams/:id/certificate` | 下載證書（即時生成 PDF stream） |
+| GET | `/api/member/certificates` | **新增** 我的所有證書列表 |
 | GET | `/api/me/exam-history` | 我的作答紀錄 |
 
 ### 3.5 Cron 端點（`/api/cron`）
@@ -374,7 +379,7 @@ Counter {
 2. 檢查考試狀態：status='active' + 在期限內
 3. 檢查重考限制：
    - graded attempts >= maxAttempts → 403 MAX_ATTEMPTS_REACHED
-   - last graded attempt + cooldownPeriod > now → 403 COOLDOWN_ACTIVE（附 nextAttemptAt）
+    - last graded OR expired attempt + cooldownPeriod > now → 403 COOLDOWN_ACTIVE（附 nextAttemptAt）
 4. 檢查是否有 in_progress attempt：
    - findOne({ exam, user, status: 'in_progress' }) → 存在則 resume
 5. Lazy Expiry 檢查：
@@ -851,10 +856,146 @@ POST /api/member/exams/:id/save-progress
 - Cron: `X-Cron-Secret: <secret>`
 
 ### Rate Limits
-- Member APIs: 100 req/15min
 - Admin APIs: 200 req/15min
+- Member APIs: 100 req/15min
+- **Start exam**: 10 req/min（防濫建 attempt）
+- **Submit exam**: 10 req/min（防重複提交）
 - Save progress: 10 req/min（debounce 前端處理）
+- Cron endpoints: 20 req/hour（僅接受來 cron-job.org IP）
 
 ---
 
-*End of Specification v3.0*
+## 14. Bulk Import 格式規範
+
+### CSV 格式
+```csv
+type,content,options,correctAnswer,points,difficulty,explanation
+multiple_choice,什麼是 XSS?,"選項1;選項2;選項3;選項4",A,1,medium,XSS 是跨站腳本攻擊
+true_false,JavaScript 是強型別語言?,FALSE,1,easy,
+fill_in_blank,HTTP 的預設阜號是？,,80,1,easy,
+```
+
+**CSV 規則**：
+- `options`：MC 題用 `;` 分隔，T/F 和 Fill 留空
+- `correctAnswer`：MC 用選項標籤（A/B/C/D），T/F 用 TRUE/FALSE，Fill 用正確答案
+- `difficulty`：easy | medium | hard
+- `explanation`：可選
+
+### JSON 格式
+```json
+{
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "content": "什麼是 XSS?",
+      "options": [
+        { "label": "A", "text": "選項1" },
+        { "label": "B", "text": "選項2" },
+        { "label": "C", "text": "選項3" },
+        { "label": "D", "text": "選項4" }
+      ],
+      "correctAnswer": "A",
+      "points": 1,
+      "difficulty": "medium",
+      "explanation": "XSS 是跨站腳本攻擊"
+    },
+    {
+      "type": "true_false",
+      "content": "JavaScript 是強型別語言?",
+      "correctAnswer": false,
+      "points": 1,
+      "difficulty": "easy"
+    }
+  ]
+}
+```
+
+**JSON 規則**：
+- MC：`correctAnswer` 為選項 label（字串）
+- T/F：`correctAnswer` 為 boolean
+- Fill：`correctAnswer` 為字串
+- `difficulty` 預設 `medium`
+
+### 匯入端點
+```
+POST /api/exams/:id/questions/bulk
+Content-Type: multipart/form-data
+Body: file (CSV 或 JSON)
+
+回應：
+{
+  "imported": 10,
+  "skipped": 2,
+  "errors": [
+    { "row": 3, "error": "Invalid question type" }
+  ]
+}
+```
+
+---
+
+## 15. Email 通知服務（v4 — 基本 email）
+
+### 15.1 使用現有 `services/email.js`
+
+直接呼叫已存在的 email service，無需新建服務文件。
+
+### 15.2 通知事件
+
+| 事件 | 觸發時機 | 收件人 | 內容 |
+|---|---|---|---|
+| 考試提交 | 作答完成（graded） | 考生 | 分數、是否及格、詳解連結 |
+| 證書發放 | 及格 + certificateEnabled | 考生 | 證書下載連結、編號、有效期 |
+| 考試開始 | 考生開始考試 | 考生（僅自己） | 不寄信（前端顯示即可） |
+| Cooldown 解除 | 管理員手動解除 | 考生 | 可重新報考通知 |
+
+### 15.3 Email Template 範例
+
+**考試結果通知**：
+```
+主旨：ACTC 考試成績通知 — {examTitle}
+
+親愛的 {userName}：
+
+您的考試「{examTitle}」已完成評分。
+
+成績：{score}%
+結果：{passed ? '及格' : '不及格'}
+
+查看詳解：{baseUrl}/member#exam/:id/result
+
+ACTC 團隊
+```
+
+**證書發放通知**（及格 + certificateEnabled）：
+```
+主旨：ACTC 證書已發放 — {examTitle}
+
+親愛的 {userName}：
+
+恭喜您通過「{examTitle}」認證考試！
+
+證書編號：{certificateNumber}
+有效期至：{expiresAt}
+
+下載證書：{baseUrl}/api/member/exams/:id/certificate
+
+ACTC 團隊
+```
+
+### 15.4 管理員測試 API
+
+| 方法 | 路徑 | 功能 |
+|---|---|---|
+| POST | `/api/exams/:id/notify-test` | 發送測試通知（管理員） |
+
+### 15.5 實作注意
+
+- 使用 `services/email.js` 的 `sendMail()` 函數
+- 考試提交時觸發：在 `4.4 自動計分` 第 7 步後呼叫
+- 證書發放時觸發：在 `4.5 證書生成` 第 3 步後呼叫
+- 若 SMTP 未設定：記錄 warning，不阻擋主流程
+
+---
+
+*End of Specification v4.0*
