@@ -1,14 +1,14 @@
 type,domain,content,optionA,optionB,optionC,optionD,correctOption,difficulty
-multiple_choice,1,What is the primary goal of information security?,Confidentiality,Integrity,Availability,All of the above,3,easy
-multiple_choice,1,Which of the following is NOT one of the CIA triad?,Confidentiality,Integrity,Availability,Accountability,3,medium
-multiple_choice,2,What is the first step in data classification?,Identify data owner,Categorize data,Label data,Apply controls,0,easy
-multiple_choice,3,Which security model focuses on preventing conflict of interest?,Bell-LaPadula,Biba,Clark-Wilson,Chinese Wall,3,hard
-multiple_choice,4,What does VPN stand for?,Virtual Private Network,Verified Public Network,Virtual Public Network,Verified Private Network,0,easy
-multiple_choice,5,What is the purpose of multi-factor authentication?,Increase password complexity,Provide multiple verification methods,Reduce login time,Eliminate passwords,1,medium
-multiple_choice,6,Which tool is used to test for vulnerabilities?,Nmap,Metasploit,Nessus,All of the above,3,medium
-multiple_choice,7,What is the first step in incident response?,Identification,Containment,Eradication,Recovery,0,easy
-multiple_choice,8,Which secure coding practice prevents SQL injection?,Input validation,Error handling,Logging,Encryption,0,medium
-true_false,1,Confidentiality ensures that data is accessible only to authorized users.,TRUE,,,,,0,easy
-true_false,2,Data classification helps determine the level of protection needed.,TRUE,,,,,0,easy
+multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of above,D,easy
+multiple_choice,1,Which of the following is NOT one of the CIA triad?,Confidentiality,Integrity,Availability,Accountability,D,medium
+multiple_choice,2,What is the first step in data classification?,Identify data owner,Categorize data,Label data,Apply controls,A,easy
+multiple_choice,3,Which security model focuses on preventing conflict of interest?,Bell-LaPadula,Biba,Clark-Wilson,Chinese Wall,D,hard
+multiple_choice,4,What does VPN stand for?,Virtual Private Network,Verified Public Network,Virtual Public Network,Verified Private Network,A,easy
+multiple_choice,5,What is the purpose of multi-factor authentication?,Increase password complexity,Provide multiple verification methods,Reduce login time,Eliminate passwords,B,medium
+multiple_choice,6,Which tool is used to test for vulnerabilities?,Nmap,Metasploit,Nessus,All of above,D,medium
+multiple_choice,7,What is the first step in incident response?,Identification,Containment,Eradication,Recovery,A,easy
+multiple_choice,8,Which secure coding practice prevents SQL injection?,Input validation,Error handling,Logging,Encryption,A,medium
+true_false,1,Confidentiality ensures that data is accessible only to authorized users.,TRUE,,,,,,TRUE,easy
+true_false,2,Data classification helps determine the level of protection needed.,TRUE,,,,,,TRUE,easy
 fill_in_blank,3,The security model that ensures no write-up is called _____.,Bell-LaPadula,,,,,,medium
 fill_in_blank,4,The protocol used for secure web browsing is _____.,HTTPS,,,,,,easy
