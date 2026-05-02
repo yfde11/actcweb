@@ -124,7 +124,7 @@ router.get('/:id', adminAuth, async (req, res) => {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
-        const questions = await Question.find({ exam: exam._id }).sort({ questionNumber: 1 });
+        const questions = await Question.find({ examIds: exam._id }).sort({ questionNumber: 1 });
 
         res.json({ data: { ...exam.toObject(), questions } });
     } catch (error) {
@@ -208,7 +208,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
 
         // Cascade delete: questions, attempts, certificates
         await Promise.all([
-            Question.deleteMany({ exam: exam._id }),
+            Question.deleteMany({ examIds: exam._id }),
             ExamAttempt.deleteMany({ exam: exam._id }),
             Certificate.deleteMany({ exam: exam._id })
         ]);
@@ -284,11 +284,11 @@ router.get('/:id/questions', adminAuth, async (req, res) => {
         const skip = (parseInt(page) - 1) * limit;
 
         const [questions, total] = await Promise.all([
-            Question.find({ exam: req.params.id })
+            Question.find({ examIds: req.params.id })
                 .sort({ questionNumber: 1 })
                 .skip(skip)
                 .limit(limit),
-            Question.countDocuments({ exam: req.params.id })
+            Question.countDocuments({ examIds: req.params.id })
         ]);
 
         res.json({
@@ -324,14 +324,14 @@ router.post('/:id/questions', adminAuth, async (req, res) => {
 
         const questionData = {
             ...req.body,
-            exam: exam._id
+            examIds: [exam._id]
         };
 
         const question = new Question(questionData);
         await question.save();
 
         // Update exam questionCount and totalPoints
-        const questions = await Question.find({ exam: exam._id });
+        const questions = await Question.find({ examIds: exam._id });
         exam.questionCount = questions.length;
         exam.totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
         await exam.save();
@@ -363,9 +363,9 @@ router.delete('/:id/questions/:qid', adminAuth, async (req, res) => {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
-        const question = await Question.findOne({ 
-            _id: req.params.qid, 
-            exam: exam._id 
+        const question = await Question.findOne({
+            _id: req.params.qid,
+            examIds: exam._id
         });
         if (!question) {
             return errorResponse(res, 404, 'QUESTION_NOT_FOUND', '題目不存在');
@@ -374,7 +374,7 @@ router.delete('/:id/questions/:qid', adminAuth, async (req, res) => {
         await question.deleteOne();
 
         // Update exam questionCount and totalPoints
-        const questions = await Question.find({ exam: exam._id });
+        const questions = await Question.find({ examIds: exam._id });
         exam.questionCount = questions.length;
         exam.totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
         await exam.save();
@@ -553,7 +553,7 @@ router.get('/:id/statistics', adminAuth, async (req, res) => {
         }));
 
         // Merge aggregated correctness stats with question metadata (question docs are small)
-        const questions = await Question.find({ exam: examId })
+        const questions = await Question.find({ examIds: examId })
             .select('questionNumber type difficulty')
             .lean();
 
@@ -679,7 +679,7 @@ router.post('/:id/questions/bulk', adminAuth, upload.single('file'), async (req,
             try {
                 await Question.insertMany(validQuestions, { session });
                 
-                const questions = await Question.find({ exam: exam._id }).session(session);
+                const questions = await Question.find({ examIds: exam._id }).session(session);
                 exam.questionCount = questions.length;
                 exam.totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
                 await exam.save({ session });
@@ -894,7 +894,7 @@ function validateQuestion(q, rowNum) {
 // Helper: Build question data for database
 function buildQuestionData(q, examId) {
     const questionData = {
-        exam: examId,
+        examIds: [examId],
         type: q.type,
         difficulty: q.difficulty || 'medium',
         content: q.content,
@@ -963,7 +963,7 @@ router.post('/:id/preview', adminAuth, async (req, res) => {
         if (!exam) {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
-        const questions = await Question.find({ exam: exam._id }).sort({ questionNumber: 1 });
+        const questions = await Question.find({ examIds: exam._id }).sort({ questionNumber: 1 });
         res.json({
             data: {
                 exam: {
@@ -1002,7 +1002,7 @@ router.patch('/:id/questions/reorder', adminAuth, async (req, res) => {
             await session.withTransaction(async () => {
                 for (const item of reorder) {
                     await Question.findOneAndUpdate(
-                        { _id: item.questionId, exam: req.params.id },
+                        { _id: item.questionId, examIds: req.params.id },
                         { questionNumber: item.questionNumber },
                         { session }
                     );
@@ -1105,12 +1105,12 @@ router.post('/:id/clone', adminAuth, async (req, res) => {
         // Copy embedded questions when the source exam is manually authored
         // (question-bank-sourced exams carry questionRefs already copied above)
         if (source.source !== 'question_bank') {
-            const sourceQuestions = await Question.find({ exam: source._id }).lean();
+            const sourceQuestions = await Question.find({ examIds: source._id }).lean();
 
             if (sourceQuestions.length > 0) {
                 const questionCopies = sourceQuestions.map(q => {
-                    const { _id, __v, createdAt, updatedAt, ...rest } = q;
-                    return { ...rest, exam: newExam._id };
+                    const { _id, __v, createdAt, updatedAt, exam, ...rest } = q;
+                    return { ...rest, examIds: [newExam._id] };
                 });
 
                 await Question.insertMany(questionCopies);
