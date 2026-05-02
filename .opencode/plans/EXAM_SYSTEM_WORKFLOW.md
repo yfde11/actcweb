@@ -268,7 +268,6 @@ Counter {
      ├── expire ──> [expired] ─┘                            │
      ├── cancel ──> [cancelled]                           │
      └── cheating ──> [auto_submitted_cheating]                │
-                                                    └── certificate ──> [certificate_issued]
 ```
 
 **注意**：`auto_submitted_cheating` 狀態不進入計分流程（4.4），不生成證書（4.5），統計時排除（3.3）。
@@ -343,7 +342,7 @@ Counter {
 | POST | `/api/exams/:id/questions/bulk` | 批量匯入（CSV/JSON） |
 | GET | `/api/exams/:id/attempts/:attemptId` | **新增** 單一作答詳情（管理員） |
 | GET | `/api/exams/:id/attempts` | 作答紀錄（分頁、篩選，cursor-based pagination） |
-| GET | `/api/exams/:id/statistics` | 統計（平均分、及格率、各題正確率，**排除作弊**） |
+| GET | `/api/exams/:id/statistics` | 統計（平均分、及格率、各題正確率，**排除 cheatingDetected=true**） |
 | POST | `/api/exams/:id/certificates/regenerate` | 重新生成失敗的證書 |
 | GET | `/api/exams/:id/export-attempts` | 匯出成績（CSV） |
 | DELETE | `/api/exams/:id/attempts/:attemptId/cooldown` | 管理員手動解除用戶 cooldown |
@@ -362,6 +361,7 @@ Counter {
 | GET | `/api/member/exams/:id/result` | 查看成績（可指定 attemptId） |
 | GET | `/api/member/exams/:id/certificate` | 下載證書（即時生成 PDF stream） |
 | GET | `/api/member/certificates` | **新增** 我的所有證書列表 |
+| GET | `/api/certificates/verify/:certificateNumber` | **新增** 公開驗證證書（QR code 導向） |
 | GET | `/api/me/exam-history` | 我的作答紀錄 |
 
 ### 3.5 Cron 端點（`/api/cron`）
@@ -370,9 +370,9 @@ Counter {
 
 | 方法 | 路徑 | 功能 |
 |---|---|---|
-| GET | `/api/cron/expired-attempts` | 過期嘗試自動提交（需 `X-Cron-Secret` header + IP） |
-| GET | `/api/cron/close-expired-exams` | 考試自動關閉（需 `X-Cron-Secret` header + IP） |
-| GET | `/api/cron/cleanup-orphaned-files` | 孤檔清理（需 `X-Cron-Secret` header + IP） |
+| POST | `/api/cron/expired-attempts` | 過期嘗試自動提交（需 `X-Cron-Secret` header + IP） |
+| POST | `/api/cron/close-expired-exams` | 考試自動關閉（需 `X-Cron-Secret` header + IP） |
+| POST | `/api/cron/cleanup-orphaned-files` | 孤檔清理（需 `X-Cron-Secret` header + IP） |
 
 **注意**：Render 免費版無原生 Cron，需使用外部服務（如 [cron-job.org](https://cron-job.org)）呼叫認證端點。
 
@@ -427,9 +427,9 @@ POST /api/member/exams/:id/save-progress
    - 前端傳 [{ questionId, answer }]
    - 未出現在 answers 的快照題目 = unanswered（answer=null）
 3. 更新 attempt：
-   - 後端自行計算作弊檢測：
+   - 後端自行計算作弊檢測（完全不依賴前端 visibilityChangeCount）：
      * 若 timeSpent < questionsPerAttempt * 30 秒（每題最少 30 秒）→ cheatingDetected = true
-     * 若 visibilityChangeCount > 10（異常頻繁切換）→ cheatingDetected = true
+     * 檢測前端傳入 visibilityChangeCount > 10（異常頻繁切換）→ cheatingDetected = true（後備）
    - 若 cheatingDetected=true → status = 'auto_submitted_cheating'
    - 否則 → status = 'submitted'
    - submittedAt = now
@@ -884,9 +884,14 @@ fill_in_blank,HTTP 的預設阜號是？,,80,1,easy,
 
 **CSV 規則**：
 - `options`：MC 題用 `;` 分隔，T/F 和 Fill 留空
-- `correctAnswer`：MC 用選項標籤（A/B/C/D → 0/1/2/3），T/F 用 TRUE/FALSE，Fill 用正確答案
+- `correctAnswer`：MC 用選項標籤（A/B/C/D），T/F 用 TRUE/FALSE，Fill 用正確答案
 - `difficulty`：easy | medium | hard
 - `explanation`：可選
+
+**CSV 安全防護**：
+- 匯入時檢查首字元是否為 `=`, `+`, `-`, `@`（formula injection）
+- 若發現則自動加單引號前綴或拒絕匯入
+- 使用 `validator.escape()` 處理所有文字欄位（content, options, explanation）
 
 **Bulk import 轉換規則**：
 - MC `correctAnswer`：A→0, B→1, C→2, D→3（儲存為 `correctOptionIndex`）
@@ -997,13 +1002,34 @@ ACTC 團隊
 ACTC 團隊
 ```
 
-### 15.4 管理員測試 API
+### 15.4 Webhook 端點（P2 加入）
+
+| 方法 | 路徑 | 功能 |
+|---|---|---|
+| POST | `/api/webhooks/exam-submitted` | 考試提交事件（JSON payload） |
+| POST | `/api/webhooks/exam-passed` | 通過考試事件（含證書連結） |
+| POST | `/api/webhooks/exam-failed` | 未通過事件（含建議） |
+
+**Webhook Payload 範例**：
+```json
+{
+  "event": "exam.submitted",
+  "examId": "507f1f77bcf86cd799439011",
+  "userId": "507f1f77bcf86cd799439022",
+  "attemptId": "507f1f77bcf86cd799439033",
+  "score": 85,
+  "passed": true,
+  "timestamp": "2026-05-02T10:30:00Z"
+}
+```
+
+### 15.5 管理員測試 API
 
 | 方法 | 路徑 | 功能 |
 |---|---|---|
 | POST | `/api/exams/:id/notify-test` | 發送測試通知（管理員） |
 
-### 15.5 實作注意
+### 15.6 實作注意
 
 - 使用 `services/email.js` 的 `sendMail()` 函數
 - 考試提交時觸發：在 `4.4 自動計分` 第 7 步後呼叫

@@ -25,6 +25,9 @@ const memberNewsRoutes = require('./routes/member-news');
 const memberEventsRoutes = require('./routes/member-events');
 const workingGroupsRoutes = require('./routes/working-groups');
 const adminWorkingGroupsRoutes = require('./routes/admin-working-groups');
+const examRoutes = require('./routes/exams');
+const memberExamRoutes = require('./routes/member-exams');
+const cronRoutes = require('./routes/cron');
 const { ensureMongo } = require('./middleware/mongoReady');
 const { bootstrapDatabase } = require('./lib/bootstrapDb');
 
@@ -65,6 +68,44 @@ app.use('/api/member/news', memberNewsRoutes);
 app.use('/api/member/events', memberEventsRoutes);
 app.use('/api/working-groups', workingGroupsRoutes);
 app.use('/api/admin/working-groups', adminWorkingGroupsRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/member/exams', memberExamRoutes);
+app.use('/api/cron', cronRoutes);
+
+// Certificate verification (public)
+const Certificate = require('./models/Certificate');
+app.get('/api/certificates/verify/:certificateNumber', async (req, res) => {
+    try {
+        const certificate = await Certificate.findOne({
+            certificateNumber: req.params.certificateNumber,
+            isRevoked: { $ne: true }
+        }).populate('exam', 'title').populate('user', 'username fullName');
+
+        if (!certificate) {
+            return res.status(404).json({ error: { code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在或已被撤銷' } });
+        }
+
+        if (certificate.expiresAt && new Date() > certificate.expiresAt) {
+            return res.status(403).json({ error: { code: 'CERTIFICATE_EXPIRED', message: '證書已過期' } });
+        }
+
+        res.json({
+            data: {
+                certificateNumber: certificate.certificateNumber,
+                issuedAt: certificate.issuedAt,
+                expiresAt: certificate.expiresAt,
+                exam: certificate.exam,
+                user: {
+                    username: certificate.user.username,
+                    fullName: certificate.user.fullName
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Verify certificate error:', error);
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: '伺服器錯誤' } });
+    }
+});
 
 // 會員專區（靜態 SPA）
 app.get('/member', (req, res) => {
