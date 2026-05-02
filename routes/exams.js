@@ -124,7 +124,7 @@ router.get('/:id', adminAuth, async (req, res) => {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
-        const questions = await Question.find({ exam: exam._id }).sort({ questionNumber: 1 });
+        const questions = await Question.find({ examIds: exam._id }).sort({ questionNumber: 1 });
 
         res.json({ data: { ...exam.toObject(), questions } });
     } catch (error) {
@@ -208,7 +208,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
 
         // Cascade delete: questions, attempts, certificates
         await Promise.all([
-            Question.deleteMany({ exam: exam._id }),
+            Question.deleteMany({ examIds: exam._id }),
             ExamAttempt.deleteMany({ exam: exam._id }),
             Certificate.deleteMany({ exam: exam._id })
         ]);
@@ -241,8 +241,8 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
 
         const validTransitions = {
             draft: ['published', 'deleted'],
-            published: ['active', 'draft', 'deleted'],
-            active: ['closed', 'deleted'],
+            published: ['active', 'draft', 'archived', 'deleted'],
+            active: ['closed', 'archived', 'deleted'],
             closed: ['archived', 'deleted'],
             archived: ['deleted'],
             deleted: []
@@ -284,11 +284,11 @@ router.get('/:id/questions', adminAuth, async (req, res) => {
         const skip = (parseInt(page) - 1) * limit;
 
         const [questions, total] = await Promise.all([
-            Question.find({ exam: req.params.id })
+            Question.find({ examIds: req.params.id })
                 .sort({ questionNumber: 1 })
                 .skip(skip)
                 .limit(limit),
-            Question.countDocuments({ exam: req.params.id })
+            Question.countDocuments({ examIds: req.params.id })
         ]);
 
         res.json({
@@ -324,14 +324,14 @@ router.post('/:id/questions', adminAuth, async (req, res) => {
 
         const questionData = {
             ...req.body,
-            exam: exam._id
+            examIds: [exam._id]
         };
 
         const question = new Question(questionData);
         await question.save();
 
         // Update exam questionCount and totalPoints
-        const questions = await Question.find({ exam: exam._id });
+        const questions = await Question.find({ examIds: exam._id });
         exam.questionCount = questions.length;
         exam.totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
         await exam.save();
@@ -363,9 +363,9 @@ router.delete('/:id/questions/:qid', adminAuth, async (req, res) => {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
-        const question = await Question.findOne({ 
-            _id: req.params.qid, 
-            exam: exam._id 
+        const question = await Question.findOne({
+            _id: req.params.qid,
+            examIds: exam._id
         });
         if (!question) {
             return errorResponse(res, 404, 'QUESTION_NOT_FOUND', '題目不存在');
@@ -374,7 +374,7 @@ router.delete('/:id/questions/:qid', adminAuth, async (req, res) => {
         await question.deleteOne();
 
         // Update exam questionCount and totalPoints
-        const questions = await Question.find({ exam: exam._id });
+        const questions = await Question.find({ examIds: exam._id });
         exam.questionCount = questions.length;
         exam.totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
         await exam.save();
@@ -427,64 +427,168 @@ router.get('/:id/attempts', adminAuth, async (req, res) => {
     }
 });
 
-// GET /api/exams/:id/statistics - exam statistics
+// GET /api/exams/:id/statistics - exam statistics (aggregation-based, no OOM risk)
 router.get('/:id/statistics', adminAuth, async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
-        const exam = await Exam.findById(req.params.id);
+        const examId = new mongoose.Types.ObjectId(req.params.id);
+
+        const exam = await Exam.findById(examId);
         if (!exam) {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
-        // Exclude cheating attempts from statistics
-        const attempts = await ExamAttempt.find({
-            exam: exam._id,
-            status: 'graded',
-            cheatingDetected: { $ne: true }
+        // --- Summary statistics via aggregation (no documents loaded into Node memory) ---
+        const summaryPipeline = [
+            {
+                $match: {
+                    exam: examId,
+                    status: 'graded',
+                    cheatingDetected: { $ne: true }
+                }
+            },
+            {
+                $facet: {
+                    summary: [
+                        {
+                            $group: {
+                                _id: null,
+                                totalAttempts: { $sum: 1 },
+                                passCount: {
+                                    $sum: { $cond: [{ $eq: ['$passed', true] }, 1, 0] }
+                                },
+                                failCount: {
+                                    $sum: { $cond: [{ $eq: ['$passed', false] }, 1, 0] }
+                                },
+                                averageScore: { $avg: '$score' },
+                                highestScore: { $max: '$score' },
+                                lowestScore: { $min: '$score' },
+                                averageTimeSpent: { $avg: '$timeSpent' }
+                            }
+                        }
+                    ],
+                    scoreDistribution: [
+                        {
+                            $bucket: {
+                                groupBy: '$score',
+                                boundaries: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 101],
+                                default: 'other',
+                                output: { count: { $sum: 1 } }
+                            }
+                        }
+                    ]
+                }
+            }
+        ];
+
+        // --- Per-question correctness statistics via aggregation ---
+        // Unwind the answers array so each answer document becomes a separate pipeline stage row.
+        // This avoids loading any attempt documents into Node.js memory.
+        const questionStatsPipeline = [
+            {
+                $match: {
+                    exam: examId,
+                    status: 'graded',
+                    cheatingDetected: { $ne: true }
+                }
+            },
+            { $unwind: '$answers' },
+            {
+                $group: {
+                    _id: '$answers.questionId',
+                    totalAnswers: { $sum: 1 },
+                    correctCount: {
+                        $sum: { $cond: [{ $eq: ['$answers.isCorrect', true] }, 1, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    questionId: '$_id',
+                    totalAnswers: 1,
+                    correctCount: 1,
+                    correctRate: {
+                        $cond: [
+                            { $gt: ['$totalAnswers', 0] },
+                            {
+                                $multiply: [
+                                    { $divide: ['$correctCount', '$totalAnswers'] },
+                                    100
+                                ]
+                            },
+                            0
+                        ]
+                    }
+                }
+            }
+        ];
+
+        // Run both aggregations in parallel
+        const [facetResult, questionAggStats] = await Promise.all([
+            ExamAttempt.aggregate(summaryPipeline),
+            ExamAttempt.aggregate(questionStatsPipeline)
+        ]);
+
+        // Extract summary (facet returns an array with one element)
+        const summaryArr = facetResult[0]?.summary || [];
+        const summary = summaryArr[0] || {
+            totalAttempts: 0,
+            passCount: 0,
+            failCount: 0,
+            averageScore: 0,
+            highestScore: null,
+            lowestScore: null,
+            averageTimeSpent: 0
+        };
+
+        const scoreDistribution = (facetResult[0]?.scoreDistribution || []).map(bucket => ({
+            range: bucket._id === 'other'
+                ? 'other'
+                : `${bucket._id}-${Math.min(bucket._id + 9, 100)}`,
+            count: bucket.count
+        }));
+
+        // Merge aggregated correctness stats with question metadata (question docs are small)
+        const questions = await Question.find({ examIds: examId })
+            .select('questionNumber type difficulty')
+            .lean();
+
+        const aggMap = {};
+        questionAggStats.forEach(s => {
+            aggMap[s.questionId.toString()] = s;
         });
 
-        const totalAttempts = attempts.length;
-        const passedAttempts = attempts.filter(a => a.passed).length;
-        const averageScore = totalAttempts > 0 ?
-            attempts.reduce((sum, a) => sum + a.score, 0) / totalAttempts : 0;
+        const questionStats = questions.map(q => {
+            const agg = aggMap[q._id.toString()] || { totalAnswers: 0, correctCount: 0, correctRate: 0 };
+            return {
+                questionId: q._id,
+                questionNumber: q.questionNumber,
+                type: q.type,
+                difficulty: q.difficulty,
+                totalAnswers: agg.totalAnswers,
+                correctCount: agg.correctCount,
+                correctRate: agg.correctRate
+            };
+        });
 
-        // Per-question statistics
-        const questions = await Question.find({ exam: exam._id });
-        const questionStats = [];
-
-        for (const question of questions) {
-            const questionAttempts = attempts.filter(a => 
-                a.questionSnapshot.some(q => q.questionId.toString() === question._id.toString())
-            );
-
-            const correctCount = questionAttempts.filter(a => {
-                const answer = a.answers.find(ans => 
-                    ans.questionId.toString() === question._id.toString()
-                );
-                return answer && answer.isCorrect;
-            }).length;
-
-            questionStats.push({
-                questionId: question._id,
-                questionNumber: question.questionNumber,
-                type: question.type,
-                difficulty: question.difficulty,
-                totalAnswers: questionAttempts.length,
-                correctCount,
-                correctRate: questionAttempts.length > 0 ? 
-                    (correctCount / questionAttempts.length * 100) : 0
-            });
-        }
+        const { totalAttempts, passCount, failCount, averageScore,
+                highestScore, lowestScore, averageTimeSpent } = summary;
 
         res.json({
             data: {
                 totalAttempts,
-                passedAttempts,
-                passRate: totalAttempts > 0 ? (passedAttempts / totalAttempts * 100) : 0,
-                averageScore,
+                passedAttempts: passCount,
+                failCount,
+                passRate: totalAttempts > 0 ? (passCount / totalAttempts * 100) : 0,
+                averageScore: averageScore || 0,
+                highestScore,
+                lowestScore,
+                averageTimeSpent: averageTimeSpent || 0,
+                scoreDistribution,
                 questionStats
             }
         });
@@ -575,7 +679,7 @@ router.post('/:id/questions/bulk', adminAuth, upload.single('file'), async (req,
             try {
                 await Question.insertMany(validQuestions, { session });
                 
-                const questions = await Question.find({ exam: exam._id }).session(session);
+                const questions = await Question.find({ examIds: exam._id }).session(session);
                 exam.questionCount = questions.length;
                 exam.totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
                 await exam.save({ session });
@@ -790,7 +894,7 @@ function validateQuestion(q, rowNum) {
 // Helper: Build question data for database
 function buildQuestionData(q, examId) {
     const questionData = {
-        exam: examId,
+        examIds: [examId],
         type: q.type,
         difficulty: q.difficulty || 'medium',
         content: q.content,
@@ -859,7 +963,7 @@ router.post('/:id/preview', adminAuth, async (req, res) => {
         if (!exam) {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
-        const questions = await Question.find({ exam: exam._id }).sort({ questionNumber: 1 });
+        const questions = await Question.find({ examIds: exam._id }).sort({ questionNumber: 1 });
         res.json({
             data: {
                 exam: {
@@ -898,7 +1002,7 @@ router.patch('/:id/questions/reorder', adminAuth, async (req, res) => {
             await session.withTransaction(async () => {
                 for (const item of reorder) {
                     await Question.findOneAndUpdate(
-                        { _id: item.questionId, exam: req.params.id },
+                        { _id: item.questionId, examIds: req.params.id },
                         { questionNumber: item.questionNumber },
                         { session }
                     );
@@ -948,6 +1052,127 @@ router.post('/from-bank', adminAuth, async (req, res) => {
     } catch (error) {
         console.error('Generate exam from bank error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', error.message || '伺服器錯誤');
+    }
+});
+
+// POST /api/exams/:id/clone - clone any exam to a new draft (admin override for published/active)
+router.post('/:id/clone', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+
+        const source = await Exam.findById(req.params.id).lean();
+        if (!source) {
+            return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
+        }
+
+        // Build the new exam using the same field allowlist as the POST create route.
+        // _id, createdAt, updatedAt, questionCount, totalPoints are intentionally excluded.
+        const {
+            description, shortDescription, examType, timeLimit, passingScore,
+            maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
+            shuffleQuestions, shuffleOptions, showCorrectAnswers, certificateEnabled,
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs, source: examSource,
+            tags
+        } = source;
+
+        const cloneData = {
+            title: `${source.title} (複本)`,
+            description, shortDescription, examType, timeLimit, passingScore,
+            maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
+            shuffleQuestions, shuffleOptions, showCorrectAnswers, certificateEnabled,
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            source: examSource,
+            tags,
+            // Reset scheduling so admin must explicitly set new dates
+            startDate: undefined,
+            endDate: undefined,
+            // Always draft + attributed to the requesting admin
+            status: 'draft',
+            createdBy: req.user.userId,
+            // Reset computed counters; they will be recalculated if questions are copied
+            questionCount: 0,
+            totalPoints: 0
+        };
+
+        // Remove undefined keys so Mongoose defaults apply properly
+        Object.keys(cloneData).forEach(k => cloneData[k] === undefined && delete cloneData[k]);
+
+        const newExam = new Exam(cloneData);
+        await newExam.save();
+
+        // Copy embedded questions when the source exam is manually authored
+        // (question-bank-sourced exams carry questionRefs already copied above)
+        if (source.source !== 'question_bank') {
+            const sourceQuestions = await Question.find({ examIds: source._id }).lean();
+
+            if (sourceQuestions.length > 0) {
+                const questionCopies = sourceQuestions.map(q => {
+                    const { _id, __v, createdAt, updatedAt, exam, ...rest } = q;
+                    return { ...rest, examIds: [newExam._id] };
+                });
+
+                await Question.insertMany(questionCopies);
+
+                // Update the cloned exam's denormalised counters
+                newExam.questionCount = questionCopies.length;
+                newExam.totalPoints = questionCopies.reduce((sum, q) => sum + (q.points || 0), 0);
+                await newExam.save();
+            }
+        }
+
+        res.status(201).json({
+            data: {
+                _id: newExam._id,
+                title: newExam.title,
+                status: newExam.status,
+                questionCount: newExam.questionCount,
+                totalPoints: newExam.totalPoints
+            }
+        });
+    } catch (error) {
+        console.error('Clone exam error:', error);
+        if (error.name === 'ValidationError') {
+            const details = {};
+            for (let field in error.errors) {
+                details[field] = error.errors[field].message;
+            }
+            return errorResponse(res, 400, 'VALIDATION_ERROR', '欄位驗證失敗', details);
+        }
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// POST /api/exams/:id/archive - convenience shortcut: move exam to archived status
+// Equivalent to PATCH /:id/status { status: 'archived' } but semantically clearer for admins.
+// Works for published, active, and closed exams (transition map in PATCH /status enforces this).
+router.post('/:id/archive', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+
+        const exam = await Exam.findById(req.params.id);
+        if (!exam) {
+            return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
+        }
+
+        const archivableStatuses = ['published', 'active', 'closed'];
+        if (!archivableStatuses.includes(exam.status)) {
+            return errorResponse(
+                res, 400, 'STATUS_TRANSITION_INVALID',
+                `無法從 ${exam.status} 封存，只有 published / active / closed 狀態可以封存`
+            );
+        }
+
+        exam.status = 'archived';
+        await exam.save();
+
+        res.json({ data: exam });
+    } catch (error) {
+        console.error('Archive exam error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
     }
 });
 

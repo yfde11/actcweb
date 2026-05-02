@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const ACTIVE_DUPLICATE_BLOCK_STATUSES = ['registered', 'waitlisted', 'pending_approval', 'confirmed', 'waitlist'];
+const ACTIVE_DUPLICATE_BLOCK_STATUSES = ['registered', 'waitlisted', 'pending_approval'];
 
 const eventRegistrationSchema = new mongoose.Schema({
     event: {
@@ -126,8 +126,9 @@ const eventRegistrationSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-    // 讀寫歷年 BSON 內額外欄位（例如舊的 name / email 未 migration 的報名筆）以便 API 可合併至 participant*。
-    strict: false
+    // Legacy BSON fields (e.g. old name/email keys) are handled via virtual setters above.
+    // All actively written fields are explicitly declared; strict mode is safe.
+    strict: true
 });
 
 eventRegistrationSchema.index(

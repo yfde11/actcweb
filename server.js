@@ -13,6 +13,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
@@ -42,14 +43,50 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-// 中間件（關閉 CSP：前台使用 Tailwind CDN 與內嵌 script）
+// Security middleware
 app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            // 'unsafe-inline' required for Alpine.js x-data directives (CDN build)
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+        },
+    },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-app.use(cors());
+const _corsOrigins = (() => {
+    const origins = [];
+    if (process.env.SITE_URL) {
+        origins.push(process.env.SITE_URL.replace(/\/$/, ''));
+    }
+    if (process.env.NODE_ENV !== 'production') {
+        origins.push(
+            'http://localhost:5001',
+            'http://localhost:3000',
+            'http://127.0.0.1:5001',
+            'http://127.0.0.1:3000'
+        );
+    }
+    return origins;
+})();
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (_corsOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // API 一律需資料庫已連線（避免登入與後台操作回不明 500）
 app.use('/api', ensureMongo);
@@ -76,38 +113,24 @@ app.use('/api/question-bank', questionBankRoutes);
 app.use('/api/cron', cronRoutes);
 
 // Certificate verification (public)
-const Certificate = require('./models/Certificate');
+const { verifyCertificate } = require('./services/examCertificates');
 app.get('/api/certificates/verify/:certificateNumber', async (req, res) => {
     try {
-        const certificate = await Certificate.findOne({
-            certificateNumber: req.params.certificateNumber,
-            isRevoked: { $ne: true }
-        }).populate('exam', 'title').populate('user', 'username fullName');
-
-        if (!certificate) {
-            return res.status(404).json({ error: { code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在或已被撤銷' } });
+        const result = await verifyCertificate(req.params.certificateNumber);
+        if (!result.ok) {
+            return res.status(result.statusCode).json({ error: { code: result.code, message: result.message } });
         }
-
-        if (certificate.expiresAt && new Date() > certificate.expiresAt) {
-            return res.status(403).json({ error: { code: 'CERTIFICATE_EXPIRED', message: '證書已過期' } });
-        }
-
-        res.json({
-            data: {
-                certificateNumber: certificate.certificateNumber,
-                issuedAt: certificate.issuedAt,
-                expiresAt: certificate.expiresAt,
-                exam: certificate.exam,
-                user: {
-                    username: certificate.user.username,
-                    fullName: certificate.user.fullName
-                }
-            }
-        });
+        res.json({ data: result.data });
     } catch (error) {
         console.error('Verify certificate error:', error);
         res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: '伺服器錯誤' } });
     }
+});
+
+// Certificate verification redirect: PDF QR codes link here; redirect to frontend
+// so users see a friendly page (frontend reads ?verify= query param to display result)
+app.get('/verify-certificate/:certificateNumber', (req, res) => {
+    res.redirect(`/?verify=${encodeURIComponent(req.params.certificateNumber)}`);
 });
 
 // 會員專區（靜態 SPA）

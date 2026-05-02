@@ -366,14 +366,121 @@
                                                     class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
                                                 繼續考試
                                             </button>
+                                            <button x-show="exam.userAttempts?.filter(a => a.status === 'graded' || a.status === 'auto_submitted_cheating').length > 0"
+                                                    @click="toggleHistory(exam._id)"
+                                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50">
+                                                <span x-text="historyExamId === exam._id ? '收起歷史' : '查看歷史'"></span>
+                                            </button>
                                             <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'MAX_ATTEMPTS_REACHED'"
                                                   class="text-xs text-red-600">已達最大次數</span>
                                             <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'COOLDOWN_ACTIVE'"
                                                   class="text-xs text-amber-600">冷卻中，可於 <span x-text="new Date(exam.canStart.nextAttemptAt).toLocaleDateString()"></span> 重考</span>
                                         </div>
                                     </div>
+
+                                    <!-- 考試歷史面板 -->
+                                    <div x-show="historyExamId === exam._id" class="mt-4 pt-4 border-t border-gray-200">
+                                        <h5 class="text-sm font-semibold text-gray-700 mb-3">過去作答紀錄</h5>
+                                        <div class="space-y-2">
+                                            <template x-for="(attempt, idx) in exam.userAttempts.filter(a => a.status === 'graded' || a.status === 'auto_submitted_cheating')" :key="attempt._id">
+                                                <div class="flex items-center justify-between bg-gray-50 rounded px-3 py-2 text-sm">
+                                                    <div class="flex items-center gap-3">
+                                                        <span class="text-gray-600 font-medium" x-text="'第 ' + attempt.attemptNumber + ' 次'"></span>
+                                                        <span class="font-semibold" x-text="Math.round(attempt.score) + '%'"></span>
+                                                        <span class="inline-block px-2 py-0.5 rounded text-xs font-medium"
+                                                              :class="attempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                                              x-text="attempt.passed ? '已通過' : '未通過'"></span>
+                                                        <span class="text-gray-500 text-xs" x-text="attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'/') : '—'"></span>
+                                                    </div>
+                                                    <button @click="loadAttemptDetail(exam._id, attempt._id)"
+                                                            :disabled="historyLoading"
+                                                            class="px-3 py-1 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-100 disabled:opacity-50">
+                                                        查看詳情
+                                                    </button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <p x-show="historyLoading" class="text-xs text-gray-500 mt-2">載入中…</p>
+                                    </div>
                                 </div>
                             </template>
+                        </div>
+                    </div>
+
+                    <!-- 作答詳情 Modal -->
+                    <div x-show="historyAttemptDetail" x-cloak
+                         @keydown.escape.window="closeAttemptDetail()"
+                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         @click.self="closeAttemptDetail()">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden" @click.stop>
+                            <div class="px-5 py-3 border-b flex justify-between items-center shrink-0">
+                                <h3 class="text-lg font-semibold">作答詳情</h3>
+                                <button type="button" @click="closeAttemptDetail()" class="text-gray-500 hover:text-gray-800" aria-label="關閉">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <template x-if="historyAttemptDetail">
+                                <div class="p-5 overflow-y-auto flex-1 space-y-4 text-sm text-gray-800">
+                                    <!-- 摘要 -->
+                                    <div class="flex flex-wrap gap-4 p-3 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <p class="text-xs text-gray-500">得分</p>
+                                            <p class="font-semibold text-lg" x-text="Math.round(historyAttemptDetail.score) + '%'"></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">結果</p>
+                                            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium mt-0.5"
+                                                  :class="historyAttemptDetail.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                                  x-text="historyAttemptDetail.passed ? '已通過' : '未通過'"></span>
+                                        </div>
+                                        <div x-show="historyAttemptDetail.timeSpent">
+                                            <p class="text-xs text-gray-500">作答時間</p>
+                                            <p class="font-medium" x-text="formatTimeSpent(historyAttemptDetail.timeSpent)"></p>
+                                        </div>
+                                        <div x-show="historyAttemptDetail.passingScore != null">
+                                            <p class="text-xs text-gray-500">通過分數</p>
+                                            <p class="font-medium" x-text="historyAttemptDetail.passingScore + '%'"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 題目作答明細 -->
+                                    <div x-show="historyAttemptDetail.questionSnapshot && historyAttemptDetail.questionSnapshot.length > 0">
+                                        <h4 class="font-semibold text-gray-700 mb-3">題目作答明細</h4>
+                                        <div class="space-y-3">
+                                            <template x-for="(q, idx) in historyAttemptDetail.questionSnapshot" :key="q.questionId">
+                                                <div class="border rounded-lg p-3"
+                                                     :class="(() => { const ans = (historyAttemptDetail.answers || []).find(a => String(a.questionId) === String(q.questionId)); return ans ? (ans.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50') : 'border-gray-200'; })()">
+                                                    <div class="flex items-start gap-2">
+                                                        <span class="shrink-0 mt-0.5 text-base" x-text="(() => { const ans = (historyAttemptDetail.answers || []).find(a => String(a.questionId) === String(q.questionId)); return ans ? (ans.isCorrect ? '✓' : '✗') : '—'; })()"></span>
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="font-medium text-gray-900">
+                                                                <span x-text="(idx + 1) + '. '"></span><span x-text="q.content && q.content.length > 120 ? q.content.substring(0, 120) + '…' : q.content"></span>
+                                                            </p>
+                                                            <div class="mt-1 text-xs space-y-0.5">
+                                                                <p class="text-gray-600">
+                                                                    <span class="font-medium">您的答案：</span>
+                                                                    <span x-text="(() => { const ans = (historyAttemptDetail.answers || []).find(a => String(a.questionId) === String(q.questionId)); if (!ans || ans.answer === undefined || ans.answer === null || ans.answer === '') return '（未作答）'; if (q.type === 'true_false') return ans.answer === true || ans.answer === 'true' ? '正確 (True)' : '錯誤 (False)'; if (q.type === 'multiple_choice' && Array.isArray(q.options || [])) { const i = Number(ans.answer); const opt = (q.options || [])[i]; return opt ? (String.fromCharCode(65 + i) + '. ' + opt.text) : String(ans.answer); } return String(ans.answer); })()"></span>
+                                                                </p>
+                                                                <p x-show="historyAttemptDetail.showCorrectAnswers !== 'never'" class="text-gray-600">
+                                                                    <span class="font-medium">正確答案：</span>
+                                                                    <span x-text="(() => { if (q.type === 'true_false') return q.correctAnswer === true || q.correctAnswer === 'true' ? '正確 (True)' : '錯誤 (False)'; if (q.type === 'multiple_choice') { const i = Number(q.correctAnswer); const opt = (q.options || [])[i]; return opt ? (String.fromCharCode(65 + i) + '. ' + opt.text) : String(q.correctAnswer); } return q.correctAnswer !== undefined && q.correctAnswer !== null ? String(q.correctAnswer) : '—'; })()"></span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <!-- 無題目明細時的提示 -->
+                                    <p x-show="!historyAttemptDetail.questionSnapshot || historyAttemptDetail.questionSnapshot.length === 0"
+                                       class="text-gray-500 text-sm">此次考試不提供題目作答明細。</p>
+                                </div>
+                            </template>
+                            <div class="px-5 py-3 border-t bg-gray-50 flex justify-end shrink-0">
+                                <button type="button" @click="closeAttemptDetail()" class="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-100 text-sm">關閉</button>
+                            </div>
                         </div>
                     </div>
 
@@ -864,11 +971,13 @@
                     try {
                         let r = await fetch('/api/member/events/my-registrations', {
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             cache: 'no-store'
                         });
                         if (!r.ok) {
                             r = await fetch('/api/profile/me/event-registrations', {
                                 headers: this.authHeaders(),
+                                credentials: 'include',
                                 cache: 'no-store'
                             });
                         }
@@ -913,12 +1022,14 @@
                     try {
                         let r = await fetch(`/api/member/events/${eventId}/cancel`, {
                             method: 'POST',
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (!r.ok) {
                             r = await fetch(`/api/profile/me/event-registrations/${eventId}`, {
                                 method: 'DELETE',
-                                headers: this.authHeaders()
+                                headers: this.authHeaders(),
+                                credentials: 'include',
                             });
                         }
                         const text = await r.text();
@@ -994,7 +1105,8 @@
                     this.showMaterialsModal = true;
                     try {
                         const r = await fetch(`/api/member/events/${row.event.id}/materials`, {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const d = await r.json().catch(() => ({}));
                         this.currentMaterials = r.ok ? (d.materials || []) : [];
@@ -1066,6 +1178,7 @@
                         const r = await fetch(`/api/member/events/${this.selectedRegistration.event.id}/survey`, {
                             method: 'POST',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify(this.surveyForm)
                         });
                         const d = await r.json().catch(() => ({}));
@@ -1118,6 +1231,7 @@
                     try {
                         const r = await fetch('/api/profile/me', {
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             cache: 'no-store'
                         });
                         if (!r.ok) throw new Error();
@@ -1175,6 +1289,7 @@
                         const r = await fetch('/api/profile/me/working-groups', {
                             method: 'PUT',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify({ groupIds: this.wgSelectedIds })
                         });
                         const text = await r.text();
@@ -1201,6 +1316,8 @@
                 },
 
                 logout() {
+                    // Clear server-side httpOnly cookie
+                    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
                     localStorage.removeItem('memberToken');
                     this.token = '';
                     this.me = {};
@@ -1425,6 +1542,7 @@
                     const r = await fetch('/api/membership/apply', {
                         method: 'POST',
                         headers: this.authHeaders(),
+                        credentials: 'include',
                         body: JSON.stringify({})
                     });
                     const d = await r.json();
@@ -1448,6 +1566,7 @@
                         const r = await fetch('/api/profile/me', {
                             method: 'PATCH',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify(payload)
                         });
                         const text = await r.text();
@@ -1502,6 +1621,9 @@
                 timeRemainingInterval: null,
                 showTimeWarning: false,
                 visibilityChangeCount: 0,
+                historyExamId: null,
+                historyAttemptDetail: null,
+                historyLoading: false,
 
                 async init() {
                     await this.loadAvailableExams();
@@ -1516,7 +1638,8 @@
                     this.loading = true;
                     try {
                         const res = await fetch('/api/member/exams', {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (res.ok) {
                             const data = await res.json();
@@ -1535,7 +1658,8 @@
                     try {
                         const res = await fetch(`/api/member/exams/${examId}/start`, {
                             method: 'POST',
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const data = await res.json();
                         if (res.ok) {
@@ -1570,7 +1694,8 @@
                 async resumeExam(examId, attemptId) {
                     try {
                         const res = await fetch(`/api/member/exams/${examId}/resume`, {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const data = await res.json();
                         if (res.ok) {
@@ -1645,6 +1770,7 @@
                         const res = await fetch(`/api/member/exams/${this.currentAttempt.attemptId}/submit`, {
                             method: 'POST',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify({
                                 attemptId: this.currentAttempt.attemptId,
                                 answers: answersArray,
@@ -1677,7 +1803,8 @@
                     this.loadingCertificates = true;
                     try {
                         const res = await fetch('/api/member/certificates', {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (res.ok) {
                             const data = await res.json();
@@ -1713,6 +1840,49 @@
                         console.error('Download certificate error:', e);
                         alert('下載失敗');
                     }
+                },
+
+                toggleHistory(examId) {
+                    if (this.historyExamId === examId) {
+                        this.historyExamId = null;
+                    } else {
+                        this.historyExamId = examId;
+                        this.historyAttemptDetail = null;
+                    }
+                },
+
+                async loadAttemptDetail(examId, attemptId) {
+                    this.historyLoading = true;
+                    this.historyAttemptDetail = null;
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/result?attemptId=${attemptId}`, {
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok) {
+                            this.historyAttemptDetail = data.data || null;
+                        } else {
+                            alert(data.error?.message || '無法載入作答詳情');
+                        }
+                    } catch (e) {
+                        console.error('Load attempt detail error:', e);
+                        alert('網路錯誤，請稍後再試');
+                    } finally {
+                        this.historyLoading = false;
+                    }
+                },
+
+                closeAttemptDetail() {
+                    this.historyAttemptDetail = null;
+                },
+
+                formatTimeSpent(seconds) {
+                    if (!seconds && seconds !== 0) return '—';
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    if (mins === 0) return `${secs} 秒`;
+                    return `${mins} 分 ${secs} 秒`;
                 }
             };
         }

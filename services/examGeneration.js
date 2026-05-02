@@ -72,14 +72,13 @@ async function generateExamFromBank(params) {
     const selectedQuestionIds = [];
     
     for (const [domain, count] of Object.entries(domainQuestions)) {
+        // E8: Removed examIds exclusion filter — it permanently excluded questions once any exam
+        // referenced them, silently exhausting the question pool over time. The $addToSet on
+        // examIds is kept below as an audit trail but is no longer used as an exclusion gate.
         const questions = await Question.aggregate([
             {
                 $match: {
-                    domain: parseInt(domain),
-                    $or: [
-                        { examIds: { $exists: false } },
-                        { examIds: { $size: 0 } }
-                    ]
+                    domain: parseInt(domain)
                 }
             },
             { $sample: { size: count } }

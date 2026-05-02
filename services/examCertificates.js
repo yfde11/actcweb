@@ -6,6 +6,46 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Shared certificate verification logic used by both the public API endpoint
+ * and the member-exams router.
+ *
+ * Returns one of:
+ *   { ok: true, data: { certificateNumber, issuedAt, expiresAt, exam, user } }
+ *   { ok: false, statusCode, code, message }
+ *
+ * @param {string} certificateNumber
+ * @returns {Promise<Object>}
+ */
+async function verifyCertificate(certificateNumber) {
+    const certificate = await Certificate.findOne({
+        certificateNumber,
+        isRevoked: { $ne: true }
+    }).populate('exam', 'title').populate('user', 'username fullName');
+
+    if (!certificate) {
+        return { ok: false, statusCode: 404, code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在或已被撤銷' };
+    }
+
+    if (certificate.expiresAt && new Date() > certificate.expiresAt) {
+        return { ok: false, statusCode: 403, code: 'CERTIFICATE_EXPIRED', message: '證書已過期' };
+    }
+
+    return {
+        ok: true,
+        data: {
+            certificateNumber: certificate.certificateNumber,
+            issuedAt: certificate.issuedAt,
+            expiresAt: certificate.expiresAt,
+            exam: certificate.exam,
+            user: {
+                username: certificate.user.username,
+                fullName: certificate.user.fullName
+            }
+        }
+    };
+}
+
 // Default font for Chinese support
 const FONT_PATH = path.join(__dirname, '../fonts/NotoSansCJKtc-Regular.ttf');
 const BOLD_FONT_PATH = path.join(__dirname, '../fonts/NotoSansCJKtc-Bold.otf');
@@ -163,9 +203,10 @@ async function generateCertificatePDF(certificateId, res) {
     }
 
     // Verification URL
+    const siteUrl = (process.env.SITE_URL || 'https://actc.org.tw').replace(/\/$/, '');
     doc.moveDown(0.5);
     doc.fontSize(10)
-       .text(`驗證網址：https://${process.env.DOMAIN || 'actc.org.tw'}/verify-certificate/${certificate.certificateNumber}`, 
+       .text(`驗證網址：${siteUrl}/verify-certificate/${certificate.certificateNumber}`,
              { align: 'center' });
 
     // Finalize PDF
@@ -224,6 +265,7 @@ async function regenerateCertificate(attemptId) {
 }
 
 module.exports = {
+    verifyCertificate,
     generateCertificatePDF,
     regenerateCertificate
 };

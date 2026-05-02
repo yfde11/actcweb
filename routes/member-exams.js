@@ -8,10 +8,20 @@ const Counter = require('../models/Counter');
 const User = require('../models/User');
 const { verifiedAuth } = require('../middleware/memberAuth');
 const { gradeAttempt, generateCertificate } = require('../services/examGrading');
-const { generateCertificatePDF } = require('../services/examCertificates');
+const { verifyCertificate, generateCertificatePDF } = require('../services/examCertificates');
 const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = require('../services/examNotifications');
 
 const router = express.Router();
+
+// Fisher-Yates shuffle — returns a new shuffled array, does not mutate the original
+function fisherYatesShuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
 
 // Error response helper
 function errorResponse(res, statusCode, code, message, details = {}) {
@@ -41,6 +51,17 @@ router.get('/', verifiedAuth, async (req, res) => {
                 ]}
             ]
         };
+
+        // Exclude 'specific' exams whose allowedMemberIds does not include this user.
+        // We push this into the DB query rather than filtering in JS to avoid loading
+        // ineligible exam documents into memory.
+        query.$and = query.$and || [];
+        query.$and.push({
+            $or: [
+                { allowedMembers: { $ne: 'specific' } },
+                { allowedMembers: 'specific', allowedMemberIds: new mongoose.Types.ObjectId(userId) }
+            ]
+        });
 
         const [exams, total] = await Promise.all([
             Exam.find(query)
@@ -209,6 +230,16 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
             return errorResponse(res, 403, 'EXAM_NOT_ACTIVE', '考試尚未開放或已結束');
         }
 
+        // Specific-member access control
+        if (exam.allowedMembers === 'specific') {
+            const allowed = (exam.allowedMemberIds || []).map(id => id.toString());
+            if (!allowed.includes(req.authUser._id.toString())) {
+                return res.status(403).json({
+                    error: { code: 'NOT_ALLOWED', message: '您未被授權參加此考試' }
+                });
+            }
+        }
+
         // Check max attempts
         const gradedAttempts = await ExamAttempt.find({
             exam: exam._id,
@@ -266,12 +297,14 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
                 selectedQuestions = [...easyQuestions, ...mediumQuestions, ...hardQuestions];
                 
                 // If not enough questions, fill from remaining
+                // E7: Shuffle remaining before slicing so fallback fill is non-deterministic
                 if (selectedQuestions.length < exam.questionsPerAttempt) {
-                    const remaining = allQuestions.filter(q => 
+                    const remaining = allQuestions.filter(q =>
                         !selectedQuestions.some(s => s._id.toString() === q._id.toString())
                     );
                     const fillCount = exam.questionsPerAttempt - selectedQuestions.length;
-                    selectedQuestions.push(...remaining.slice(0, fillCount));
+                    const shuffledRemaining = fisherYatesShuffle(remaining);
+                    selectedQuestions.push(...shuffledRemaining.slice(0, fillCount));
                 }
             }
 
@@ -352,7 +385,7 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
             questionMap[q._id.toString()] = q;
         });
 
-        const returnQuestions = attempt.questionSnapshot.map(snapshot => {
+        let returnQuestions = attempt.questionSnapshot.map(snapshot => {
             const fullQ = questionMap[snapshot.questionId.toString()];
             let options = fullQ ? [...fullQ.options] : [];
 
@@ -394,6 +427,11 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
         // Persist any correctAnswer updates caused by option shuffling
         if (exam.shuffleOptions) {
             await attempt.save();
+        }
+
+        // Shuffle question order when enabled
+        if (exam.shuffleQuestions === true) {
+            returnQuestions = fisherYatesShuffle(returnQuestions);
         }
 
         res.json({
@@ -580,32 +618,37 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
 
         // Backend cheat detection (independent of frontend)
         const exam = await Exam.findById(req.params.id);
-        const timeSpentSeconds = timeSpent || Math.floor((new Date() - attempt.startedAt) / 1000);
-        
+
+        // E3: Compute elapsed time server-side using startedAt — do NOT trust client-supplied timeSpent
+        const serverTimeSpent = Math.floor((new Date() - new Date(attempt.startedAt)) / 1000);
+
+        // E4: Use server-stored visibilityChangeCount — do NOT trust client-supplied value
+        const serverVisibilityCount = attempt.visibilityChangeCount || 0;
+
         let cheatingDetected = false;
-        
+
         // Rule 1: Time spent too short (less than 30 seconds per question)
-        if (timeSpentSeconds < attempt.questionSnapshot.length * 30) {
+        if (serverTimeSpent < attempt.questionSnapshot.length * 30) {
             cheatingDetected = true;
             attempt.cheatingDetails.push({
-                type: 'devtools',
+                type: 'fast_submission', // E2: was incorrectly 'devtools'
                 timestamp: new Date(),
                 warningNumber: 999
             });
         }
-        
-        // Rule 2: Frontend reports excessive visibility changes (backup)
-        if (visibilityChangeCount && visibilityChangeCount > 10) {
+
+        // Rule 2: Excessive tab switches detected server-side
+        if (serverVisibilityCount > 10) {
             cheatingDetected = true;
-            attempt.visibilityChangeCount = visibilityChangeCount;
             attempt.cheatingDetails.push({
                 type: 'visibility_change',
                 timestamp: new Date(),
-                warningNumber: visibilityChangeCount
+                warningNumber: serverVisibilityCount
             });
         }
 
-        attempt.timeSpent = timeSpentSeconds;
+        // Store client-supplied timeSpent for analytics only (not used for cheat detection)
+        attempt.timeSpent = timeSpent || serverTimeSpent;
         attempt.submittedAt = new Date();
         
         if (cheatingDetected) {
@@ -743,39 +786,19 @@ router.get('/:id/result', verifiedAuth, async (req, res) => {
     }
 });
 
-// GET /api/certificates/verify/:certificateNumber - public verification (mounted separately)
+// GET /api/member/exams/verify/:certificateNumber - public verification (shared logic)
 router.get('/verify/:certificateNumber', async (req, res) => {
     try {
-        const certificate = await Certificate.findOne({
-            certificateNumber: req.params.certificateNumber,
-            isRevoked: { $ne: true }
-        }).populate('exam', 'title').populate('user', 'username fullName');
-
-        if (!certificate) {
-            return errorResponse(res, 404, 'CERTIFICATE_NOT_FOUND', '證書不存在或已被撤銷');
+        const result = await verifyCertificate(req.params.certificateNumber);
+        if (!result.ok) {
+            return errorResponse(res, result.statusCode, result.code, result.message);
         }
-
-        if (certificate.expiresAt && new Date() > certificate.expiresAt) {
-            return errorResponse(res, 403, 'CERTIFICATE_EXPIRED', '證書已過期');
-        }
-
-        res.json({
-            data: {
-                certificateNumber: certificate.certificateNumber,
-                issuedAt: certificate.issuedAt,
-                expiresAt: certificate.expiresAt,
-                exam: certificate.exam,
-                user: {
-                    username: certificate.user.username,
-                    fullName: certificate.user.fullName
-                }
-            }
-        });
+        res.json({ data: result.data });
     } catch (error) {
         console.error('Verify certificate error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
-        }
-    });
+    }
+});
 
 // GET /api/member/exams/certificate/:certificateNumber - download certificate PDF
 router.get('/certificate/:certificateNumber', verifiedAuth, async (req, res) => {
