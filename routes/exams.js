@@ -196,6 +196,16 @@ router.delete('/:id', adminAuth, async (req, res) => {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
+        const attemptCount = await ExamAttempt.countDocuments({ exam: exam._id, status: 'graded' });
+        if (attemptCount > 0) {
+            return res.status(409).json({
+                error: {
+                    code: 'EXAM_HAS_RESULTS',
+                    message: `此考試已有 ${attemptCount} 筆成績紀錄，無法直接刪除。請改用封存（archived）狀態。`
+                }
+            });
+        }
+
         // Cascade delete: questions, attempts, certificates
         await Promise.all([
             Question.deleteMany({ exam: exam._id }),

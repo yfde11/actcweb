@@ -23,11 +23,11 @@
                 </a>
                 <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
                     <a href="/#home" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">首頁</a>
-                    <a href="/about.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
+                    <a href="/about" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
                     <a href="/#news" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">最新消息</a>
                     <a href="/#events" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">活動課程</a>
                     <a href="/#corporate-members" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">企業會員</a>
-                    <a href="/workgroups.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">工作小組</a>
+                    <a href="/workgroups" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">工作小組</a>
                     <div id="desktopMemberNav" class="relative flex items-center gap-2 md:ml-auto">
                         <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
                         <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
@@ -60,11 +60,11 @@
             <div id="mobileMenu" class="hidden md:hidden pb-4" role="navigation" aria-label="手機主選單">
                 <div class="space-y-2">
                     <a href="/#home" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
-                    <a href="/about.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <a href="/about" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
                     <a href="/#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
                     <a href="/#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
                     <a href="/#corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
-                    <a href="/workgroups.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
+                    <a href="/workgroups" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
                     <div class="border-t border-gray-100 pt-2">
                         <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
                             <span class="flex items-center gap-2 font-medium">
@@ -626,7 +626,7 @@
 
             <div id="workgroups-panel" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token && me.membershipStatus === 'approved'">
                 <h2 class="text-xl font-bold mb-2">工作小組</h2>
-                <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups.html" class="text-actc-orange underline">工作小組介紹</a>。</p>
+                <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups" class="text-actc-orange underline">工作小組介紹</a>。</p>
                 <div class="space-y-3 mb-4" x-show="wgCatalog.length">
                     <template x-for="g in wgCatalog" :key="g._id">
                         <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">

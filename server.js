@@ -170,7 +170,10 @@ app.get('/secretariat', (req, res) => {
 
 // 404 處理
 app.use('*', (req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ message: 'Route not found' });
+    }
+    res.redirect('/');
 });
 
 // 錯誤處理中間件

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const optionSchema = new mongoose.Schema({
     text: {
@@ -89,14 +90,10 @@ const questionSchema = new mongoose.Schema({
 questionSchema.index({ domain: 1, difficulty: 1 });
 
 questionSchema.pre('save', async function(next) {
-    if (this.isNew && !this.questionNumber && this.exam) {
+    if (this.isNew && !this.questionNumber) {
         try {
-            const lastQuestion = await this.constructor.findOne(
-                { exam: this.exam },
-                { questionNumber: 1 },
-                { sort: { questionNumber: -1 } }
-            );
-            this.questionNumber = lastQuestion ? lastQuestion.questionNumber + 1 : 1;
+            const counter = await Counter.getNextSequence('questionNumber');
+            this.questionNumber = counter;
             next();
         } catch (error) {
             next(error);
