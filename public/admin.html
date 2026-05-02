@@ -1357,6 +1357,91 @@
                                 </div>
                             </div>
                         </div>
+
+                    <!-- 統計資訊 Modal -->
+                    <div x-show="showStatisticsModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">考試統計</h3>
+                                <button @click="showStatisticsModal = false; currentStatisticsExamId = null" class="text-gray-500 hover:text-gray-800">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                                <p x-show="loadingStatistics" class="text-sm text-gray-500">載入中…</p>
+                                <template x-if="!loadingStatistics && statistics">
+                                    <div>
+                                        <!-- 概覽卡片 -->
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div class="bg-blue-50 p-4 rounded-lg">
+                                                <p class="text-xs text-gray-500">總嘗試次數</p>
+                                                <p class="text-2xl font-bold text-blue-700" x-text="statistics.totalAttempts || 0"></p>
+                                            </div>
+                                            <div class="bg-green-50 p-4 rounded-lg">
+                                                <p class="text-xs text-gray-500">通過次數</p>
+                                                <p class="text-2xl font-bold text-green-700" x-text="statistics.passedAttempts || 0"></p>
+                                            </div>
+                                            <div class="bg-purple-50 p-4 rounded-lg">
+                                                <p class="text-xs text-gray-500">通過率</p>
+                                                <p class="text-2xl font-bold text-purple-700"><span x-text="(statistics.passRate || 0).toFixed(1)"></span>%</p>
+                                            </div>
+                                            <div class="bg-orange-50 p-4 rounded-lg">
+                                                <p class="text-xs text-gray-500">平均分數</p>
+                                                <p class="text-2xl font-bold text-orange-700"><span x-text="(statistics.averageScore || 0).toFixed(1)"></span></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- 各題正確率 -->
+                                        <div class="mt-6">
+                                            <h4 class="text-md font-semibold mb-3">各題正確率</h4>
+                                            <div class="overflow-x-auto">
+                                                <table class="min-w-full text-sm">
+                                                    <thead class="bg-gray-50">
+                                                        <tr>
+                                                            <th class="px-3 py-2 text-left">題號</th>
+                                                            <th class="px-3 py-2 text-left">題型</th>
+                                                            <th class="px-3 py-2 text-left">難度</th>
+                                                            <th class="px-3 py-2 text-left">總作答數</th>
+                                                            <th class="px-3 py-2 text-left">正確次數</th>
+                                                            <th class="px-3 py-2 text-left">正確率</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="divide-y divide-gray-100">
+                                                        <template x-for="q in statistics.questionStats || []" :key="q.questionId">
+                                                            <tr>
+                                                                <td class="px-3 py-2" x-text="q.questionNumber"></td>
+                                                                <td class="px-3 py-2">
+                                                                    <span x-text="q.type === 'multiple_choice' ? '選擇題' : q.type === 'true_false' ? '是非題' : '填空題'"></span>
+                                                                </td>
+                                                                <td class="px-3 py-2">
+                                                                    <span class="px-2 py-1 rounded text-xs"
+                                                                          :class="q.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                                                                                     q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                                                     'bg-red-100 text-red-800'">
+                                                                        <span x-text="q.difficulty"></span>
+                                                                    </span>
+                                                                </td>
+                                                                <td class="px-3 py-2" x-text="q.totalAnswers || 0"></td>
+                                                                <td class="px-3 py-2" x-text="q.correctCount || 0"></td>
+                                                                <td class="px-3 py-2">
+                                                                    <span class="font-medium" 
+                                                                          :class="(q.correctRate || 0) >= 80 ? 'text-green-600' : 
+                                                                                     (q.correctRate || 0) >= 60 ? 'text-yellow-600' : 
+                                                                                     'text-red-600'">
+                                                                        <span x-text="(q.correctRate || 0).toFixed(1)"></span>%
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <p x-show="!loadingStatistics && !statistics" class="text-sm text-gray-500">尚無統計資訊。</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
