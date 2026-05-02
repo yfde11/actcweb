@@ -1324,6 +1324,7 @@
                                                 <th class="px-3 py-2 text-left">是否通過</th>
                                                 <th class="px-3 py-2 text-left">提交時間</th>
                                                 <th class="px-3 py-2 text-left">作弊</th>
+                                                <th class="px-3 py-2 text-left">操作</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-100">
@@ -1349,6 +1350,13 @@
                                                     <td class="px-3 py-2">
                                                         <span x-show="attempt.cheatingDetected" class="text-red-600 text-xs">是</span>
                                                         <span x-show="!attempt.cheatingDetected">否</span>
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        <button x-show="attempt.status === 'graded' || attempt.status === 'auto_submitted_cheating'"
+                                                                @click="selectedAttemptForCooldown = attempt; removeCooldown(attempt._id)"
+                                                                class="text-xs text-orange-600 hover:underline ml-2">
+                                                            解除冷卻
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             </template>
@@ -2090,6 +2098,8 @@
                 currentAttemptsExamId: null,
                 attempts: [],
                 loadingAttempts: false,
+                cooldownModal: false,
+                selectedAttemptForCooldown: null,
                 // Statistics
                 showStatisticsModal: false,
                 currentStatisticsExamId: null,
@@ -2388,6 +2398,24 @@
                     this.currentStatisticsExamId = examId;
                     this.showStatisticsModal = true;
                     this.loadStatistics(examId);
+                },
+                async removeCooldown(attemptId) {
+                    if (!confirm('確定要解除此用戶的冷卻限制嗎？')) return;
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${this.currentAttemptsExamId}/attempts/${attemptId}/cooldown`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            alert('冷卻限制已解除');
+                            await this.loadAttempts(this.currentAttemptsExamId);
+                        } else {
+                            alert('解除失敗');
+                        }
+                    } catch (e) {
+                        console.error('Remove cooldown error:', e);
+                    }
                 },
                 async changeStatus(exam) {
                     const newStatus = prompt(`輸入新狀態 (draft/published/active/closed/archived/deleted):`, exam.status);
