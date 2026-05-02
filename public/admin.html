@@ -1300,6 +1300,63 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 作答紀錄 Modal -->
+                    <div x-show="showAttemptsModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">作答紀錄</h3>
+                                <button @click="showAttemptsModal = false; currentAttemptsExamId = null" class="text-gray-500 hover:text-gray-800">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-6">
+                                <p x-show="loadingAttempts" class="text-sm text-gray-500">載入中…</p>
+                                <p x-show="!loadingAttempts && attempts.length === 0" class="text-sm text-gray-500">尚無作答紀錄。</p>
+                                <div x-show="!loadingAttempts && attempts.length > 0" class="overflow-x-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left">用戶</th>
+                                                <th class="px-3 py-2 text-left">狀態</th>
+                                                <th class="px-3 py-2 text-left">分數</th>
+                                                <th class="px-3 py-2 text-left">是否通過</th>
+                                                <th class="px-3 py-2 text-left">提交時間</th>
+                                                <th class="px-3 py-2 text-left">作弊</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            <template x-for="attempt in attempts" :key="attempt._id">
+                                                <tr>
+                                                    <td class="px-3 py-2" x-text="attempt.user?.username || attempt.user?.fullName || '未知'"></td>
+                                                    <td class="px-3 py-2">
+                                                        <span class="px-2 py-1 rounded text-xs"
+                                                              :class="attempt.status === 'graded' ? 'bg-green-100 text-green-800' :
+                                                                 attempt.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                                                 attempt.status === 'auto_submitted_cheating' ? 'bg-red-100 text-red-800' :
+                                                                 'bg-gray-100 text-gray-800'">
+                                                            <span x-text="attempt.status"></span>
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-3 py-2" x-text="attempt.score !== null ? Math.round(attempt.score) + '%' : '-'"></td>
+                                                    <td class="px-3 py-2">
+                                                        <span x-show="attempt.passed" class="text-green-600">是</span>
+                                                        <span x-show="attempt.passed === false" class="text-red-600">否</span>
+                                                        <span x-show="attempt.passed === null">-</span>
+                                                    </td>
+                                                    <td class="px-3 py-2 text-xs" x-text="attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : '-'"></td>
+                                                    <td class="px-3 py-2">
+                                                        <span x-show="attempt.cheatingDetected" class="text-red-600 text-xs">是</span>
+                                                        <span x-show="!attempt.cheatingDetected">否</span>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -1942,6 +1999,11 @@
                     explanation: ''
                 },
                 questionLoading: false,
+                // Attempts management
+                showAttemptsModal: false,
+                currentAttemptsExamId: null,
+                attempts: [],
+                loadingAttempts: false,
                 async init() {
                     await this.loadExams();
                 },
@@ -2192,9 +2254,27 @@
                         alert('刪除題目失敗');
                     }
                 },
+                async loadAttempts(examId) {
+                    this.loadingAttempts = true;
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${examId}/attempts`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.attempts = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load attempts error:', e);
+                    } finally {
+                        this.loadingAttempts = false;
+                    }
+                },
                 viewAttempts(examId) {
-                    // TODO: Implement attempts view
-                    alert('作答紀錄功能開發中，考試 ID: ' + examId);
+                    this.currentAttemptsExamId = examId;
+                    this.showAttemptsModal = true;
+                    this.loadAttempts(examId);
                 },
                 async changeStatus(exam) {
                     const newStatus = prompt(`輸入新狀態 (draft/published/active/closed/archived/deleted):`, exam.status);
