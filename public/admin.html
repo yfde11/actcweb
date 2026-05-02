@@ -1154,6 +1154,152 @@
                         </table>
                         <p class="text-gray-500 text-sm mt-2" x-show="exams.length === 0">尚無考試</p>
                     </div>
+
+                    <!-- 題目列表 Modal -->
+                    <div x-show="showQuestionListModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">題目管理</h3>
+                                <div class="flex gap-2">
+                                    <button @click="openQuestionModal()" class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                                        新增題目
+                                    </button>
+                                    <button @click="showQuestionListModal = false; currentQuestionExamId = null" class="text-gray-500 hover:text-gray-800">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-6">
+                                <p x-show="questionLoading" class="text-sm text-gray-500">載入中…</p>
+                                <p x-show="!questionLoading && questions.length === 0" class="text-sm text-gray-500">尚無題目，請新增。</p>
+                                <div x-show="!questionLoading && questions.length > 0" class="space-y-4">
+                                    <template x-for="(q, idx) in questions" :key="q._id">
+                                        <div class="border rounded-lg p-4 hover:bg-gray-50">
+                                            <div class="flex justify-between items-start">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <span class="px-2 py-1 bg-gray-100 text-xs rounded" x-text="q.type === 'multiple_choice' ? '選擇題' : q.type === 'true_false' ? '是非題' : '填空題'"></span>
+                                                        <span class="px-2 py-1 bg-blue-100 text-xs rounded" x-text="q.difficulty"></span>
+                                                        <span class="text-xs text-gray-500" x-text="q.points + ' 分'"></span>
+                                                    </div>
+                                                    <p class="text-sm text-gray-900" x-text="(idx + 1) + '. ' + q.content"></p>
+                                                </div>
+                                                <div class="ml-4 flex gap-2">
+                                                    <button @click="openQuestionModal(q)" class="text-blue-600 hover:underline text-sm">編輯</button>
+                                                    <button @click="deleteQuestion(q._id)" class="text-red-600 hover:underline text-sm">刪除</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 題目編輯 Modal -->
+                    <div x-show="showQuestionModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold" x-text="editingQuestion ? '編輯題目' : '新增題目'"></h3>
+                                <button @click="showQuestionModal = false" class="text-gray-500 hover:text-gray-800">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <!-- 題型 -->
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">題型</label>
+                                    <select x-model="questionForm.type" class="w-full border rounded px-3 py-2">
+                                        <option value="multiple_choice">選擇題</option>
+                                        <option value="true_false">是非題</option>
+                                        <option value="fill_in_blank">填空題</option>
+                                    </select>
+                                </div>
+                                <!-- 難度 -->
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">難度</label>
+                                    <select x-model="questionForm.difficulty" class="w-full border rounded px-3 py-2">
+                                        <option value="easy">簡單</option>
+                                        <option value="medium">中等</option>
+                                        <option value="hard">困難</option>
+                                    </select>
+                                </div>
+                                <!-- 題目內容 -->
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">題目內容</label>
+                                    <textarea x-model="questionForm.content" rows="3" class="w-full border rounded px-3 py-2" placeholder="請輸入題目"></textarea>
+                                </div>
+                                <!-- 選擇題選項 -->
+                                <div x-show="questionForm.type === 'multiple_choice'">
+                                    <label class="block text-sm text-gray-600 mb-2">選項</label>
+                                    <div class="space-y-2">
+                                        <template x-for="(opt, idx) in questionForm.options" :key="idx">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium w-8" x-text="opt.label + '.'"></span>
+                                                <input type="text" x-model="opt.text" class="flex-1 border rounded px-3 py-2" placeholder="選項內容">
+                                                <input type="radio" :name="'correct-option'" :value="idx" x-model="questionForm.correctOptionIndex" class="text-blue-600">
+                                                <span class="text-xs text-gray-500">正確</span>
+                                                <button type="button" @click="removeOption(idx)" class="text-red-600 hover:underline text-xs">刪除</button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <button type="button" @click="addOption()" class="mt-2 text-sm text-blue-600 hover:underline">+ 新增選項</button>
+                                </div>
+                                <!-- 是非題 -->
+                                <div x-show="questionForm.type === 'true_false'">
+                                    <label class="block text-sm text-gray-600 mb-2">正確答案</label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="radio" x-model="questionForm.correctBoolean" :value="true" class="text-blue-600">
+                                        <span>正確 (True)</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="radio" x-model="questionForm.correctBoolean" :value="false" class="text-blue-600">
+                                        <span>錯誤 (False)</span>
+                                    </label>
+                                </div>
+                                <!-- 填空題 -->
+                                <div x-show="questionForm.type === 'fill_in_blank'">
+                                    <label class="block text-sm text-gray-600 mb-1">正確答案</label>
+                                    <div class="space-y-2">
+                                        <template x-for="(ans, idx) in questionForm.correctAnswers" :key="idx">
+                                            <div class="flex items-center gap-2">
+                                                <input type="text" x-model="questionForm.correctAnswers[idx]" class="flex-1 border rounded px-3 py-2" placeholder="正確答案">
+                                                <button type="button" @click="questionForm.correctAnswers.splice(idx, 1)" class="text-red-600 hover:underline text-xs" x-show="questionForm.correctAnswers.length > 1">刪除</button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <button type="button" @click="questionForm.correctAnswers.push('')" class="mt-2 text-sm text-blue-600 hover:underline">+ 新增正確答案</button>
+                                    <div class="mt-3">
+                                        <label class="block text-sm text-gray-600 mb-1">可接受答案 (選填，不區分大小寫)</label>
+                                        <div class="space-y-2">
+                                            <template x-for="(ans, idx) in questionForm.acceptableAnswers" :key="idx">
+                                                <div class="flex items-center gap-2">
+                                                    <input type="text" x-model="questionForm.acceptableAnswers[idx]" class="flex-1 border rounded px-3 py-2" placeholder="可接受答案">
+                                                    <button type="button" @click="questionForm.acceptableAnswers.splice(idx, 1)" class="text-red-600 hover:underline text-xs" x-show="questionForm.acceptableAnswers.length > 1">刪除</button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <button type="button" @click="questionForm.acceptableAnswers.push('')" class="mt-2 text-sm text-blue-600 hover:underline">+ 新增可接受答案</button>
+                                    </div>
+                                </div>
+                                <!-- 分數 -->
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">分數</label>
+                                    <input type="number" x-model.number="questionForm.points" min="1" max="100" class="w-full border rounded px-3 py-2">
+                                </div>
+                                <!-- 解析 -->
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">解析 (選填)</label>
+                                    <textarea x-model="questionForm.explanation" rows="2" class="w-full border rounded px-3 py-2" placeholder="題目解析"></textarea>
+                                </div>
+                                <!-- 按鈕 -->
+                                <div class="flex justify-end gap-2 pt-4 border-t">
+                                    <button type="button" @click="showQuestionModal = false" class="px-4 py-2 border rounded">取消</button>
+                                    <button type="button" @click="saveQuestion()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -1772,6 +1918,30 @@
                     certificateEnabled: false,
                     status: 'draft'
                 },
+                // Question management
+                showQuestionModal: false,
+                showQuestionListModal: false,
+                currentQuestionExamId: null,
+                questions: [],
+                editingQuestion: null,
+                questionForm: {
+                    type: 'multiple_choice',
+                    difficulty: 'medium',
+                    content: '',
+                    options: [
+                        { text: '', label: 'A' },
+                        { text: '', label: 'B' },
+                        { text: '', label: 'C' },
+                        { text: '', label: 'D' }
+                    ],
+                    correctOptionIndex: 0,
+                    correctBoolean: true,
+                    correctAnswers: [''],
+                    acceptableAnswers: [''],
+                    points: 1,
+                    explanation: ''
+                },
+                questionLoading: false,
                 async init() {
                     await this.loadExams();
                 },
@@ -1870,9 +2040,157 @@
                         alert('刪除失敗');
                     }
                 },
-                viewQuestions(examId) {
-                    // TODO: Implement question management
-                    alert('題目管理功能開發中，考試 ID: ' + examId);
+                async viewQuestions(examId) {
+                    this.currentQuestionExamId = examId;
+                    this.showQuestionListModal = true;
+                    await this.loadQuestions(examId);
+                },
+                async loadQuestions(examId) {
+                    this.questionLoading = true;
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${examId}/questions`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.questions = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load questions error:', e);
+                    } finally {
+                        this.questionLoading = false;
+                    }
+                },
+                openQuestionModal(question = null) {
+                    this.editingQuestion = question;
+                    if (question) {
+                        this.questionForm = {
+                            type: question.type,
+                            difficulty: question.difficulty || 'medium',
+                            content: question.content,
+                            options: question.options?.length > 0 ? question.options : [
+                                { text: '', label: 'A' },
+                                { text: '', label: 'B' },
+                                { text: '', label: 'C' },
+                                { text: '', label: 'D' }
+                            ],
+                            correctOptionIndex: question.correctOptionIndex ?? 0,
+                            correctBoolean: question.correctBoolean ?? true,
+                            correctAnswers: question.correctAnswers?.length > 0 ? question.correctAnswers : [''],
+                            acceptableAnswers: question.acceptableAnswers?.length > 0 ? question.acceptableAnswers : [''],
+                            points: question.points || 1,
+                            explanation: question.explanation || ''
+                        };
+                    } else {
+                        this.questionForm = {
+                            type: 'multiple_choice',
+                            difficulty: 'medium',
+                            content: '',
+                            options: [
+                                { text: '', label: 'A' },
+                                { text: '', label: 'B' },
+                                { text: '', label: 'C' },
+                                { text: '', label: 'D' }
+                            ],
+                            correctOptionIndex: 0,
+                            correctBoolean: true,
+                            correctAnswers: [''],
+                            acceptableAnswers: [''],
+                            points: 1,
+                            explanation: ''
+                        };
+                    }
+                    this.showQuestionModal = true;
+                },
+                addOption() {
+                    const label = String.fromCharCode(65 + this.questionForm.options.length);
+                    this.questionForm.options.push({ text: '', label });
+                },
+                removeOption(idx) {
+                    if (this.questionForm.options.length <= 2) {
+                        alert('至少需要2個選項');
+                        return;
+                    }
+                    this.questionForm.options.splice(idx, 1);
+                    // Update labels
+                    this.questionForm.options.forEach((opt, i) => {
+                        opt.label = String.fromCharCode(65 + i);
+                    });
+                    // Adjust correctOptionIndex if needed
+                    if (this.questionForm.correctOptionIndex >= this.questionForm.options.length) {
+                        this.questionForm.correctOptionIndex = this.questionForm.options.length - 1;
+                    }
+                },
+                async saveQuestion() {
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const url = this.editingQuestion
+                            ? `/api/exams/${this.currentQuestionExamId}/questions/${this.editingQuestion._id}`
+                            : `/api/exams/${this.currentQuestionExamId}/questions`;
+                        const method = this.editingQuestion ? 'PUT' : 'POST';
+                        
+                        // Build payload based on type
+                        const payload = {
+                            type: this.questionForm.type,
+                            difficulty: this.questionForm.difficulty,
+                            content: this.questionForm.content,
+                            points: this.questionForm.points,
+                            explanation: this.questionForm.explanation
+                        };
+                        
+                        if (this.questionForm.type === 'multiple_choice') {
+                            payload.options = this.questionForm.options.filter(o => o.text.trim());
+                            payload.correctOptionIndex = this.questionForm.correctOptionIndex;
+                        } else if (this.questionForm.type === 'true_false') {
+                            payload.correctBoolean = this.questionForm.correctBoolean;
+                        } else if (this.questionForm.type === 'fill_in_blank') {
+                            payload.correctAnswers = this.questionForm.correctAnswers.filter(a => a.trim());
+                            payload.acceptableAnswers = this.questionForm.acceptableAnswers.filter(a => a.trim());
+                        }
+                        
+                        const res = await fetch(url, {
+                            method,
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (res.ok) {
+                            this.showQuestionModal = false;
+                            await this.loadQuestions(this.currentQuestionExamId);
+                            await this.loadExams(); // Refresh exam question count
+                        } else {
+                            const err = await res.json();
+                            alert(err.error?.message || '儲存題目失敗');
+                        }
+                    } catch (e) {
+                        console.error('Save question error:', e);
+                        alert('儲存題目失敗');
+                    }
+                },
+                async deleteQuestion(questionId) {
+                    if (!confirm('確定要刪除這個題目嗎？')) return;
+                    
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${this.currentQuestionExamId}/questions/${questionId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (res.ok) {
+                            await this.loadQuestions(this.currentQuestionExamId);
+                            await this.loadExams(); // Refresh exam question count
+                        } else {
+                            alert('刪除題目失敗');
+                        }
+                    } catch (e) {
+                        console.error('Delete question error:', e);
+                        alert('刪除題目失敗');
+                    }
                 },
                 viewAttempts(examId) {
                     // TODO: Implement attempts view
