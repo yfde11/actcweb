@@ -76,38 +76,24 @@ app.use('/api/question-bank', questionBankRoutes);
 app.use('/api/cron', cronRoutes);
 
 // Certificate verification (public)
-const Certificate = require('./models/Certificate');
+const { verifyCertificate } = require('./services/examCertificates');
 app.get('/api/certificates/verify/:certificateNumber', async (req, res) => {
     try {
-        const certificate = await Certificate.findOne({
-            certificateNumber: req.params.certificateNumber,
-            isRevoked: { $ne: true }
-        }).populate('exam', 'title').populate('user', 'username fullName');
-
-        if (!certificate) {
-            return res.status(404).json({ error: { code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在或已被撤銷' } });
+        const result = await verifyCertificate(req.params.certificateNumber);
+        if (!result.ok) {
+            return res.status(result.statusCode).json({ error: { code: result.code, message: result.message } });
         }
-
-        if (certificate.expiresAt && new Date() > certificate.expiresAt) {
-            return res.status(403).json({ error: { code: 'CERTIFICATE_EXPIRED', message: '證書已過期' } });
-        }
-
-        res.json({
-            data: {
-                certificateNumber: certificate.certificateNumber,
-                issuedAt: certificate.issuedAt,
-                expiresAt: certificate.expiresAt,
-                exam: certificate.exam,
-                user: {
-                    username: certificate.user.username,
-                    fullName: certificate.user.fullName
-                }
-            }
-        });
+        res.json({ data: result.data });
     } catch (error) {
         console.error('Verify certificate error:', error);
         res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: '伺服器錯誤' } });
     }
+});
+
+// Certificate verification redirect: PDF QR codes link here; redirect to frontend
+// so users see a friendly page (frontend reads ?verify= query param to display result)
+app.get('/verify-certificate/:certificateNumber', (req, res) => {
+    res.redirect(`/?verify=${encodeURIComponent(req.params.certificateNumber)}`);
 });
 
 // 會員專區（靜態 SPA）
