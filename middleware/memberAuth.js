@@ -3,7 +3,9 @@ const User = require('../models/User');
 const { DB_UNAVAILABLE } = require('./mongoReady');
 
 async function attachUserFromJwt(req, res) {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.cookies?.memberToken
+        || req.cookies?.adminToken  // admins can use member routes too
+        || req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
         res.status(401).json({ message: 'Access denied. No token provided.' });
         return null;

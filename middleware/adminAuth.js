@@ -5,7 +5,8 @@ const { DB_UNAVAILABLE } = require('./mongoReady');
 // 基本認證中間件
 const auth = async (req, res, next) => {
     try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+        const token = req.cookies?.adminToken
+            || req.header('Authorization')?.replace('Bearer ', '');
 
         if (!token) {
             return res.status(401).json({
@@ -50,8 +51,9 @@ const auth = async (req, res, next) => {
 const adminAuth = async (req, res, next) => {
     try {
         // 先進行基本認證
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        
+        const token = req.cookies?.adminToken
+            || req.header('Authorization')?.replace('Bearer ', '');
+
         if (!token) {
             return res.status(401).json({ 
                 message: 'Access denied. No token provided.' 

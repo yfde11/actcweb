@@ -971,11 +971,13 @@
                     try {
                         let r = await fetch('/api/member/events/my-registrations', {
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             cache: 'no-store'
                         });
                         if (!r.ok) {
                             r = await fetch('/api/profile/me/event-registrations', {
                                 headers: this.authHeaders(),
+                                credentials: 'include',
                                 cache: 'no-store'
                             });
                         }
@@ -1020,12 +1022,14 @@
                     try {
                         let r = await fetch(`/api/member/events/${eventId}/cancel`, {
                             method: 'POST',
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (!r.ok) {
                             r = await fetch(`/api/profile/me/event-registrations/${eventId}`, {
                                 method: 'DELETE',
-                                headers: this.authHeaders()
+                                headers: this.authHeaders(),
+                                credentials: 'include',
                             });
                         }
                         const text = await r.text();
@@ -1101,7 +1105,8 @@
                     this.showMaterialsModal = true;
                     try {
                         const r = await fetch(`/api/member/events/${row.event.id}/materials`, {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const d = await r.json().catch(() => ({}));
                         this.currentMaterials = r.ok ? (d.materials || []) : [];
@@ -1173,6 +1178,7 @@
                         const r = await fetch(`/api/member/events/${this.selectedRegistration.event.id}/survey`, {
                             method: 'POST',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify(this.surveyForm)
                         });
                         const d = await r.json().catch(() => ({}));
@@ -1225,6 +1231,7 @@
                     try {
                         const r = await fetch('/api/profile/me', {
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             cache: 'no-store'
                         });
                         if (!r.ok) throw new Error();
@@ -1282,6 +1289,7 @@
                         const r = await fetch('/api/profile/me/working-groups', {
                             method: 'PUT',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify({ groupIds: this.wgSelectedIds })
                         });
                         const text = await r.text();
@@ -1308,6 +1316,8 @@
                 },
 
                 logout() {
+                    // Clear server-side httpOnly cookie
+                    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
                     localStorage.removeItem('memberToken');
                     this.token = '';
                     this.me = {};
@@ -1532,6 +1542,7 @@
                     const r = await fetch('/api/membership/apply', {
                         method: 'POST',
                         headers: this.authHeaders(),
+                        credentials: 'include',
                         body: JSON.stringify({})
                     });
                     const d = await r.json();
@@ -1555,6 +1566,7 @@
                         const r = await fetch('/api/profile/me', {
                             method: 'PATCH',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify(payload)
                         });
                         const text = await r.text();
@@ -1626,7 +1638,8 @@
                     this.loading = true;
                     try {
                         const res = await fetch('/api/member/exams', {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (res.ok) {
                             const data = await res.json();
@@ -1645,7 +1658,8 @@
                     try {
                         const res = await fetch(`/api/member/exams/${examId}/start`, {
                             method: 'POST',
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const data = await res.json();
                         if (res.ok) {
@@ -1680,7 +1694,8 @@
                 async resumeExam(examId, attemptId) {
                     try {
                         const res = await fetch(`/api/member/exams/${examId}/resume`, {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const data = await res.json();
                         if (res.ok) {
@@ -1755,6 +1770,7 @@
                         const res = await fetch(`/api/member/exams/${this.currentAttempt.attemptId}/submit`, {
                             method: 'POST',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify({
                                 attemptId: this.currentAttempt.attemptId,
                                 answers: answersArray,
@@ -1787,7 +1803,8 @@
                     this.loadingCertificates = true;
                     try {
                         const res = await fetch('/api/member/certificates', {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (res.ok) {
                             const data = await res.json();
@@ -1839,7 +1856,8 @@
                     this.historyAttemptDetail = null;
                     try {
                         const res = await fetch(`/api/member/exams/${examId}/result?attemptId=${attemptId}`, {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const data = await res.json().catch(() => ({}));
                         if (res.ok) {
