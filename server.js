@@ -8,6 +8,7 @@ if (!process.env.JWT_SECRET) {
     process.env.JWT_SECRET = 'actc_dev_only_jwt_secret_change_in_env';
 }
 
+const http = require('http');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -222,6 +223,33 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/actc_websit
     } catch (err) {
         console.error('❌ Database bootstrap:', err.message);
     }
+
+    // Wire cron job: auto-submit expired exam attempts every 5 minutes
+    function callCronEndpoint() {
+        const options = {
+            hostname: '127.0.0.1',
+            port: PORT,
+            path: '/api/cron/expired-attempts',
+            method: 'POST',
+            headers: {
+                'X-Cron-Secret': process.env.CRON_SECRET || 'your-cron-secret-here',
+                'Content-Type': 'application/json'
+            }
+        };
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode !== 200) {
+                    console.warn(`⚠️  Cron expired-attempts: HTTP ${res.statusCode}`);
+                }
+            });
+        });
+        req.on('error', (err) => console.error('Cron expired-attempts error:', err.message));
+        req.end();
+    }
+
+    setInterval(callCronEndpoint, 5 * 60 * 1000);
 
     app.listen(PORT, HOST, () => {
         console.log(`🚀 Server listening on http://${HOST}:${PORT} (容器內埠；Docker 時由 Caddy 對外提供 80/443)`);

@@ -276,9 +276,10 @@
                     </div>
                 </div>
                 <p class="text-sm text-red-600 mt-2 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
+            </div>
 
-                <!-- 考試專區 -->
-                <div id="exams" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-data="examsTab()" x-init="init()">
+            <!-- 考試專區 -->
+            <div id="exams" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-data="examsTab()" x-init="init()">
                     <div class="flex justify-between items-center mb-2">
                         <h2 class="text-xl font-bold">考試專區</h2>
                         <button @click="showCertificates = true; loadCertificates()" class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
@@ -452,7 +453,6 @@
                         </button>
                     </div>
                     </div>
-                </div>
             </div>
 
             <div x-show="showPaymentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

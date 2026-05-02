@@ -11,7 +11,7 @@ async function sendExamSubmittedEmail(user, exam, attempt) {
         const userName = validator.escape(user.fullName || user.username);
         const examTitle = validator.escape(exam.title);
         const attemptNumber = attempt.attemptNumber;
-        const viewResultUrl = `${siteBaseUrl()}/member/exams/${exam._id}/result?attemptId=${attempt._id}`;
+        const viewResultUrl = `${siteBaseUrl()}/member`;
 
         const subject = `考試提交確認 - ${examTitle}`;
         const html = `
