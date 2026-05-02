@@ -41,6 +41,19 @@ async function gradeAttempt(attemptId) {
     let incorrectCount = 0;
     let unansweredCount = 0;
 
+    // Batch-fetch all fill_in_blank questions up front to avoid N+1 DB queries
+    const fillInBlankIds = attempt.questionSnapshot
+        .filter(q => q.type === 'fill_in_blank')
+        .map(q => q.questionId);
+
+    const fillInBlankQuestions = fillInBlankIds.length > 0
+        ? await Question.find({ _id: { $in: fillInBlankIds } }).lean()
+        : [];
+
+    const fillInBlankMap = new Map(
+        fillInBlankQuestions.map(q => [q._id.toString(), q])
+    );
+
     // Process each question in snapshot
     for (const snapshot of attempt.questionSnapshot) {
         totalPoints += snapshot.points;
@@ -67,8 +80,8 @@ async function gradeAttempt(attemptId) {
         } else if (snapshot.type === 'true_false') {
             isCorrect = String(userAnswer).toLowerCase() === String(snapshot.correctAnswer).toLowerCase();
         } else if (snapshot.type === 'fill_in_blank') {
-            // Get full question to check acceptable answers
-            const question = await Question.findById(snapshot.questionId);
+            // Use pre-fetched map — avoids one DB query per question
+            const question = fillInBlankMap.get(snapshot.questionId.toString());
             if (question) {
                 const normalizedUserAnswer = String(userAnswer).trim().toLowerCase();
                 const acceptableAnswers = [

@@ -7,7 +7,7 @@ const Certificate = require('../models/Certificate');
 const Counter = require('../models/Counter');
 const { verifiedAuth } = require('../middleware/memberAuth');
 const { gradeAttempt, generateCertificate } = require('../services/examGrading');
-const { generateCertificatePDF } = require('../services/examCertificates');
+const { verifyCertificate, generateCertificatePDF } = require('../services/examCertificates');
 const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = require('../services/examNotifications');
 
 const router = express.Router();
@@ -749,39 +749,19 @@ router.get('/:id/result', verifiedAuth, async (req, res) => {
     }
 });
 
-// GET /api/certificates/verify/:certificateNumber - public verification (mounted separately)
+// GET /api/member/exams/verify/:certificateNumber - public verification (shared logic)
 router.get('/verify/:certificateNumber', async (req, res) => {
     try {
-        const certificate = await Certificate.findOne({
-            certificateNumber: req.params.certificateNumber,
-            isRevoked: { $ne: true }
-        }).populate('exam', 'title').populate('user', 'username fullName');
-
-        if (!certificate) {
-            return errorResponse(res, 404, 'CERTIFICATE_NOT_FOUND', '證書不存在或已被撤銷');
+        const result = await verifyCertificate(req.params.certificateNumber);
+        if (!result.ok) {
+            return errorResponse(res, result.statusCode, result.code, result.message);
         }
-
-        if (certificate.expiresAt && new Date() > certificate.expiresAt) {
-            return errorResponse(res, 403, 'CERTIFICATE_EXPIRED', '證書已過期');
-        }
-
-        res.json({
-            data: {
-                certificateNumber: certificate.certificateNumber,
-                issuedAt: certificate.issuedAt,
-                expiresAt: certificate.expiresAt,
-                exam: certificate.exam,
-                user: {
-                    username: certificate.user.username,
-                    fullName: certificate.user.fullName
-                }
-            }
-        });
+        res.json({ data: result.data });
     } catch (error) {
         console.error('Verify certificate error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
-        }
-    });
+    }
+});
 
 // GET /api/member/exams/certificate/:certificateNumber - download certificate PDF
 router.get('/certificate/:certificateNumber', verifiedAuth, async (req, res) => {
