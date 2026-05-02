@@ -794,4 +794,71 @@ function formatDate(date) {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+// POST /api/exams/:id/preview - preview exam without creating attempt
+router.post('/:id/preview', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+        const exam = await Exam.findById(req.params.id);
+        if (!exam) {
+            return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
+        }
+        const questions = await Question.find({ exam: exam._id }).sort({ questionNumber: 1 });
+        res.json({
+            data: {
+                exam: {
+                    title: exam.title,
+                    timeLimit: exam.timeLimit,
+                    passingScore: exam.passingScore,
+                    questionsPerAttempt: exam.questionsPerAttempt
+                },
+                questions: questions.map(q => ({
+                    questionNumber: q.questionNumber,
+                    type: q.type,
+                    content: q.content,
+                    options: q.options,
+                    points: q.points,
+                    difficulty: q.difficulty
+                })),
+                totalPoints: questions.reduce((sum, q) => sum + q.points, 0)
+            }
+        });
+    } catch (error) {
+        console.error('Preview exam error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// PATCH /api/exams/:id/questions/reorder - reorder questions
+router.patch('/:id/questions/reorder', adminAuth, async (req, res) => {
+    try {
+        const { reorder } = req.body;
+        if (!Array.isArray(reorder) || reorder.length === 0) {
+            return errorResponse(res, 400, 'VALIDATION_ERROR', 'reorder 陣列為空');
+        }
+
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                for (const item of reorder) {
+                    await Question.findOneAndUpdate(
+                        { _id: item.questionId, exam: req.params.id },
+                        { questionNumber: item.questionNumber },
+                        { session }
+                    );
+                }
+            });
+            session.endSession();
+            res.json({ message: '重排完成' });
+        } catch (e) {
+            session.endSession();
+            throw e;
+        }
+    } catch (error) {
+        console.error('Reorder error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
 module.exports = router;

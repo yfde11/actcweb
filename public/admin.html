@@ -1143,6 +1143,7 @@
                                         <td class="px-2 py-2" x-text="exam.questionCount || 0"></td>
                                         <td class="px-2 py-2" x-text="exam.passingScore + '%'"></td>
                                         <td class="px-2 py-2">
+                                            <button @click="previewExam(exam._id)" class="text-teal-600 hover:underline mr-2">預覽</button>
                                             <button @click="editExam(exam)" class="text-blue-600 hover:underline mr-2">編輯</button>
                                             <button @click="viewQuestions(exam._id)" class="text-green-600 hover:underline mr-2">題目</button>
                                             <button @click="viewAttempts(exam._id)" class="text-purple-600 hover:underline mr-2">作答</button>
@@ -1165,6 +1166,9 @@
                                     <button @click="openQuestionModal()" class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
                                         新增題目
                                     </button>
+                                    <button @click="reorderQuestions()" class="px-4 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700">
+                                        保存排序
+                                    </button>
                                     <button @click="showQuestionListModal = false; currentQuestionExamId = null" class="text-gray-500 hover:text-gray-800">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
@@ -1179,6 +1183,7 @@
                                             <div class="flex justify-between items-start">
                                                 <div class="flex-1">
                                                     <div class="flex items-center gap-2 mb-2">
+                                                        <input type="number" x-model.number="q.newQuestionNumber" min="1" class="w-16 px-2 py-1 border rounded text-sm" placeholder="序號">
                                                         <span class="px-2 py-1 bg-gray-100 text-xs rounded" x-text="q.type === 'multiple_choice' ? '選擇題' : q.type === 'true_false' ? '是非題' : '填空題'"></span>
                                                         <span class="px-2 py-1 bg-blue-100 text-xs rounded" x-text="q.difficulty"></span>
                                                         <span class="text-xs text-gray-500" x-text="q.points + ' 分'"></span>
@@ -1193,6 +1198,34 @@
                                         </div>
                                     </template>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 考試預覽 Modal -->
+                    <div x-show="showPreviewModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">考試預覽</h3>
+                                <button @click="showPreviewModal = false; previewData = null" class="text-gray-500 hover:text-gray-800">✕</button>
+                            </div>
+                            <div class="p-6 space-y-4" x-show="previewData">
+                                <div class="bg-gray-50 p-4 rounded">
+                                    <p class="font-medium" x-text="previewData.exam?.title"></p>
+                                    <p class="text-sm text-gray-600">限時：<span x-text="previewData.exam?.timeLimit"></span> 分鐘</p>
+                                    <p class="text-sm text-gray-600">總分：<span x-text="previewData.totalPoints"></span></p>
+                                </div>
+                                <template x-for="(q, idx) in previewData.questions || []" :key="idx">
+                                    <div class="border rounded p-4">
+                                        <p class="font-medium"><span x-text="idx + 1"></span>. <span x-text="q.content"></span></p>
+                                        <p class="text-xs text-gray-500 mt-1">分數：<span x-text="q.points"></span> | 難度：<span x-text="q.difficulty"></span></p>
+                                        <div x-show="q.type === 'multiple_choice'" class="mt-2 space-y-1">
+                                            <template x-for="(opt, i) in q.options" :key="i">
+                                                <div class="text-sm"><span x-text="String.fromCharCode(65 + i)"></span>. <span x-text="opt.text"></span></div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -2105,6 +2138,10 @@
                 currentStatisticsExamId: null,
                 statistics: null,
                 loadingStatistics: false,
+                // Preview
+                showPreviewModal: false,
+                previewData: null,
+                previewLoading: false,
                 async init() {
                     await this.loadExams();
                 },
@@ -2355,6 +2392,42 @@
                         alert('刪除題目失敗');
                     }
                 },
+                async reorderQuestions() {
+                    try {
+                        const reorder = this.questions
+                            .filter(q => q.newQuestionNumber && q.newQuestionNumber !== q.questionNumber)
+                            .map(q => ({
+                                questionId: q._id,
+                                questionNumber: q.newQuestionNumber
+                            }));
+                        
+                        if (reorder.length === 0) {
+                            alert('沒有需要保存的排序變更');
+                            return;
+                        }
+                        
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${this.currentQuestionExamId}/questions/reorder`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ reorder })
+                        });
+                        
+                        if (res.ok) {
+                            alert('排序已保存');
+                            await this.loadQuestions(this.currentQuestionExamId);
+                        } else {
+                            const err = await res.json();
+                            alert(err.error?.message || '排序保存失敗');
+                        }
+                    } catch (e) {
+                        console.error('Reorder error:', e);
+                        alert('排序保存失敗');
+                    }
+                },
                 async loadAttempts(examId) {
                     this.loadingAttempts = true;
                     try {
@@ -2398,6 +2471,25 @@
                     this.currentStatisticsExamId = examId;
                     this.showStatisticsModal = true;
                     this.loadStatistics(examId);
+                },
+                async previewExam(examId) {
+                    this.previewLoading = true;
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${examId}/preview`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.previewData = data.data;
+                            this.showPreviewModal = true;
+                        }
+                    } catch (e) {
+                        console.error('Preview error:', e);
+                    } finally {
+                        this.previewLoading = false;
+                    }
                 },
                 async removeCooldown(attemptId) {
                     if (!confirm('確定要解除此用戶的冷卻限制嗎？')) return;
