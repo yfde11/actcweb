@@ -12,6 +12,16 @@ const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = req
 
 const router = express.Router();
 
+// Fisher-Yates shuffle — returns a new shuffled array, does not mutate the original
+function fisherYatesShuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
 // Error response helper
 function errorResponse(res, statusCode, code, message, details = {}) {
     return res.status(statusCode).json({
@@ -286,12 +296,14 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
                 selectedQuestions = [...easyQuestions, ...mediumQuestions, ...hardQuestions];
                 
                 // If not enough questions, fill from remaining
+                // E7: Shuffle remaining before slicing so fallback fill is non-deterministic
                 if (selectedQuestions.length < exam.questionsPerAttempt) {
-                    const remaining = allQuestions.filter(q => 
+                    const remaining = allQuestions.filter(q =>
                         !selectedQuestions.some(s => s._id.toString() === q._id.toString())
                     );
                     const fillCount = exam.questionsPerAttempt - selectedQuestions.length;
-                    selectedQuestions.push(...remaining.slice(0, fillCount));
+                    const shuffledRemaining = fisherYatesShuffle(remaining);
+                    selectedQuestions.push(...shuffledRemaining.slice(0, fillCount));
                 }
             }
 
@@ -372,7 +384,7 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
             questionMap[q._id.toString()] = q;
         });
 
-        const returnQuestions = attempt.questionSnapshot.map(snapshot => {
+        let returnQuestions = attempt.questionSnapshot.map(snapshot => {
             const fullQ = questionMap[snapshot.questionId.toString()];
             return {
                 questionId: snapshot.questionId,
@@ -387,6 +399,19 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
                 correctAnswers: undefined
             };
         });
+
+        // E5: Apply shuffle flags from exam settings
+        if (exam.shuffleQuestions === true) {
+            returnQuestions = fisherYatesShuffle(returnQuestions);
+        }
+        if (exam.shuffleOptions === true) {
+            returnQuestions = returnQuestions.map(q => {
+                if ((q.type === 'multiple_choice' || q.type === 'single_choice') && Array.isArray(q.options) && q.options.length > 0) {
+                    return { ...q, options: fisherYatesShuffle(q.options) };
+                }
+                return q;
+            });
+        }
 
         res.json({
             data: {
@@ -572,32 +597,37 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
 
         // Backend cheat detection (independent of frontend)
         const exam = await Exam.findById(req.params.id);
-        const timeSpentSeconds = timeSpent || Math.floor((new Date() - attempt.startedAt) / 1000);
-        
+
+        // E3: Compute elapsed time server-side using startedAt — do NOT trust client-supplied timeSpent
+        const serverTimeSpent = Math.floor((new Date() - new Date(attempt.startedAt)) / 1000);
+
+        // E4: Use server-stored visibilityChangeCount — do NOT trust client-supplied value
+        const serverVisibilityCount = attempt.visibilityChangeCount || 0;
+
         let cheatingDetected = false;
-        
+
         // Rule 1: Time spent too short (less than 30 seconds per question)
-        if (timeSpentSeconds < attempt.questionSnapshot.length * 30) {
+        if (serverTimeSpent < attempt.questionSnapshot.length * 30) {
             cheatingDetected = true;
             attempt.cheatingDetails.push({
-                type: 'devtools',
+                type: 'fast_submission', // E2: was incorrectly 'devtools'
                 timestamp: new Date(),
                 warningNumber: 999
             });
         }
-        
-        // Rule 2: Frontend reports excessive visibility changes (backup)
-        if (visibilityChangeCount && visibilityChangeCount > 10) {
+
+        // Rule 2: Excessive tab switches detected server-side
+        if (serverVisibilityCount > 10) {
             cheatingDetected = true;
-            attempt.visibilityChangeCount = visibilityChangeCount;
             attempt.cheatingDetails.push({
                 type: 'visibility_change',
                 timestamp: new Date(),
-                warningNumber: visibilityChangeCount
+                warningNumber: serverVisibilityCount
             });
         }
 
-        attempt.timeSpent = timeSpentSeconds;
+        // Store client-supplied timeSpent for analytics only (not used for cheat detection)
+        attempt.timeSpent = timeSpent || serverTimeSpent;
         attempt.submittedAt = new Date();
         
         if (cheatingDetected) {
