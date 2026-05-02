@@ -441,10 +441,17 @@
                         <h3 class="text-lg font-semibold" :class="examResult.passed ? 'text-green-800' : 'text-red-800'">
                             <span x-text="examResult.passed ? '恭喜通過！' : '很遺憾，未通過'"></span>
                         </h3>
-                        <p class="text-sm mt-2" :class="examResult.passed ? 'text-green-700' : 'text-red-700'">
-                            得分: <span x-text="Math.round(examResult.score)"></span> 分 (通過分數: <span x-text="examResult.passed ? '' : '...'"></span>)
-                        </p>
-                        <button @click="examResult = null; loadAvailableExams()" class="mt-3 px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300">關閉</button>
+                    <p class="text-sm mt-2" :class="examResult.passed ? 'text-green-700' : 'text-red-700'">
+                        得分: <span x-text="Math.round(examResult.score)"></span> 分 (通過分數: <span x-text="examResult.passed ? '' : '...'"></span>)
+                    </p>
+                    <div class="mt-3 flex gap-2">
+                        <button @click="examResult = null; loadAvailableExams()" class="px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300">關閉</button>
+                        <button x-show="examResult.certificateIssued" 
+                                @click="downloadCertificate(examResult.certificateNumber)" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                            下載證書
+                        </button>
+                    </div>
                     </div>
                 </div>
             </div>

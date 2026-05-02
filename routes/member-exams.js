@@ -639,6 +639,15 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
             }
         }
 
+        // Include certificate info if passed and certificate exists
+        if (attempt.passed && attempt.cheatingDetected !== true) {
+            const certificate = await Certificate.findOne({ attempt: attempt._id });
+            if (certificate) {
+                result.certificateNumber = certificate.certificateNumber;
+                result.certificateIssued = true;
+            }
+        }
+
         res.json({ data: result });
     } catch (error) {
         console.error('Submit exam error:', error);
