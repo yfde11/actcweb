@@ -7,6 +7,7 @@ const Certificate = require('../models/Certificate');
 const Counter = require('../models/Counter');
 const { verifiedAuth } = require('../middleware/memberAuth');
 const { gradeAttempt, generateCertificate } = require('../services/examGrading');
+const { generateCertificatePDF } = require('../services/examCertificates');
 const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = require('../services/examNotifications');
 
 const router = express.Router();

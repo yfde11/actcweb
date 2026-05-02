@@ -6,8 +6,8 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 
-// Default font for Chinese support (ensure this exists in your project)
-const FONT_PATH = path.join(__dirname, '../fonts/NotoSansCJKtc-Regular.otf');
+// Default font for Chinese support
+const FONT_PATH = path.join(__dirname, '../fonts/NotoSansCJKtc-Regular.ttf');
 const BOLD_FONT_PATH = path.join(__dirname, '../fonts/NotoSansCJKtc-Bold.otf');
 
 /**
