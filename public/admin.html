@@ -1146,6 +1146,7 @@
                                             <button @click="editExam(exam)" class="text-blue-600 hover:underline mr-2">編輯</button>
                                             <button @click="viewQuestions(exam._id)" class="text-green-600 hover:underline mr-2">題目</button>
                                             <button @click="viewAttempts(exam._id)" class="text-purple-600 hover:underline mr-2">作答</button>
+                                            <button @click="viewStatistics(exam._id)" class="text-orange-600 hover:underline mr-2">統計</button>
                                             <button @click="deleteExam(exam._id)" class="text-red-600 hover:underline">刪除</button>
                                         </td>
                                     </tr>
@@ -2004,6 +2005,11 @@
                 currentAttemptsExamId: null,
                 attempts: [],
                 loadingAttempts: false,
+                // Statistics
+                showStatisticsModal: false,
+                currentStatisticsExamId: null,
+                statistics: null,
+                loadingStatistics: false,
                 async init() {
                     await this.loadExams();
                 },
@@ -2275,6 +2281,28 @@
                     this.currentAttemptsExamId = examId;
                     this.showAttemptsModal = true;
                     this.loadAttempts(examId);
+                },
+                async loadStatistics(examId) {
+                    this.loadingStatistics = true;
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch(`/api/exams/${examId}/statistics`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.statistics = data.data || null;
+                        }
+                    } catch (e) {
+                        console.error('Load statistics error:', e);
+                    } finally {
+                        this.loadingStatistics = false;
+                    }
+                },
+                viewStatistics(examId) {
+                    this.currentStatisticsExamId = examId;
+                    this.showStatisticsModal = true;
+                    this.loadStatistics(examId);
                 },
                 async changeStatus(exam) {
                     const newStatus = prompt(`輸入新狀態 (draft/published/active/closed/archived/deleted):`, exam.status);
