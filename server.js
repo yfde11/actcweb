@@ -47,7 +47,30 @@ app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-app.use(cors());
+const _corsOrigins = (() => {
+    const origins = [];
+    if (process.env.SITE_URL) {
+        origins.push(process.env.SITE_URL.replace(/\/$/, ''));
+    }
+    if (process.env.NODE_ENV !== 'production') {
+        origins.push(
+            'http://localhost:5001',
+            'http://localhost:3000',
+            'http://127.0.0.1:5001',
+            'http://127.0.0.1:3000'
+        );
+    }
+    return origins;
+})();
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (_corsOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
