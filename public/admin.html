@@ -1808,6 +1808,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     try {
                         const r = await fetch('/api/auth/change-password', {
                             method: 'POST',
+                            credentials: 'include',
                             headers: {
                                 'Content-Type': 'application/json',
                                 Authorization: `Bearer ${token}`
@@ -1844,6 +1845,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
 
                     try {
                         const response = await fetch('/api/auth/verify', {
+                            credentials: 'include',
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -1916,6 +1918,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     try {
                         const response = await fetch('/api/auth/force-change-password', {
                             method: 'POST',
+                            credentials: 'include',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -1941,6 +1944,8 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 },
 
                 logout() {
+                    // Clear server-side httpOnly cookie
+                    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('memberToken');
                     this.isLoggedIn = false;
@@ -2028,6 +2033,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                             const r = await fetch('/api/admin/working-groups/' + this.editingId, {
                                 method: 'PATCH',
                                 headers: this.authHeaders(),
+                                credentials: 'include',
                                 body: JSON.stringify({
                                     title: this.form.title,
                                     subtitle: this.form.subtitle,
@@ -2042,6 +2048,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                             const r = await fetch('/api/admin/working-groups', {
                                 method: 'POST',
                                 headers: this.authHeaders(),
+                                credentials: 'include',
                                 body: JSON.stringify(this.form)
                             });
                             const d = await r.json();
@@ -2093,6 +2100,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const r = await fetch('/api/admin/working-groups/' + this.membersWgId + '/members', {
                             method: 'POST',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify({ userId: uid })
                         });
                         const d = await r.json();
@@ -2130,6 +2138,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 if (!token) return;
 
                 const response = await fetch('/api/news/admin?limit=1', {
+                    credentials: 'include',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -2157,6 +2166,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 if (!token) return;
 
                 const response = await fetch('/api/corporate-members/stats', {
+                    credentials: 'include',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -2184,6 +2194,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 if (!token) return;
 
                 const response = await fetch('/api/events/stats', {
+                    credentials: 'include',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -2413,6 +2424,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     try {
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch('/api/exams', {
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok) {
@@ -2465,6 +2477,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         
                         const res = await fetch(url, {
                             method,
+                            credentials: 'include',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
@@ -2491,6 +2504,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${id}`, {
                             method: 'DELETE',
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         
@@ -2514,6 +2528,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     try {
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${examId}/questions`, {
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok) {
@@ -2615,13 +2630,14 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         
                         const res = await fetch(url, {
                             method,
+                            credentials: 'include',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(payload)
                         });
-                        
+
                         if (res.ok) {
                             this.showQuestionModal = false;
                             await this.loadQuestions(this.currentQuestionExamId);
@@ -2642,6 +2658,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${this.currentQuestionExamId}/questions/${questionId}`, {
                             method: 'DELETE',
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         
@@ -2673,6 +2690,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${this.currentQuestionExamId}/questions/reorder`, {
                             method: 'PATCH',
+                            credentials: 'include',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
@@ -2697,6 +2715,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     try {
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${examId}/attempts`, {
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok) {
@@ -2719,6 +2738,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     try {
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${examId}/statistics`, {
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok) {
@@ -2742,6 +2762,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${examId}/preview`, {
                             method: 'POST',
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok) {
@@ -2761,6 +2782,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${this.currentAttemptsExamId}/attempts/${attemptId}/cooldown`, {
                             method: 'DELETE',
+                            credentials: 'include',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (res.ok) {
@@ -2781,6 +2803,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${exam._id}/status`, {
                             method: 'PATCH',
+                            credentials: 'include',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'

@@ -13,6 +13,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
@@ -42,9 +43,21 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-// 中間件（關閉 CSP：前台使用 Tailwind CDN 與內嵌 script）
+// Security middleware
 app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            // 'unsafe-inline' required for Alpine.js x-data directives (CDN build)
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+        },
+    },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 const _corsOrigins = (() => {
@@ -73,6 +86,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // API 一律需資料庫已連線（避免登入與後台操作回不明 500）
 app.use('/api', ensureMongo);
