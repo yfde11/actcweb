@@ -3,6 +3,7 @@ const ExamAttempt = require('../models/ExamAttempt');
 const Question = require('../models/Question');
 const Certificate = require('../models/Certificate');
 const Counter = require('../models/Counter');
+const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = require('./examNotifications');
 
 /**
  * Grade an exam attempt
@@ -89,7 +90,11 @@ async function gradeAttempt(attemptId) {
 
     // Calculate final score
     attempt.score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
-    attempt.passed = attempt.score >= (await attempt.populate('exam')).exam.passingScore;
+    
+    // Populate exam to get passing score
+    await attempt.populate('exam');
+    attempt.passed = attempt.score >= attempt.exam.passingScore;
+    
     attempt.gradingDetails = {
         totalPoints,
         earnedPoints,
@@ -100,6 +105,28 @@ async function gradeAttempt(attemptId) {
     attempt.status = 'graded';
 
     await attempt.save();
+
+    // Send email notifications (non-blocking)
+    try {
+        // Populate user if not already populated
+        if (!attempt.user || typeof attempt.user === 'string' || attempt.user instanceof mongoose.Types.ObjectId) {
+            await attempt.populate('user');
+        }
+        
+        if (attempt.status === 'graded' && attempt.user && attempt.exam) {
+            await sendExamSubmittedEmail(attempt.user, attempt.exam, attempt);
+            
+            if (attempt.passed) {
+                const certificate = await Certificate.findOne({ attempt: attempt._id });
+                const certNumber = certificate ? certificate.certificateNumber : null;
+                await sendExamPassedEmail(attempt.user, attempt.exam, attempt, certNumber);
+            } else {
+                await sendExamFailedEmail(attempt.user, attempt.exam, attempt);
+            }
+        }
+    } catch (notifyError) {
+        console.error('[examGrading] Notification error (non-blocking):', notifyError);
+    }
 
     return {
         attemptId: attempt._id,

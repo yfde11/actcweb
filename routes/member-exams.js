@@ -6,6 +6,8 @@ const ExamAttempt = require('../models/ExamAttempt');
 const Certificate = require('../models/Certificate');
 const Counter = require('../models/Counter');
 const { verifiedAuth } = require('../middleware/memberAuth');
+const { gradeAttempt, generateCertificate } = require('../services/examGrading');
+const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = require('../services/examNotifications');
 
 const router = express.Router();
 
@@ -295,11 +297,8 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
             content: q.content,
             points: q.points,
             difficulty: q.difficulty,
-            // Include options for MC without correct answer indicator
-            ...(q.type === 'multiple_choice' ? {
-                options: attempt.questionSnapshot.find(s => s.questionId === q.questionId) && 
-                    await Question.findById(q.questionId).then(q => q.options) : []
-            } : {})
+            // Options will be fetched below
+            options: []
         }));
 
         // Fetch full question details for options
@@ -539,109 +538,43 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
 
         await attempt.save();
 
-        // Trigger grading (simplified - in production use job queue)
+        // Trigger grading if no cheating detected
         if (!cheatingDetected) {
-            // Auto-grade
-            let totalPoints = 0;
-            let earnedPoints = 0;
-            let correctCount = 0;
-            let incorrectCount = 0;
-            let unansweredCount = 0;
-
-            for (const snapshot of attempt.questionSnapshot) {
-                totalPoints += snapshot.points;
-                const answer = attempt.answers.find(a => 
-                    a.questionId.toString() === snapshot.questionId.toString()
-                );
-
-                if (!answer || answer.answer === null || answer.answer === undefined) {
-                    unansweredCount++;
-                    continue;
-                }
-
-                let isCorrect = false;
-                if (snapshot.type === 'multiple_choice') {
-                    isCorrect = answer.answer === snapshot.correctAnswer;
-                } else if (snapshot.type === 'true_false') {
-                    isCorrect = String(answer.answer).toLowerCase() === String(snapshot.correctAnswer).toLowerCase();
-                } else if (snapshot.type === 'fill_in_blank') {
-                    const userAnswer = String(answer.answer).trim().toLowerCase();
-                    const correctAnswers = await Question.findById(snapshot.questionId).then(q => 
-                        [...(q.correctAnswers || []), ...(q.acceptableAnswers || [])]
-                    );
-                    isCorrect = correctAnswers.some(ca => 
-                        ca.toLowerCase().trim() === userAnswer
-                    );
-                }
-
-                if (isCorrect) {
-                    correctCount++;
-                    earnedPoints += snapshot.points;
-                    answer.isCorrect = true;
-                    answer.pointsEarned = snapshot.points;
-                } else {
-                    incorrectCount++;
-                }
-            }
-
-            attempt.score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
-            attempt.passed = attempt.score >= exam.passingScore;
-            attempt.gradingDetails = {
-                totalPoints,
-                earnedPoints,
-                correctCount,
-                incorrectCount,
-                unansweredCount
-            };
-            attempt.status = 'graded';
-
-            await attempt.save();
+            const gradingResult = await gradeAttempt(attempt._id);
 
             // Generate certificate if passed and enabled
-            if (attempt.passed && exam.certificateEnabled && !attempt.cheatingDetected) {
+            if (gradingResult.passed && exam.certificateEnabled) {
                 try {
-                    const Counter = require('../models/Counter');
-                    const seq = await Counter.getNextSequence('certificate_number');
-                    const year = new Date().getFullYear();
-                    const certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
-
-                    const certificate = new Certificate({
-                        certificateNumber: certNumber,
-                        exam: exam._id,
-                        user: req.user.userId,
-                        attempt: attempt._id,
-                        expiresAt: exam.certificateTemplate?.validityPeriod > 0 ?
-                            new Date(new Date().setMonth(new Date().getMonth() + exam.certificateTemplate.validityPeriod)) :
-                            null
-                    });
-
-                    await certificate.save();
+                    await generateCertificate(attempt._id);
                 } catch (certError) {
                     console.error('Certificate generation error:', certError);
                 }
             }
         }
 
+        // Fetch updated attempt for response
+        const updatedAttempt = await ExamAttempt.findById(attempt._id);
+        
         // Return result based on showCorrectAnswers setting
         const result = {
-            attemptId: attempt._id,
-            status: attempt.status,
-            score: attempt.score,
-            passed: attempt.passed,
-            cheatingDetected: attempt.cheatingDetected
+            attemptId: updatedAttempt._id,
+            status: updatedAttempt.status,
+            score: updatedAttempt.score,
+            passed: updatedAttempt.passed,
+            cheatingDetected: updatedAttempt.cheatingDetected
         };
 
-        if (exam.showCorrectAnswers !== 'never' && attempt.status === 'graded') {
-            result.gradingDetails = attempt.gradingDetails;
+        if (exam.showCorrectAnswers !== 'never' && updatedAttempt.status === 'graded') {
+            result.gradingDetails = updatedAttempt.gradingDetails;
             if (exam.showCorrectAnswers === 'immediately') {
-                result.questionSnapshot = attempt.questionSnapshot;
-                result.answers = attempt.answers;
+                result.questionSnapshot = updatedAttempt.questionSnapshot;
+                result.answers = updatedAttempt.answers;
             }
         }
 
         // Include certificate info if passed and certificate exists
-        if (attempt.passed && attempt.cheatingDetected !== true) {
-            const certificate = await Certificate.findOne({ attempt: attempt._id });
+        if (updatedAttempt.passed && !updatedAttempt.cheatingDetected) {
+            const certificate = await Certificate.findOne({ attempt: updatedAttempt._id });
             if (certificate) {
                 result.certificateNumber = certificate.certificateNumber;
                 result.certificateIssued = true;
