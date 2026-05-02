@@ -387,11 +387,14 @@
                             <button @click="currentAttempt = null; loadAvailableExams()" class="text-sm text-gray-500 hover:underline">返回列表</button>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-4">
-                                <div>
-                                    <p class="text-sm text-gray-600">考試編號: <span x-text="currentAttempt.attemptNumber"></span></p>
-                                    <p class="text-sm text-gray-600">剩餘時間: <span x-text="formatTimeRemaining()"></span></p>
-                                </div>
+                    <div class="flex justify-between items-center mb-4">
+                                    <div>
+                                        <p class="font-medium" x-text="currentAttempt.attemptNumber ? '考試編號：' + currentAttempt.attemptNumber : ''"></p>
+                                        <p class="text-sm text-gray-600">剩餘時間: <span x-text="formatTimeRemaining()" :class="showTimeWarning ? 'text-red-600 font-bold' : ''"></span></p>
+                                    </div>
+                                    <div x-show="showTimeWarning" class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">
+                                        ⚠️ 剩餘時間不足5分鐘！
+                                    </div>
                                 <button @click="submitExam()" :disabled="submitting"
                                         class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
                                     <span x-text="submitting ? '提交中…' : '提交考卷'"></span>
@@ -1494,6 +1497,8 @@
                 submiting: false,
                 answers: {},
                 timeRemainingInterval: null,
+                showTimeWarning: false,
+                visibilityChangeCount: 0,
 
                 async init() {
                     await this.loadAvailableExams();
