@@ -13,6 +13,30 @@ const optionSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
+// D5 MIGRATION REQUIRED — dual exam fields are intentionally inconsistent:
+//
+// `exam`    — set at question-creation time for manually authored questions
+//             (routes/exams.js POST /:id/questions and bulk import, buildQuestionData).
+//             All admin queries (list, count, delete, reorder, statistics, preview,
+//             clone) filter by `{ exam: examId }`. This field is undefined for
+//             question-bank questions that were never explicitly authored under a
+//             single exam.
+//
+// `examIds` — array field updated via `$addToSet` by examGeneration.js when a
+//             question-bank exam is generated (both random and manual modes).
+//             examGeneration.js matches unassigned bank questions with
+//             `{ examIds: { $exists: false } }` or `{ examIds: { $size: 0 } }`.
+//             This field is typically empty for manually authored questions.
+//
+// The two fields are NOT kept in sync. Consolidating to a single field requires
+// a data migration:
+//   1. For every document where `exam` is set and `examIds` is empty, push
+//      `exam` into `examIds`.
+//   2. Update all query sites in routes/exams.js that filter `{ exam: id }` to
+//      filter `{ examIds: id }` (or `{ $or: [{ exam: id }, { examIds: id }] }`
+//      during a transitional window).
+//   3. Remove the `exam` field from the schema once all call sites are migrated.
+// Do NOT remove either field or change any query until the migration is complete.
 const questionSchema = new mongoose.Schema({
     exam: {
         type: mongoose.Schema.Types.ObjectId,
