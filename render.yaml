@@ -11,14 +11,18 @@ services:
     buildCommand: npm install --omit=dev
     startCommand: node server.js
     envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
       - key: NODE_ENV
         value: production
+      - key: DOMAIN
+        value: your-domain.com
       - key: PORT
         value: 5001
-      - key: MONGO_URI
-        sync: false  # 部署時手動填入 Atlas 連接字串
-      - key: JWT_SECRET
-        sync: false  # 部署時手動填入或自動產生
       - key: MONGO_SERVER_SELECTION_TIMEOUT_MS
         value: "30000"
       - key: SITE_URL
