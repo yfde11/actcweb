@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>題庫管理 - ACTC 管理後台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div x-data="questionBankAdmin()" x-init="init()" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">題庫管理系統</h1>
+                <a href="/admin" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-arrow-left"></i> 返回管理後台
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6">
+            
+            <!-- Toolbar -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex gap-3">
+                        <button @click="showCreateModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>新增題目
+                        </button>
+                        <button @click="showImportModal = true" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-file-import mr-2"></i>批量匯入
+                        </button>
+                        <button @click="loadStatistics()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-chart-bar mr-2"></i>統計
+                        </button>
+                    </div>
+                    <div class="flex gap-3">
+                        <select x-model="selectedDomain" @change="filterByDomain()" class="border rounded-lg px-3 py-2">
+                            <option value="">全部 Domains</option>
+                            <template x-for="d in domains">
+                                <option :value="d.id" x-text="d.id + '. ' + d.name"></option>
+                            </template>
+                        </select>
+                        <input type="text" x-model="searchQuery" @keyup.enter="search()" placeholder="搜尋題目..." class="border rounded-lg px-3 py-2 w-64">
+                        <button @click="search()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">題型</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">題目內容</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">難度</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用次數</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <template x-for="q in questions" :key="q._id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span x-text="q.type === 'multiple_choice' ? '單選' : q.type === 'true_false' ? '判斷' : '填空'" 
+                                          class="px-2 py-1 text-xs rounded"
+                                          :class="q.type === 'multiple_choice' ? 'bg-blue-100 text-blue-800' : 
+                                                     q.type === 'true_false' ? 'bg-green-100 text-green-800' : 
+                                                     'bg-purple-100 text-purple-800'">
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="q.domain + '. ' + (domains.find(d => d.id === q.domain)?.name || '').substring(0, 20) + '...'"></td>
+                                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" x-text="q.content"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span x-text="q.difficulty === 'easy' ? '簡單' : q.difficulty === 'medium' ? '中等' : '困難'" 
+                                          :class="q.difficulty === 'easy' ? 'text-green-600' : 
+                                                     q.difficulty === 'medium' ? 'text-yellow-600' : 
+                                                     'text-red-600'">
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center" x-text="q.examIds ? q.examIds.length : 0"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button @click="editQuestion(q)" class="text-blue-600 hover:text-blue-900 mr-3">編輯</button>
+                                    <button @click="deleteQuestion(q._id)" class="text-red-600 hover:text-red-900">刪除</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="bg-white px-6 py-4 border-t flex justify-between items-center">
+                    <span class="text-sm text-gray-700">
+                        共 <span x-text="total"></span> 題
+                    </span>
+                    <div class="flex gap-2">
+                        <button @click="prevPage()" :disabled="page <= 1" class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">上一頁</button>
+                        <span class="px-3 py-1" x-text="page + ' / ' + totalPages"></span>
+                        <button @click="nextPage()" :disabled="page >= totalPages" class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50">下一頁</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create/Edit Modal -->
+        <div x-show="showCreateModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-xl font-bold" x-text="showCreateModal ? '新增題目' : '編輯題目'"></h3>
+                    <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <!-- Type -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">題型</label>
+                        <select x-model="formData.type" class="w-full border rounded-lg px-3 py-2">
+                            <option value="multiple_choice">單選題</option>
+                            <option value="true_false">判斷題</option>
+                            <option value="fill_in_blank">填空題</option>
+                        </select>
+                    </div>
+                    <!-- Domain -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">CISSP Domain</label>
+                        <select x-model="formData.domain" class="w-full border rounded-lg px-3 py-2">
+                            <template x-for="d in domains">
+                                <option :value="d.id" x-text="d.id + '. ' + d.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <!-- Content -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">題目內容</label>
+                        <textarea x-model="formData.content" class="w-full border rounded-lg px-3 py-2" rows="3"></textarea>
+                    </div>
+                    <!-- Options (Multiple Choice) -->
+                    <template x-if="formData.type === 'multiple_choice'">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">選項</label>
+                            <template x-for="(opt, idx) in formData.options">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="w-8 font-medium" x-text="opt.label"></span>
+                                    <input type="text" x-model="opt.text" class="flex-1 border rounded-lg px-3 py-2" placeholder="選項內容">
+                                    <input type="radio" :value="idx" x-model="formData.correctOptionIndex" class="w-5 h-5">
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <!-- Correct Boolean (True/False) -->
+                    <template x-if="formData.type === 'true_false'">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">正確答案</label>
+                            <label class="inline-flex items-center mr-4">
+                                <input type="radio" value="true" x-model="formData.correctBoolean" class="w-5 h-5 mr-2"> 正確 (True)
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" value="false" x-model="formData.correctBoolean" class="w-5 h-5 mr-2"> 錯誤 (False)
+                            </label>
+                        </div>
+                    </template>
+                    <!-- Correct Answers (Fill in Blank) -->
+                    <template x-if="formData.type === 'fill_in_blank'">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">正確答案</label>
+                            <input type="text" x-model="formData.correctAnswers[0]" class="w-full border rounded-lg px-3 py-2" placeholder="可接受答案，用逗號分隔">
+                        </div>
+                    </template>
+                    <!-- Difficulty -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">難度</label>
+                        <select x-model="formData.difficulty" class="w-full border rounded-lg px-3 py-2">
+                            <option value="easy">簡單</option>
+                            <option value="medium">中等</option>
+                            <option value="hard">困難</option>
+                        </select>
+                    </div>
+                    <!-- Points -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">分數</label>
+                        <input type="number" x-model="formData.points" class="w-32 border rounded-lg px-3 py-2" min="1">
+                    </div>
+                    <!-- Explanation -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">說明（選填）</label>
+                        <textarea x-model="formData.explanation" class="w-full border rounded-lg px-3 py-2" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3">
+                    <button @click="closeModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button @click="saveQuestion()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        <i class="fas fa-save mr-2"></i>儲存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Modal -->
+        <div x-show="showImportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-xl font-bold">批量匯入題目</h3>
+                    <button @click="showImportModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <p class="text-sm text-gray-600 mb-4">上傳 CSV 檔案，格式需包含：type, domain, content, optionA, optionB, optionC, optionD, correctOption, difficulty</p>
+                    <input type="file" @change="handleFileUpload($event)" accept=".csv" class="w-full border rounded-lg px-3 py-2">
+                    <div class="mt-4 text-sm text-gray-500">
+                        <p>格式範例：</p>
+                        <pre class="bg-gray-100 p-2 rounded mt-2 text-xs overflow-x-auto">
+type,domain,content,optionA,optionB,optionC,optionD,correctOption,difficulty
+multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of above,3,easy</pre>
+                    </div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3">
+                    <button @click="showImportModal = false" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button @click="importCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                        <i class="fas fa-file-import mr-2"></i>匯入
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function questionBankAdmin() {
+            return {
+                questions: [],
+                domains: [
+                    { id: 1, name: 'Security and Risk Management' },
+                    { id: 2, name: 'Asset Security' },
+                    { id: 3, name: 'Security Architecture and Engineering' },
+                    { id: 4, name: 'Communication and Network Security' },
+                    { id: 5, name: 'Identity and Access Management' },
+                    { id: 6, name: 'Security Assessment and Testing' },
+                    { id: 7, name: 'Security Operations' },
+                    { id: 8, name: 'Software Development Security' }
+                ],
+                selectedDomain: '',
+                searchQuery: '',
+                page: 1,
+                limit: 20,
+                total: 0,
+                totalPages: 1,
+                loading: false,
+
+                showCreateModal: false,
+                showEditModal: false,
+                showImportModal: false,
+                editingQuestion: null,
+                selectedFile: null,
+
+                formData: {
+                    type: 'multiple_choice',
+                    domain: 1,
+                    content: '',
+                    options: [
+                        { text: '', label: 'A' },
+                        { text: '', label: 'B' },
+                        { text: '', label: 'C' },
+                        { text: '', label: 'D' }
+                    ],
+                    correctOptionIndex: 0,
+                    correctBoolean: true,
+                    correctAnswers: [''],
+                    points: 1,
+                    difficulty: 'easy',
+                    explanation: ''
+                },
+
+                getToken() {
+                    return localStorage.getItem('adminToken') || '';
+                },
+
+                async init() {
+                    await this.loadQuestions();
+                },
+
+                async loadQuestions() {
+                    this.loading = true;
+                    try {
+                        const query = new URLSearchParams();
+                        if (this.selectedDomain) query.append('domain', this.selectedDomain);
+                        if (this.searchQuery) query.append('search', this.searchQuery);
+                        query.append('page', this.page);
+                        query.append('limit', this.limit);
+
+                        const res = await fetch(`/api/question-bank?${query}`, {
+                            headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.questions = data.data || [];
+                            this.total = data.pagination.total;
+                            this.totalPages = data.pagination.totalPages;
+                        }
+                    } catch (e) {
+                        console.error('Load error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async saveQuestion() {
+                    try {
+                        const method = this.showCreateModal ? 'POST' : 'PUT';
+                        const url = this.showCreateModal ? '/api/question-bank' : `/api/question-bank/${this.editingQuestion._id}`;
+
+                        const res = await fetch(url, {
+                            method,
+                            headers: {
+                                'Authorization': `Bearer ${this.getToken()}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.formData)
+                        });
+
+                        if (res.ok) {
+                            this.closeModal();
+                            await this.loadQuestions();
+                        }
+                    } catch (e) {
+                        console.error('Save error:', e);
+                    }
+                },
+
+                editQuestion(q) {
+                    this.editingQuestion = q;
+                    this.formData = {
+                        type: q.type,
+                        domain: q.domain,
+                        content: q.content,
+                        options: q.options || [{ text: '', label: 'A' }, { text: '', label: 'B' }, { text: '', label: 'C' }, { text: '', label: 'D' }],
+                        correctOptionIndex: q.correctOptionIndex || 0,
+                        correctBoolean: q.correctBoolean !== undefined ? q.correctBoolean : true,
+                        correctAnswers: q.correctAnswers || [''],
+                        points: q.points || 1,
+                        difficulty: q.difficulty || 'easy',
+                        explanation: q.explanation || ''
+                    };
+                    this.showEditModal = true;
+                },
+
+                async deleteQuestion(id) {
+                    if (!confirm('確定要刪除這個題目嗎？')) return;
+                    try {
+                        await fetch(`/api/question-bank/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                        });
+                        await this.loadQuestions();
+                    } catch (e) {
+                        console.error('Delete error:', e);
+                    }
+                },
+
+                closeModal() {
+                    this.showCreateModal = false;
+                    this.showEditModal = false;
+                    this.editingQuestion = null;
+                    this.formData = {
+                        type: 'multiple_choice',
+                        domain: 1,
+                        content: '',
+                        options: [
+                            { text: '', label: 'A' },
+                            { text: '', label: 'B' },
+                            { text: '', label: 'C' },
+                            { text: '', label: 'D' }
+                        ],
+                        correctOptionIndex: 0,
+                        correctBoolean: true,
+                        correctAnswers: [''],
+                        points: 1,
+                        difficulty: 'easy',
+                        explanation: ''
+                    };
+                },
+
+                handleFileUpload(event) {
+                    this.selectedFile = event.target.files[0];
+                },
+
+                async importCSV() {
+                    if (!this.selectedFile) return;
+                    const formData = new FormData();
+                    formData.append('file', this.selectedFile);
+
+                    try {
+                        const res = await fetch('/api/question-bank/import', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${this.getToken()}` },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        alert(`匯入成功 ${data.data.imported} 題，失敗 ${data.data.errors.length} 題`);
+                        this.showImportModal = false;
+                        await this.loadQuestions();
+                    } catch (e) {
+                        console.error('Import error:', e);
+                    }
+                },
+
+                async loadStatistics() {
+                    try {
+                        const res = await fetch('/api/question-bank/statistics', {
+                            headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                        });
+                        const data = await res.json();
+                        alert(`總題數: ${data.data.total}\n未使用: ${data.data.unused}`);
+                    } catch (e) {
+                        console.error('Stats error:', e);
+                    }
+                },
+
+                filterByDomain() {
+                    this.page = 1;
+                    this.loadQuestions();
+                },
+
+                search() {
+                    this.page = 1;
+                    this.loadQuestions();
+                },
+
+                prevPage() {
+                    if (this.page > 1) {
+                        this.page--;
+                        this.loadQuestions();
+                    }
+                },
+
+                nextPage() {
+                    if (this.page < this.totalPages) {
+                        this.page++;
+                        this.loadQuestions();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

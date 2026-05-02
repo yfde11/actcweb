@@ -164,6 +164,23 @@ const examSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    source: {
+        type: String,
+        enum: {
+            values: ['manual', 'question_bank'],
+            message: 'Source must be manual or question_bank'
+        },
+        default: 'manual'
+    },
+    domainRatio: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
+    questionRefs: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Question'
+    }],
     tags: [String],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

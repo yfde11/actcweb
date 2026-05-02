@@ -16,12 +16,27 @@ const questionSchema = new mongoose.Schema({
     exam: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Exam',
-        required: true,
         index: true
     },
-    questionNumber: {
+    examIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Exam',
+        index: true
+    }],
+    domain: {
         type: Number,
-        required: true
+        min: 1,
+        max: 8,
+        index: true,
+        validate: {
+            validator: function(v) {
+                return v === undefined || (v >= 1 && v <= 8);
+            },
+            message: 'Domain must be between 1 and 8 (CISSP domains)'
+        }
+    },
+    questionNumber: {
+        type: Number
     },
     type: {
         type: String,
@@ -71,11 +86,10 @@ const questionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-questionSchema.index({ exam: 1, questionNumber: 1 }, { unique: true });
-questionSchema.index({ exam: 1, difficulty: 1 });
+questionSchema.index({ domain: 1, difficulty: 1 });
 
 questionSchema.pre('save', async function(next) {
-    if (this.isNew && !this.questionNumber) {
+    if (this.isNew && !this.questionNumber && this.exam) {
         try {
             const lastQuestion = await this.constructor.findOne(
                 { exam: this.exam },
@@ -99,16 +113,6 @@ questionSchema.pre('save', function(next) {
     next();
 });
 
-questionSchema.pre('remove', async function(next) {
-    try {
-        await this.constructor.updateMany(
-            { exam: this.exam, questionNumber: { $gt: this.questionNumber } },
-            { $inc: { questionNumber: -1 } }
-        );
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
+// Note: Removed pre('remove') middleware as questions can now belong to multiple exams via examIds
 
 module.exports = mongoose.model('Question', questionSchema);

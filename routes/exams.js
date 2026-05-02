@@ -8,6 +8,7 @@ const Question = require('../models/Question');
 const ExamAttempt = require('../models/ExamAttempt');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
+const { generateExamFromBank, generateExamManual } = require('../services/examGeneration');
 const { adminAuth } = require('../middleware/adminAuth');
 
 const router = express.Router();
@@ -858,6 +859,41 @@ router.patch('/:id/questions/reorder', adminAuth, async (req, res) => {
     } catch (error) {
         console.error('Reorder error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// POST /api/exams/from-bank - Generate exam from question bank
+router.post('/from-bank', adminAuth, async (req, res) => {
+    try {
+        const { mode, ...params } = req.body;
+        
+        if (!mode || !['manual', 'random'].includes(mode)) {
+            return errorResponse(res, 400, 'INVALID_MODE', 'Mode must be manual or random');
+        }
+
+        let exam;
+        if (mode === 'manual') {
+            if (!params.questionIds || params.questionIds.length === 0) {
+                return errorResponse(res, 400, 'NO_QUESTIONS', 'No questions selected');
+            }
+            exam = await generateExamManual({
+                ...params,
+                createdBy: req.user.userId
+            });
+        } else {
+            if (!params.domainRatio || Object.keys(params.domainRatio).length === 0) {
+                return errorResponse(res, 400, 'NO_DOMAIN_RATIO', 'Domain ratio is required for random mode');
+            }
+            exam = await generateExamFromBank({
+                ...params,
+                createdBy: req.user.userId
+            });
+        }
+
+        res.status(201).json({ data: exam });
+    } catch (error) {
+        console.error('Generate exam from bank error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', error.message || '伺服器錯誤');
     }
 });
 
