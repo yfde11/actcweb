@@ -41,6 +41,17 @@ router.get('/', verifiedAuth, async (req, res) => {
             ]
         };
 
+        // Exclude 'specific' exams whose allowedMemberIds does not include this user.
+        // We push this into the DB query rather than filtering in JS to avoid loading
+        // ineligible exam documents into memory.
+        query.$and = query.$and || [];
+        query.$and.push({
+            $or: [
+                { allowedMembers: { $ne: 'specific' } },
+                { allowedMembers: 'specific', allowedMemberIds: new mongoose.Types.ObjectId(userId) }
+            ]
+        });
+
         const [exams, total] = await Promise.all([
             Exam.find(query)
                 .sort({ createdAt: -1 })
@@ -206,6 +217,16 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
         // Check if exam is available
         if (!exam.isAvailable) {
             return errorResponse(res, 403, 'EXAM_NOT_ACTIVE', '考試尚未開放或已結束');
+        }
+
+        // Specific-member access control
+        if (exam.allowedMembers === 'specific') {
+            const allowed = (exam.allowedMemberIds || []).map(id => id.toString());
+            if (!allowed.includes(req.authUser._id.toString())) {
+                return res.status(403).json({
+                    error: { code: 'NOT_ALLOWED', message: '您未被授權參加此考試' }
+                });
+            }
         }
 
         // Check max attempts
