@@ -320,6 +320,7 @@
                     <!-- 可報考列表 -->
                     <div x-show="!currentAttempt">
                         <h3 class="text-lg font-semibold mb-3">可報考考試</h3>
+                        <p x-show="startExamError" class="text-sm text-red-600 mb-3 p-3 bg-red-50 rounded border border-red-200" x-text="startExamError" role="alert"></p>
                         <p x-show="loading" class="text-sm text-gray-500">載入中…</p>
                         <p x-show="!loading && availableExams.length === 0" class="text-sm text-gray-500">目前沒有可報考的考試。</p>
                         <div x-show="!loading && availableExams.length > 0" class="space-y-4">
@@ -361,11 +362,6 @@
                                             </button>
                                             <button x-show="exam.userAttempts?.some(a => a.status === 'in_progress')"
                                                     @click="resumeExam(exam._id, exam.userAttempts.find(a => a.status === 'in_progress')._id)"
-                                                    class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
-                                                繼續考試
-                                            </button>
-                                            <button x-show="exam.canStart.reason === 'IN_PROGRESS'"
-                                                    @click="resumeExam(exam._id, exam.canStart.attemptId)"
                                                     class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
                                                 繼續考試
                                             </button>
@@ -445,7 +441,7 @@
                             <span x-text="examResult.passed ? '恭喜通過！' : '很遺憾，未通過'"></span>
                         </h3>
                     <p class="text-sm mt-2" :class="examResult.passed ? 'text-green-700' : 'text-red-700'">
-                        得分: <span x-text="Math.round(examResult.score)"></span> 分 (通過分數: <span x-text="examResult.passed ? '' : '...'"></span>)
+                        得分: <span x-text="Math.round(examResult.score)"></span> 分 (通過分數: <span x-text="examResult.passingScore != null ? examResult.passingScore + '%' : '—'"></span>)
                     </p>
                     <div class="mt-3 flex gap-2">
                         <button @click="examResult = null; loadAvailableExams()" class="px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300">關閉</button>
@@ -845,7 +841,7 @@
                         none: '無',
                         payment_pending: '待付款',
                         payment_submitted: '待審核',
-                        paid: '未付款',
+                        paid: '已付款',
                         payment_rejected: '付款退回',
                         refunded: '已退款'
                     };
@@ -1500,6 +1496,7 @@
                 loading: false,
                 loadingCertificates: false,
                 startingExam: null,
+                startExamError: '',
                 submiting: false,
                 answers: {},
                 timeRemainingInterval: null,
@@ -1534,6 +1531,7 @@
 
                 async startExam(examId) {
                     this.startingExam = examId;
+                    this.startExamError = '';
                     try {
                         const res = await fetch(`/api/member/exams/${examId}/start`, {
                             method: 'POST',
@@ -1544,6 +1542,7 @@
                             this.currentAttempt = data.data;
                             this.answers = {};
                             this.visibilityChangeCount = 0;
+                            this.startExamError = '';
                             // Add visibility change detection
                             this._visibilityChangeHandler = () => {
                                 if (document.hidden) {
@@ -1558,11 +1557,11 @@
                             document.addEventListener('visibilitychange', this._visibilityChangeHandler);
                             this.startTimeRemainingTimer();
                         } else {
-                            alert(data.error?.message || '開始考試失敗');
+                            this.startExamError = data.error?.message || '開始考試失敗';
                         }
                     } catch (e) {
                         console.error('Start exam error:', e);
-                        alert('網路錯誤');
+                        this.startExamError = '網路錯誤，請稍後再試';
                     } finally {
                         this.startingExam = null;
                     }

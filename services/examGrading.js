@@ -50,8 +50,12 @@ async function gradeAttempt(attemptId) {
 
         if (!answer || answer.answer === null || answer.answer === undefined) {
             unansweredCount++;
-            answer.isCorrect = false;
-            answer.pointsEarned = 0;
+            // answer may be undefined (question was skipped entirely) — do not
+            // attempt to set properties on it; just count it as wrong and move on.
+            if (answer) {
+                answer.isCorrect = false;
+                answer.pointsEarned = 0;
+            }
             continue;
         }
 

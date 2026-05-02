@@ -28,15 +28,24 @@ function errorResponse(res, statusCode, code, message, details = {}) {
 // GET /api/exams - list exams with pagination and filters
 router.get('/', adminAuth, async (req, res) => {
     try {
-        const { page = 1, limit = 20, status, search } = req.query;
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page = 1, status, search } = req.query;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const skip = (parseInt(page) - 1) * limit;
         const query = {};
 
         if (status) query.status = status;
         if (search) {
+            if (search.length > 100) {
+                return res.json({
+                    data: [],
+                    pagination: { total: 0, totalPages: 0, page: parseInt(page), limit }
+                });
+            }
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchRegex = new RegExp(escapeRegex(search), 'i');
             query.$or = [
-                { title: new RegExp(search, 'i') },
-                { description: new RegExp(search, 'i') }
+                { title: searchRegex },
+                { description: searchRegex }
             ];
         }
 
@@ -44,7 +53,7 @@ router.get('/', adminAuth, async (req, res) => {
             Exam.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .populate('createdBy', 'username fullName'),
             Exam.countDocuments(query)
         ]);
@@ -53,9 +62,9 @@ router.get('/', adminAuth, async (req, res) => {
             data: exams,
             pagination: {
                 total,
-                totalPages: Math.ceil(total / parseInt(limit)),
+                totalPages: Math.ceil(total / limit),
                 page: parseInt(page),
-                limit: parseInt(limit)
+                limit
             }
         });
     } catch (error) {
@@ -67,10 +76,24 @@ router.get('/', adminAuth, async (req, res) => {
 // POST /api/exams - create exam
 router.post('/', adminAuth, async (req, res) => {
     try {
+        // Allowlist: only safe fields accepted from req.body
+        const {
+            title, description, shortDescription, examType, timeLimit, passingScore,
+            maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
+            startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs
+        } = req.body;
+
         const examData = {
-            ...req.body,
+            title, description, shortDescription, examType, timeLimit, passingScore,
+            maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
+            startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
             createdBy: req.user.userId
         };
+
+        // Remove undefined keys so Mongoose defaults apply properly
+        Object.keys(examData).forEach(k => examData[k] === undefined && delete examData[k]);
 
         const exam = new Exam(examData);
         await exam.save();
@@ -126,7 +149,25 @@ router.put('/:id', adminAuth, async (req, res) => {
             return errorResponse(res, 400, 'STATUS_TRANSITION_INVALID', '只能編輯草稿狀態的考試');
         }
 
-        Object.assign(exam, req.body);
+        // Allowlist: only safe fields accepted from req.body; status/createdBy/totalPoints/questionCount not allowed
+        const {
+            title, description, shortDescription, examType, timeLimit, passingScore,
+            maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
+            startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs
+        } = req.body;
+
+        const allowedUpdates = {
+            title, description, shortDescription, examType, timeLimit, passingScore,
+            maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
+            startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs
+        };
+
+        // Remove undefined keys so existing values are not overwritten with undefined
+        Object.keys(allowedUpdates).forEach(k => allowedUpdates[k] === undefined && delete allowedUpdates[k]);
+
+        Object.assign(exam, allowedUpdates);
         await exam.save();
 
         res.json({ data: exam });
@@ -228,14 +269,15 @@ router.get('/:id/questions', adminAuth, async (req, res) => {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
-        const { page = 1, limit = 50 } = req.query;
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page = 1 } = req.query;
+        const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+        const skip = (parseInt(page) - 1) * limit;
 
         const [questions, total] = await Promise.all([
             Question.find({ exam: req.params.id })
                 .sort({ questionNumber: 1 })
                 .skip(skip)
-                .limit(parseInt(limit)),
+                .limit(limit),
             Question.countDocuments({ exam: req.params.id })
         ]);
 
@@ -243,9 +285,9 @@ router.get('/:id/questions', adminAuth, async (req, res) => {
             data: questions,
             pagination: {
                 total,
-                totalPages: Math.ceil(total / parseInt(limit)),
+                totalPages: Math.ceil(total / limit),
                 page: parseInt(page),
-                limit: parseInt(limit)
+                limit
             }
         });
     } catch (error) {
@@ -341,7 +383,8 @@ router.get('/:id/attempts', adminAuth, async (req, res) => {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
-        const { limit = 20, cursor } = req.query;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const { cursor } = req.query;
         const query = { exam: req.params.id };
 
         if (cursor) {
@@ -354,14 +397,14 @@ router.get('/:id/attempts', adminAuth, async (req, res) => {
 
         const attempts = await ExamAttempt.find(query)
             .sort({ startedAt: -1, _id: -1 })
-            .limit(parseInt(limit) + 1)
+            .limit(limit + 1)
             .populate('user', 'username fullName email');
 
-        const hasMore = attempts.length > parseInt(limit);
+        const hasMore = attempts.length > limit;
         if (hasMore) attempts.pop();
 
-        const nextCursor = hasMore ? 
-            `${attempts[attempts.length - 1].startedAt.toISOString()}|${attempts[attempts.length - 1]._id}` : 
+        const nextCursor = hasMore ?
+            `${attempts[attempts.length - 1].startedAt.toISOString()}|${attempts[attempts.length - 1]._id}` :
             null;
 
         res.json({
@@ -557,8 +600,9 @@ router.get('/:id/export-attempts', adminAuth, async (req, res) => {
             return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
         }
 
-        const { cursor, limit = 1000 } = req.query;
-        const query = { 
+        const exportLimit = Math.min(parseInt(req.query.limit) || 1000, 5000);
+        const { cursor } = req.query;
+        const query = {
             exam: req.params.id,
             cheatingDetected: { $ne: true }
         };
@@ -573,10 +617,10 @@ router.get('/:id/export-attempts', adminAuth, async (req, res) => {
 
         const attempts = await ExamAttempt.find(query)
             .sort({ startedAt: -1, _id: -1 })
-            .limit(parseInt(limit) + 1)
+            .limit(exportLimit + 1)
             .populate('user', 'username email fullName');
 
-        const hasMore = attempts.length > parseInt(limit);
+        const hasMore = attempts.length > exportLimit;
         if (hasMore) attempts.pop();
 
         const csvRows = [];

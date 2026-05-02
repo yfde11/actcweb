@@ -114,6 +114,42 @@ router.get('/', verifiedAuth, async (req, res) => {
     }
 });
 
+// GET /api/member/certificates - my certificates
+router.get('/certificates', verifiedAuth, async (req, res) => {
+    try {
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const [certificates, total] = await Promise.all([
+            Certificate.find({
+                user: req.user.userId,
+                isRevoked: { $ne: true }
+            })
+                .sort({ issuedAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit))
+                .populate('exam', 'title examType'),
+            Certificate.countDocuments({
+                user: req.user.userId,
+                isRevoked: { $ne: true }
+            })
+        ]);
+
+        res.json({
+            data: certificates,
+            pagination: {
+                total,
+                totalPages: Math.ceil(total / parseInt(limit)),
+                page: parseInt(page),
+                limit: parseInt(limit)
+            }
+        });
+    } catch (error) {
+        console.error('List certificates error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
 // GET /api/member/exams/:id - exam info (no answers)
 router.get('/:id', verifiedAuth, async (req, res) => {
     try {
@@ -153,6 +189,11 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+
+        // Membership gate: only approved members may take exams
+        if (req.authUser.membershipStatus !== 'approved') {
+            return errorResponse(res, 403, 'MEMBERSHIP_REQUIRED', '需要通過會員審核才能參加考試');
         }
 
         const userId = req.user.userId;
@@ -463,21 +504,31 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
+        // Membership gate: only approved members may submit exams
+        if (req.authUser.membershipStatus !== 'approved') {
+            return errorResponse(res, 403, 'MEMBERSHIP_REQUIRED', '需要通過會員審核才能參加考試');
+        }
+
         const { attemptId, answers, timeSpent, visibilityChangeCount } = req.body;
 
         if (!attemptId) {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '缺少 attemptId');
         }
 
-        const attempt = await ExamAttempt.findOne({
-            _id: attemptId,
-            exam: req.params.id,
-            user: req.user.userId,
-            status: 'in_progress'
-        });
+        // Atomic transition: in_progress -> grading (prevents double-submit race condition)
+        const attempt = await ExamAttempt.findOneAndUpdate(
+            { _id: attemptId, exam: req.params.id, user: req.user.userId, status: 'in_progress' },
+            { $set: { status: 'grading' } },
+            { new: false }
+        );
 
         if (!attempt) {
-            return errorResponse(res, 404, 'ATTEMPT_NOT_FOUND', '作答紀錄不存在');
+            // Determine whether it was never found or already submitted
+            const existing = await ExamAttempt.findOne({ _id: attemptId, user: req.user.userId });
+            if (!existing) {
+                return errorResponse(res, 404, 'ATTEMPT_NOT_FOUND', '作答紀錄不存在');
+            }
+            return errorResponse(res, 409, 'ALREADY_SUBMITTED', '考試已提交，請勿重複操作');
         }
 
         // Lazy expiry check
@@ -562,6 +613,7 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
             status: updatedAttempt.status,
             score: updatedAttempt.score,
             passed: updatedAttempt.passed,
+            passingScore: exam.passingScore,
             cheatingDetected: updatedAttempt.cheatingDetected
         };
 
@@ -596,6 +648,11 @@ router.get('/:id/result', verifiedAuth, async (req, res) => {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
+        // Membership gate: only approved members may view exam results
+        if (req.authUser.membershipStatus !== 'approved') {
+            return errorResponse(res, 403, 'MEMBERSHIP_REQUIRED', '需要通過會員審核才能參加考試');
+        }
+
         const { attemptId } = req.query;
         const query = {
             exam: req.params.id,
@@ -620,6 +677,7 @@ router.get('/:id/result', verifiedAuth, async (req, res) => {
             status: attempt.status,
             score: attempt.score,
             passed: attempt.passed,
+            passingScore: exam ? exam.passingScore : undefined,
             cheatingDetected: attempt.cheatingDetected,
             submittedAt: attempt.submittedAt,
             timeSpent: attempt.timeSpent
@@ -636,42 +694,6 @@ router.get('/:id/result', verifiedAuth, async (req, res) => {
         res.json({ data: result });
     } catch (error) {
         console.error('Get result error:', error);
-        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
-    }
-});
-
-// GET /api/member/certificates - my certificates
-router.get('/certificates', verifiedAuth, async (req, res) => {
-    try {
-        const { page = 1, limit = 20 } = req.query;
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-
-        const [certificates, total] = await Promise.all([
-            Certificate.find({ 
-                user: req.user.userId, 
-                isRevoked: { $ne: true } 
-            })
-                .sort({ issuedAt: -1 })
-                .skip(skip)
-                .limit(parseInt(limit))
-                .populate('exam', 'title examType'),
-            Certificate.countDocuments({ 
-                user: req.user.userId, 
-                isRevoked: { $ne: true } 
-            })
-        ]);
-
-        res.json({
-            data: certificates,
-            pagination: {
-                total,
-                totalPages: Math.ceil(total / parseInt(limit)),
-                page: parseInt(page),
-                limit: parseInt(limit)
-            }
-        });
-    } catch (error) {
-        console.error('List certificates error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
     }
 });

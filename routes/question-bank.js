@@ -16,25 +16,34 @@ const upload = multer({
 // GET /api/question-bank - List questions with filters and pagination
 router.get('/', adminAuth, async (req, res) => {
     try {
-        const { domain, search, type, difficulty, page = 1, limit = 20 } = req.query;
-        
+        const { domain, search, type, difficulty, page = 1 } = req.query;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+
         const query = {};
         if (domain) query.domain = parseInt(domain);
         if (type) query.type = type;
         if (difficulty) query.difficulty = difficulty;
         if (search) {
+            if (search.length > 100) {
+                return res.json({
+                    data: [],
+                    pagination: { total: 0, page: parseInt(page), limit, totalPages: 0 }
+                });
+            }
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedSearch = escapeRegex(search);
             query.$or = [
-                { content: { $regex: search, $options: 'i' } },
-                { 'options.text': { $regex: search, $options: 'i' } }
+                { content: { $regex: escapedSearch, $options: 'i' } },
+                { 'options.text': { $regex: escapedSearch, $options: 'i' } }
             ];
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const skip = (parseInt(page) - 1) * limit;
         const [questions, total] = await Promise.all([
             Question.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             Question.countDocuments(query)
         ]);
@@ -44,7 +53,7 @@ router.get('/', adminAuth, async (req, res) => {
             pagination: {
                 total,
                 page: parseInt(page),
-                limit: parseInt(limit),
+                limit,
                 totalPages: Math.ceil(total / limit)
             }
         });
