@@ -91,7 +91,7 @@ const examAttemptSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: {
-            values: ['in_progress', 'submitted', 'graded', 'expired', 'cancelled', 'auto_submitted_cheating'],
+            values: ['in_progress', 'submitted', 'grading', 'graded', 'expired', 'cancelled', 'auto_submitted_cheating'],
             message: 'Invalid attempt status'
         },
         default: 'in_progress',

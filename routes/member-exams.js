@@ -5,6 +5,7 @@ const Question = require('../models/Question');
 const ExamAttempt = require('../models/ExamAttempt');
 const Certificate = require('../models/Certificate');
 const Counter = require('../models/Counter');
+const User = require('../models/User');
 const { verifiedAuth } = require('../middleware/memberAuth');
 const { gradeAttempt, generateCertificate } = require('../services/examGrading');
 const { verifyCertificate, generateCertificatePDF } = require('../services/examCertificates');
@@ -386,6 +387,29 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
 
         let returnQuestions = attempt.questionSnapshot.map(snapshot => {
             const fullQ = questionMap[snapshot.questionId.toString()];
+            let options = fullQ ? [...fullQ.options] : [];
+
+            // Shuffle options when enabled; update snapshot's correctAnswer to reflect new index
+            if (exam.shuffleOptions && snapshot.type === 'multiple_choice' && options.length > 0) {
+                const originalCorrectIndex = snapshot.correctAnswer;
+                const correctOption = options[originalCorrectIndex];
+
+                // Fisher-Yates shuffle
+                for (let i = options.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [options[i], options[j]] = [options[j], options[i]];
+                }
+
+                // Find where the correct option landed in the shuffled array
+                const newCorrectIndex = options.findIndex(
+                    (opt, idx) => opt === correctOption ||
+                        (opt && correctOption && opt.text === correctOption.text)
+                );
+                if (newCorrectIndex !== -1) {
+                    snapshot.correctAnswer = newCorrectIndex;
+                }
+            }
+
             return {
                 questionId: snapshot.questionId,
                 questionNumber: snapshot.questionNumber,
@@ -393,24 +417,21 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
                 content: snapshot.content,
                 points: snapshot.points,
                 difficulty: snapshot.difficulty,
-                options: fullQ ? fullQ.options : [],
+                options,
                 correctOptionIndex: undefined, // Don't send correct answer
                 correctBoolean: undefined,
                 correctAnswers: undefined
             };
         });
 
-        // E5: Apply shuffle flags from exam settings
+        // Persist any correctAnswer updates caused by option shuffling
+        if (exam.shuffleOptions) {
+            await attempt.save();
+        }
+
+        // Shuffle question order when enabled
         if (exam.shuffleQuestions === true) {
             returnQuestions = fisherYatesShuffle(returnQuestions);
-        }
-        if (exam.shuffleOptions === true) {
-            returnQuestions = returnQuestions.map(q => {
-                if ((q.type === 'multiple_choice' || q.type === 'single_choice') && Array.isArray(q.options) && q.options.length > 0) {
-                    return { ...q, options: fisherYatesShuffle(q.options) };
-                }
-                return q;
-            });
         }
 
         res.json({
@@ -646,12 +667,28 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
             const gradingResult = await gradeAttempt(attempt._id);
 
             // Generate certificate if passed and enabled
+            let certificateNumber = null;
             if (gradingResult.passed && exam.certificateEnabled) {
                 try {
                     await generateCertificate(attempt._id);
+                    const cert = await Certificate.findOne({ attempt: attempt._id });
+                    if (cert) certificateNumber = cert.certificateNumber;
                 } catch (certError) {
                     console.error('Certificate generation error:', certError);
                 }
+            }
+
+            // Send exam result notification email (req.authUser is the full user doc from verifiedAuth)
+            try {
+                const notifUser = req.authUser;
+                const gradedAttempt = await ExamAttempt.findById(attempt._id);
+                if (gradingResult.passed) {
+                    await sendExamPassedEmail(notifUser, exam, gradedAttempt, certificateNumber);
+                } else {
+                    await sendExamFailedEmail(notifUser, exam, gradedAttempt);
+                }
+            } catch (notifError) {
+                console.error('[submit] Failed to send exam result notification:', notifError);
             }
         }
 
