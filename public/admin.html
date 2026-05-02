@@ -9,10 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/assets/css/common.css" />
     <style>[x-cloak]{display:none!important}</style>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
     <script src="/components/NewsManagement.js"></script>
     <script src="/components/MembersManagement.js"></script>
-<script src="/components/QuestionBankManagement.js"></script>
+    <script src="/components/QuestionBankManagement.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
     <nav class="bg-white shadow-lg sticky top-0 z-40" aria-label="全站與管理後台導覽">
@@ -1509,7 +1508,7 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                     批量匯入
                                 </button>
-                                <button @click="loadStatistics(); showStatisticsModal = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-800 text-sm font-medium shadow-sm">
+                                <button @click="loadStatistics(); showQBankStatisticsModal = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-800 text-sm font-medium shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                                     統計
                                 </button>
@@ -1716,11 +1715,11 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     </div>
 
                     <!-- 統計 Modal -->
-                    <div x-show="showStatisticsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div x-show="showQBankStatisticsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
                             <div class="p-6 border-b flex justify-between items-center">
                                 <h3 class="text-xl font-bold">題庫統計</h3>
-                                <button @click="showStatisticsModal = false" class="text-gray-400 hover:text-gray-600">
+                                <button @click="showQBankStatisticsModal = false" class="text-gray-400 hover:text-gray-600">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
@@ -1745,7 +1744,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                                 </div>
                             </div>
                             <div class="p-6 border-t flex justify-end">
-                                <button @click="showStatisticsModal = false" class="px-4 py-2 border rounded-lg hover:bg-gray-50">關閉</button>
+                                <button @click="showQBankStatisticsModal = false" class="px-4 py-2 border rounded-lg hover:bg-gray-50">關閉</button>
                             </div>
                         </div>
                     </div>
@@ -2803,5 +2802,6 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
             }
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
 </body>
 </html>

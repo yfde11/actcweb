@@ -22,7 +22,7 @@ function questionBankTab() {
         showCreateModal: false,
         showEditModal: false,
         showImportModal: false,
-        showStatisticsModal: false,
+        showQBankStatisticsModal: false,
         showGenerateExamModal: false,
         editingQuestion: null,
         selectedQuestions: [],
@@ -205,15 +205,38 @@ function questionBankTab() {
 
         async loadStatistics() {
             try {
+                console.log('[DEBUG] Loading statistics...');
+                const token = this.getToken();
+                console.log('[DEBUG] Token present:', !!token);
+                
                 const res = await fetch('/api/question-bank/statistics', {
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
+                
+                console.log('[DEBUG] Response status:', res.status);
+                
                 if (res.ok) {
-                    this.statistics = await res.json();
-                    this.showStatisticsModal = true;
+                    const result = await res.json();
+                    console.log('[DEBUG] Statistics data:', result);
+                    this.statistics = result.data || result;
+                    // Force Alpine.js to update by using $nextTick
+                    const self = this;
+                    setTimeout(() => {
+                        self.showQBankStatisticsModal = true;
+                        console.log('[DEBUG] showQBankStatisticsModal set to true after timeout');
+                    }, 0);
+                    // Also try immediate
+                    this.showQBankStatisticsModal = true;
+                    console.log('[DEBUG] Modal should be visible now');
+                    console.log('[DEBUG] showQBankStatisticsModal set to true');
+                } else {
+                    const text = await res.text();
+                    console.error('[DEBUG] Statistics API error:', res.status, text);
+                    alert('统计加载失败：' + res.status + ' - ' + text.substring(0, 100));
                 }
             } catch (e) {
-                console.error('Statistics error:', e);
+                console.error('[DEBUG] Statistics error:', e);
+                alert('统计加载出错：' + e.message);
             }
         },
 

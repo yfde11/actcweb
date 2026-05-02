@@ -1133,8 +1133,14 @@
                         this.profileLastSavedPayload = JSON.stringify(this.profile);
                         await this.loadWorkingGroupsForMember();
                         await this.loadEventRegistrations();
-                    } catch {
-                        this.logout();
+                    } catch (e) {
+                        console.error('loadMe failed:', e);
+                        // Don't auto logout - just clear token and show login form
+                        if (this.token) {
+                            localStorage.removeItem('memberToken');
+                            this.token = '';
+                        }
+                        this.me = {};
                     }
                 },
 
@@ -1707,117 +1713,6 @@
                     } catch (e) {
                         console.error('Download certificate error:', e);
                         alert('下載失敗');
-                    }
-                }
-            };
-        }
-                    } catch (e) {
-                        console.error('Load exams error:', e);
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-
-                async startExam(examId) {
-                    this.startingExam = examId;
-                    try {
-                        const res = await fetch(`/api/member/exams/${examId}/start`, {
-                            method: 'POST',
-                            headers: this.authHeaders()
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                            this.currentAttempt = data.data;
-                            this.answers = {};
-                            this.startTimeRemainingTimer();
-                        } else {
-                            alert(data.error?.message || '開始考試失敗');
-                        }
-                    } catch (e) {
-                        console.error('Start exam error:', e);
-                        alert('網路錯誤');
-                    } finally {
-                        this.startingExam = null;
-                    }
-                },
-
-                async resumeExam(examId, attemptId) {
-                    try {
-                        const res = await fetch(`/api/member/exams/${examId}/resume`, {
-                            headers: this.authHeaders()
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                            this.currentAttempt = data.data;
-                            // Restore answers
-                            this.answers = {};
-                            if (data.data.answers) {
-                                data.data.answers.forEach(a => {
-                                    this.answers[a.questionId] = a.answer;
-                                });
-                            }
-                            this.startTimeRemainingTimer();
-                        } else {
-                            alert(data.error?.message || '繼續考試失敗');
-                        }
-                    } catch (e) {
-                        console.error('Resume exam error:', e);
-                        alert('網路錯誤');
-                    }
-                },
-
-                startTimeRemainingTimer() {
-                    if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
-                    this.timeRemainingInterval = setInterval(() => {
-                        if (!this.currentAttempt?.expiresAt) return;
-                        const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
-                        if (remaining <= 0) {
-                            clearInterval(this.timeRemainingInterval);
-                            alert('考試時間到！即將自動提交。');
-                            this.submitExam();
-                        }
-                    }, 1000);
-                },
-
-                formatTimeRemaining() {
-                    if (!this.currentAttempt?.expiresAt) return '無限制';
-                    const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
-                    const mins = Math.floor(remaining / 60);
-                    const secs = remaining % 60;
-                    return `${mins}:${secs.toString().padStart(2, '0')}`;
-                },
-
-                async submitExam() {
-                    if (!confirm('確定要提交考卷嗎？')) return;
-                    this.submiting = true;
-                    try {
-                        const answersArray = Object.keys(this.answers).map(qId => ({
-                            questionId: qId,
-                            answer: this.answers[qId]
-                        }));
-                        const res = await fetch(`/api/member/exams/${this.currentAttempt.attemptId}/submit`, {
-                            method: 'POST',
-                            headers: this.authHeaders(),
-                            body: JSON.stringify({
-                                attemptId: this.currentAttempt.attemptId,
-                                answers: answersArray,
-                                timeSpent: this.currentAttempt.timeLimit ? 
-                                    Math.floor((new Date() - new Date(this.currentAttempt.startedAt)) / 1000) : 0
-                            })
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                            this.currentAttempt = null;
-                            if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
-                            this.examResult = data.data;
-                        } else {
-                            alert(data.error?.message || '提交失敗');
-                        }
-                    } catch (e) {
-                        console.error('Submit exam error:', e);
-                        alert('網路錯誤');
-                    } finally {
-                        this.submiting = false;
                     }
                 }
             };
