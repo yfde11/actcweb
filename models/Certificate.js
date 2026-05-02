@@ -5,7 +5,6 @@ const certificateSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        index: true,
         match: [/^ACTC-EXAM-\d{4}-\d{6}$/, 'Certificate number must match format ACTC-EXAM-YYYY-XXXXXX']
     },
     exam: {

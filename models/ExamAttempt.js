@@ -164,7 +164,6 @@ const examAttemptSchema = new mongoose.Schema({
 });
 
 examAttemptSchema.index({ exam: 1, user: 1, status: 1 });
-examAttemptSchema.index({ user: 1 });
 examAttemptSchema.index({ status: 1, expiresAt: 1 });
 examAttemptSchema.index({ exam: 1, status: 1, startedAt: -1 });
 examAttemptSchema.index(
