@@ -764,6 +764,30 @@ router.get('/verify/:certificateNumber', async (req, res) => {
     } catch (error) {
         console.error('Verify certificate error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+        }
+    });
+
+// GET /api/member/exams/certificate/:certificateNumber - download certificate PDF
+router.get('/certificate/:certificateNumber', verifiedAuth, async (req, res) => {
+    try {
+        const certificate = await Certificate.findOne({
+            certificateNumber: req.params.certificateNumber,
+            user: req.user.userId,
+            isRevoked: { $ne: true }
+        }).populate('exam');
+
+        if (!certificate) {
+            return res.status(404).json({ error: { code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在' } });
+        }
+
+        if (certificate.expiresAt && new Date() > certificate.expiresAt) {
+            return res.status(403).json({ error: { code: 'CERTIFICATE_EXPIRED', message: '證書已過期' } });
+        }
+
+        await generateCertificatePDF(certificate._id, res);
+    } catch (error) {
+        console.error('Download certificate error:', error);
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: '下載失敗' } });
     }
 });
 

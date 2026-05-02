@@ -279,8 +279,43 @@
 
                 <!-- 考試專區 -->
                 <div id="exams" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-data="examsTab()" x-init="init()">
-                    <h2 class="text-xl font-bold mb-2">考試專區</h2>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-xl font-bold">考試專區</h2>
+                        <button @click="showCertificates = true; loadCertificates()" class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                            我的證書
+                        </button>
+                    </div>
                     <p class="text-sm text-gray-600 mb-4">參加考試、查看成績與證書</p>
+
+                    <!-- 證書列表 Modal -->
+                    <div x-show="showCertificates" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">我的證書</h3>
+                                <button @click="showCertificates = false" class="text-gray-500 hover:text-gray-800">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <p x-show="loadingCertificates" class="text-sm text-gray-500">載入中…</p>
+                                <p x-show="!loadingCertificates && certificates.length === 0" class="text-sm text-gray-500">尚無證書。</p>
+                                <div x-show="!loadingCertificates && certificates.length > 0" class="space-y-3">
+                                    <template x-for="cert in certificates" :key="cert._id">
+                                        <div class="border rounded p-4 flex justify-between items-center">
+                                            <div>
+                                                <p class="font-medium" x-text="cert.exam?.title || '考試'"></p>
+                                                <p class="text-xs text-gray-500">證書編號：<span x-text="cert.certificateNumber"></span></p>
+                                                <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString()"></span></p>
+                                            </div>
+                                            <button @click="downloadCertificate(cert.certificateNumber)" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                                                下載
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- 可報考列表 -->
                     <div x-show="!currentAttempt">
@@ -1444,7 +1479,10 @@
                 availableExams: [],
                 currentAttempt: null,
                 examResult: null,
+                certificates: [],
+                showCertificates: false,
                 loading: false,
+                loadingCertificates: false,
                 startingExam: null,
                 submiting: false,
                 answers: {},
@@ -1469,6 +1507,159 @@
                             const data = await res.json();
                             this.availableExams = data.data || [];
                         }
+                    } catch (e) {
+                        console.error('Load exams error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async startExam(examId) {
+                    this.startingExam = examId;
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/start`, {
+                            method: 'POST',
+                            headers: this.authHeaders()
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.currentAttempt = data.data;
+                            this.answers = {};
+                            this.startTimeRemainingTimer();
+                        } else {
+                            alert(data.error?.message || '開始考試失敗');
+                        }
+                    } catch (e) {
+                        console.error('Start exam error:', e);
+                        alert('網路錯誤');
+                    } finally {
+                        this.startingExam = null;
+                    }
+                },
+
+                async resumeExam(examId, attemptId) {
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/resume`, {
+                            headers: this.authHeaders()
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.currentAttempt = data.data;
+                            // Restore answers
+                            this.answers = {};
+                            if (data.data.answers) {
+                                data.data.answers.forEach(a => {
+                                    this.answers[a.questionId] = a.answer;
+                                });
+                            }
+                            this.startTimeRemainingTimer();
+                        } else {
+                            alert(data.error?.message || '繼續考試失敗');
+                        }
+                    } catch (e) {
+                        console.error('Resume exam error:', e);
+                        alert('網路錯誤');
+                    }
+                },
+
+                startTimeRemainingTimer() {
+                    if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                    this.timeRemainingInterval = setInterval(() => {
+                        if (!this.currentAttempt?.expiresAt) return;
+                        const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                        if (remaining <= 0) {
+                            clearInterval(this.timeRemainingInterval);
+                            alert('考試時間到！即將自動提交。');
+                            this.submitExam();
+                        }
+                    }, 1000);
+                },
+
+                formatTimeRemaining() {
+                    if (!this.currentAttempt?.expiresAt) return '無限制';
+                    const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                },
+
+                async submitExam() {
+                    if (!confirm('確定要提交考卷嗎？')) return;
+                    this.submitting = true;
+                    try {
+                        const answersArray = Object.keys(this.answers).map(qId => ({
+                            questionId: qId,
+                            answer: this.answers[qId]
+                        }));
+                        const res = await fetch(`/api/member/exams/${this.currentAttempt.attemptId}/submit`, {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({
+                                attemptId: this.currentAttempt.attemptId,
+                                answers: answersArray,
+                                timeSpent: this.currentAttempt.timeLimit ? 
+                                    Math.floor((new Date() - new Date(this.currentAttempt.startedAt)) / 1000) : 0
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.currentAttempt = null;
+                            if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                            this.examResult = data.data;
+                        } else {
+                            alert(data.error?.message || '提交失敗');
+                        }
+                    } catch (e) {
+                        console.error('Submit exam error:', e);
+                        alert('網路錯誤');
+                    } finally {
+                        this.submitting = false;
+                    }
+                },
+
+                async loadCertificates() {
+                    this.loadingCertificates = true;
+                    try {
+                        const res = await fetch('/api/member/certificates', {
+                            headers: this.authHeaders()
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.certificates = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load certificates error:', e);
+                    } finally {
+                        this.loadingCertificates = false;
+                    }
+                },
+
+                async downloadCertificate(certificateNumber) {
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    try {
+                        const res = await fetch(`/api/member/exams/certificate/${certificateNumber}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `certificate-${certificateNumber}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        } else {
+                            alert('下載失敗');
+                        }
+                    } catch (e) {
+                        console.error('Download certificate error:', e);
+                        alert('下載失敗');
+                    }
+                }
+            };
+        }
                     } catch (e) {
                         console.error('Load exams error:', e);
                     } finally {
