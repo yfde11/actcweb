@@ -276,6 +276,142 @@
                     </div>
                 </div>
                 <p class="text-sm text-red-600 mt-2 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
+
+                <!-- 考試專區 -->
+                <div id="exams" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-data="examsTab()" x-init="init()">
+                    <h2 class="text-xl font-bold mb-2">考試專區</h2>
+                    <p class="text-sm text-gray-600 mb-4">參加考試、查看成績與證書</p>
+
+                    <!-- 可報考列表 -->
+                    <div x-show="!currentAttempt">
+                        <h3 class="text-lg font-semibold mb-3">可報考考試</h3>
+                        <p x-show="loading" class="text-sm text-gray-500">載入中…</p>
+                        <p x-show="!loading && availableExams.length === 0" class="text-sm text-gray-500">目前沒有可報考的考試。</p>
+                        <div x-show="!loading && availableExams.length > 0" class="space-y-4">
+                            <template x-for="exam in availableExams" :key="exam._id">
+                                <div class="border rounded-lg p-4 hover:bg-gray-50">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-gray-900" x-text="exam.title"></h4>
+                                            <p class="text-sm text-gray-600 mt-1" x-text="exam.shortDescription || exam.description?.substring(0, 100) + '...'"></p>
+                                            <div class="flex gap-4 mt-2 text-xs text-gray-500">
+                                                <span x-show="exam.timeLimit > 0">限時: <span x-text="exam.timeLimit"></span> 分鐘</span>
+                                                <span>通過分數: <span x-text="exam.passingScore"></span>%</span>
+                                                <span>題數: <span x-text="exam.questionsPerAttempt || exam.questionCount"></span></span>
+                                            </div>
+                                            <!-- 用戶嘗試資訊 -->
+                                            <div x-show="exam.userAttempts && exam.userAttempts.length > 0" class="mt-2">
+                                                <template x-for="attempt in exam.userAttempts" :key="attempt._id">
+                                                    <div class="text-xs inline-block mr-2 px-2 py-1 rounded"
+                                                         :class="attempt.status === 'graded' ? (attempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') :
+                                                                  attempt.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                                                  attempt.status === 'auto_submitted_cheating' ? 'bg-red-100 text-red-800' :
+                                                                  'bg-gray-100 text-gray-800'">
+                                                        <span x-text="attempt.status === 'graded' ? (attempt.passed ? '已通過' : '未通過') :
+                                                                       attempt.status === 'in_progress' ? '進行中' :
+                                                                       attempt.status === 'submitted' ? '已提交' :
+                                                                       attempt.status === 'auto_submitted_cheating' ? '作弊判定' :
+                                                                       attempt.status"></span>
+                                                        <span x-show="attempt.score !== null" class="ml-1">(<span x-text="Math.round(attempt.score)"></span>分)</span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4 flex flex-col gap-2">
+                                            <button x-show="exam.canStart.allowed && !exam.userAttempts?.some(a => a.status === 'in_progress')"
+                                                    @click="startExam(exam._id)"
+                                                    :disabled="startingExam === exam._id"
+                                                    class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+                                                <span x-text="startingExam === exam._id ? '開始中…' : '開始考試'"></span>
+                                            </button>
+                                            <button x-show="exam.userAttempts?.some(a => a.status === 'in_progress')"
+                                                    @click="resumeExam(exam._id, exam.userAttempts.find(a => a.status === 'in_progress')._id)"
+                                                    class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                                繼續考試
+                                            </button>
+                                            <button x-show="exam.canStart.reason === 'IN_PROGRESS'"
+                                                    @click="resumeExam(exam._id, exam.canStart.attemptId)"
+                                                    class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                                繼續考試
+                                            </button>
+                                            <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'MAX_ATTEMPTS_REACHED'"
+                                                  class="text-xs text-red-600">已達最大次數</span>
+                                            <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'COOLDOWN_ACTIVE'"
+                                                  class="text-xs text-amber-600">冷卻中，可於 <span x-text="new Date(exam.canStart.nextAttemptAt).toLocaleDateString()"></span> 重考</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- 考試進行中 -->
+                    <div x-show="currentAttempt" class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">考試進行中</h3>
+                            <button @click="currentAttempt = null; loadAvailableExams()" class="text-sm text-gray-500 hover:underline">返回列表</button>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <p class="text-sm text-gray-600">考試編號: <span x-text="currentAttempt.attemptNumber"></span></p>
+                                    <p class="text-sm text-gray-600">剩餘時間: <span x-text="formatTimeRemaining()"></span></p>
+                                </div>
+                                <button @click="submitExam()" :disabled="submitting"
+                                        class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
+                                    <span x-text="submitting ? '提交中…' : '提交考卷'"></span>
+                                </button>
+                            </div>
+                            <!-- 題目列表 -->
+                            <div class="space-y-6">
+                                <template x-for="(question, idx) in currentAttempt.questions" :key="question.questionId">
+                                    <div class="bg-white p-4 rounded border">
+                                        <p class="font-medium text-gray-900 mb-3">
+                                            <span x-text="idx + 1"></span>. <span x-text="question.content"></span>
+                                            <span class="text-xs text-gray-500 ml-2">(<span x-text="question.points"></span> 分, <span x-text="question.difficulty"></span>)</span>
+                                        </p>
+                                        <!-- MC -->
+                                        <div x-show="question.type === 'multiple_choice'" class="space-y-2">
+                                            <template x-for="(opt, optIdx) in question.options">
+                                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" class="text-blue-600">
+                                                    <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
+                                                </label>
+                                            </template>
+                                        </div>
+                                        <!-- T/F -->
+                                        <div x-show="question.type === 'true_false'" class="space-y-2">
+                                            <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" class="text-blue-600">
+                                                <span>正確 (True)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" class="text-blue-600">
+                                                <span>錯誤 (False)</span>
+                                            </label>
+                                        </div>
+                                        <!-- Fill in blank -->
+                                        <div x-show="question.type === 'fill_in_blank'" class="mt-2">
+                                            <input type="text" x-model="answers[question.questionId]" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 考試結果 -->
+                    <div x-show="examResult" class="mt-6 p-4 rounded-lg"
+                         :class="examResult.passed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+                        <h3 class="text-lg font-semibold" :class="examResult.passed ? 'text-green-800' : 'text-red-800'">
+                            <span x-text="examResult.passed ? '恭喜通過！' : '很遺憾，未通過'"></span>
+                        </h3>
+                        <p class="text-sm mt-2" :class="examResult.passed ? 'text-green-700' : 'text-red-700'">
+                            得分: <span x-text="Math.round(examResult.score)"></span> 分 (通過分數: <span x-text="examResult.passed ? '' : '...'"></span>)
+                        </p>
+                        <button @click="examResult = null; loadAvailableExams()" class="mt-3 px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300">關閉</button>
+                    </div>
+                </div>
             </div>
 
             <div x-show="showPaymentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1300,6 +1436,148 @@
                     }
                 },
 
+            };
+        }
+
+        function examsTab() {
+            return {
+                availableExams: [],
+                currentAttempt: null,
+                examResult: null,
+                loading: false,
+                startingExam: null,
+                submiting: false,
+                answers: {},
+                timeRemainingInterval: null,
+
+                async init() {
+                    await this.loadAvailableExams();
+                },
+
+                authHeaders() {
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+                },
+
+                async loadAvailableExams() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/member/exams', {
+                            headers: this.authHeaders()
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.availableExams = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load exams error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async startExam(examId) {
+                    this.startingExam = examId;
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/start`, {
+                            method: 'POST',
+                            headers: this.authHeaders()
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.currentAttempt = data.data;
+                            this.answers = {};
+                            this.startTimeRemainingTimer();
+                        } else {
+                            alert(data.error?.message || '開始考試失敗');
+                        }
+                    } catch (e) {
+                        console.error('Start exam error:', e);
+                        alert('網路錯誤');
+                    } finally {
+                        this.startingExam = null;
+                    }
+                },
+
+                async resumeExam(examId, attemptId) {
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/resume`, {
+                            headers: this.authHeaders()
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.currentAttempt = data.data;
+                            // Restore answers
+                            this.answers = {};
+                            if (data.data.answers) {
+                                data.data.answers.forEach(a => {
+                                    this.answers[a.questionId] = a.answer;
+                                });
+                            }
+                            this.startTimeRemainingTimer();
+                        } else {
+                            alert(data.error?.message || '繼續考試失敗');
+                        }
+                    } catch (e) {
+                        console.error('Resume exam error:', e);
+                        alert('網路錯誤');
+                    }
+                },
+
+                startTimeRemainingTimer() {
+                    if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                    this.timeRemainingInterval = setInterval(() => {
+                        if (!this.currentAttempt?.expiresAt) return;
+                        const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                        if (remaining <= 0) {
+                            clearInterval(this.timeRemainingInterval);
+                            alert('考試時間到！即將自動提交。');
+                            this.submitExam();
+                        }
+                    }, 1000);
+                },
+
+                formatTimeRemaining() {
+                    if (!this.currentAttempt?.expiresAt) return '無限制';
+                    const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                },
+
+                async submitExam() {
+                    if (!confirm('確定要提交考卷嗎？')) return;
+                    this.submiting = true;
+                    try {
+                        const answersArray = Object.keys(this.answers).map(qId => ({
+                            questionId: qId,
+                            answer: this.answers[qId]
+                        }));
+                        const res = await fetch(`/api/member/exams/${this.currentAttempt.attemptId}/submit`, {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({
+                                attemptId: this.currentAttempt.attemptId,
+                                answers: answersArray,
+                                timeSpent: this.currentAttempt.timeLimit ? 
+                                    Math.floor((new Date() - new Date(this.currentAttempt.startedAt)) / 1000) : 0
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.currentAttempt = null;
+                            if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                            this.examResult = data.data;
+                        } else {
+                            alert(data.error?.message || '提交失敗');
+                        }
+                    } catch (e) {
+                        console.error('Submit exam error:', e);
+                        alert('網路錯誤');
+                    } finally {
+                        this.submiting = false;
+                    }
+                }
             };
         }
     </script>
