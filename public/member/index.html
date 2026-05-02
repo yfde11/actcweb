@@ -1537,6 +1537,19 @@
                         if (res.ok) {
                             this.currentAttempt = data.data;
                             this.answers = {};
+                            this.visibilityChangeCount = 0;
+                            // Add visibility change detection
+                            this._visibilityChangeHandler = () => {
+                                if (document.hidden) {
+                                    this.visibilityChangeCount++;
+                                    if (this.visibilityChangeCount <= 3) {
+                                        alert(`警告：偵測到視窗切換（第 ${this.visibilityChangeCount} 次）\n請勿切換視窗。`);
+                                    } else if (this.visibilityChangeCount > 10) {
+                                        alert('偵測到異常頻繁的視窗切換，系統將標記作弊行為。');
+                                    }
+                                }
+                            };
+                            document.addEventListener('visibilitychange', this._visibilityChangeHandler);
                             this.startTimeRemainingTimer();
                         } else {
                             alert(data.error?.message || '開始考試失敗');
@@ -1576,11 +1589,32 @@
 
                 startTimeRemainingTimer() {
                     if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                    
+                    // Add visibility change detection
+                    this._visibilityChangeHandler = () => {
+                        if (document.hidden) {
+                            this.visibilityChangeCount++;
+                            if (this.visibilityChangeCount <= 3) {
+                                alert(`警告：偵測到視窗切換（第 ${this.visibilityChangeCount} 次）\n請勿切換視窗。`);
+                            } else if (this.visibilityChangeCount > 10) {
+                                alert('偵測到異常頻繁的視窗切換，系統將標記作弊行為。');
+                            }
+                        }
+                    };
+                    document.addEventListener('visibilitychange', this._visibilityChangeHandler);
+                    
                     this.timeRemainingInterval = setInterval(() => {
                         if (!this.currentAttempt?.expiresAt) return;
                         const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                        
+                        // Show warning when <5 minutes
+                        if (remaining <= 300 && remaining > 0) {
+                            this.showTimeWarning = true;
+                        }
+                        
                         if (remaining <= 0) {
                             clearInterval(this.timeRemainingInterval);
+                            document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
                             alert('考試時間到！即將自動提交。');
                             this.submitExam();
                         }
@@ -1610,7 +1644,8 @@
                                 attemptId: this.currentAttempt.attemptId,
                                 answers: answersArray,
                                 timeSpent: this.currentAttempt.timeLimit ? 
-                                    Math.floor((new Date() - new Date(this.currentAttempt.startedAt)) / 1000) : 0
+                                    Math.floor((new Date() - new Date(this.currentAttempt.startedAt)) / 1000) : 0,
+                                visibilityChangeCount: this.visibilityChangeCount || 0
                             })
                         });
                         const data = await res.json();
@@ -1626,6 +1661,10 @@
                         alert('網路錯誤');
                     } finally {
                         this.submitting = false;
+                        // Remove visibility change listener
+                        if (this._visibilityChangeHandler) {
+                            document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+                        }
                     }
                 },
 
