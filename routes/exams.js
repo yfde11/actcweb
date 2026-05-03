@@ -768,6 +768,96 @@ router.get('/:id/export-attempts', adminAuth, async (req, res) => {
     }
 });
 
+// GET /api/exams/:id/attempts/export - export all exam attempts as UTF-8 BOM CSV (Excel-compatible)
+router.get('/:id/attempts/export', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+
+        const exam = await Exam.findById(req.params.id);
+        if (!exam) {
+            return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
+        }
+
+        const query = { exam: req.params.id };
+
+        // Optional status filter
+        const allowedStatuses = ['in_progress', 'submitted', 'grading', 'graded', 'expired', 'cancelled', 'auto_submitted_cheating'];
+        if (req.query.status && req.query.status !== 'all' && allowedStatuses.includes(req.query.status)) {
+            query.status = req.query.status;
+        }
+
+        // Optional date range filter on startedAt
+        if (req.query.from || req.query.to) {
+            query.startedAt = {};
+            if (req.query.from) {
+                const fromDate = new Date(req.query.from);
+                if (!isNaN(fromDate.getTime())) query.startedAt.$gte = fromDate;
+            }
+            if (req.query.to) {
+                const toDate = new Date(req.query.to);
+                if (!isNaN(toDate.getTime())) query.startedAt.$lte = toDate;
+            }
+            if (Object.keys(query.startedAt).length === 0) delete query.startedAt;
+        }
+
+        const attempts = await ExamAttempt.find(query)
+            .sort({ startedAt: -1, _id: -1 })
+            .populate('user', 'username email fullName');
+
+        // Format date in Asia/Taipei timezone (+8h)
+        function formatTaipeiDate(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            const offset = 8 * 60 * 60 * 1000;
+            const taipei = new Date(d.getTime() + offset);
+            const year = taipei.getUTCFullYear();
+            const month = String(taipei.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(taipei.getUTCDate()).padStart(2, '0');
+            const hours = String(taipei.getUTCHours()).padStart(2, '0');
+            const minutes = String(taipei.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(taipei.getUTCSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        const csvRows = [];
+        // zh-TW headers per spec
+        csvRows.push('姓名,使用者名稱,Email,分數,是否通過,作答時間(秒),開始時間,提交時間,狀態,切換分頁次數,疑似作弊');
+
+        for (const attempt of attempts) {
+            const user = attempt.user || {};
+            const row = [
+                escapeCSVField(user.fullName || ''),
+                escapeCSVField(user.username || ''),
+                escapeCSVField(user.email || ''),
+                attempt.score !== undefined && attempt.score !== null ? attempt.score : '',
+                attempt.passed !== undefined && attempt.passed !== null ? (attempt.passed ? '是' : '否') : '',
+                attempt.timeSpent !== undefined && attempt.timeSpent !== null ? attempt.timeSpent : '',
+                formatTaipeiDate(attempt.startedAt),
+                formatTaipeiDate(attempt.submittedAt),
+                escapeCSVField(attempt.status || ''),
+                attempt.visibilityChangeCount !== undefined ? attempt.visibilityChangeCount : 0,
+                attempt.cheatingDetected ? '是' : '否'
+            ];
+            csvRows.push(row.join(','));
+        }
+
+        // UTF-8 BOM required for Excel to open Chinese text correctly
+        const BOM = '﻿';
+        const csvContent = BOM + csvRows.join('\n');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `exam-attempts-${exam._id}-${timestamp}.csv`;
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csvContent);
+    } catch (error) {
+        console.error('Export attempts CSV error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
 // Helper: Check for CSV injection
 function checkCSVInjection(value) {
     if (typeof value !== 'string') return false;
