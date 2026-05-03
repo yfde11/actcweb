@@ -1266,4 +1266,75 @@ router.post('/:id/archive', adminAuth, async (req, res) => {
     }
 });
 
+// GET /api/exams/:id/certificates - list certificates for an exam
+router.get('/:id/certificates', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+        const exam = await Exam.findById(req.params.id);
+        if (!exam) {
+            return errorResponse(res, 404, 'EXAM_NOT_FOUND', '考試不存在');
+        }
+        const certs = await Certificate.find({ exam: req.params.id })
+            .populate('user', 'username email fullName')
+            .populate('revokedBy', 'username fullName')
+            .sort({ issuedAt: -1 });
+        res.json({ data: certs });
+    } catch (error) {
+        console.error('List certificates error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// POST /api/exams/certificates/:id/revoke - revoke a certificate
+router.post('/certificates/:id/revoke', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的證書 ID');
+        }
+        const cert = await Certificate.findById(req.params.id);
+        if (!cert) {
+            return errorResponse(res, 404, 'NOT_FOUND', '證書不存在');
+        }
+        if (cert.isRevoked) {
+            return errorResponse(res, 400, 'ALREADY_REVOKED', '證書已撤銷');
+        }
+        cert.isRevoked = true;
+        cert.revokedAt = new Date();
+        cert.revokedBy = req.user.userId;
+        cert.revokeReason = req.body.reason || '';
+        await cert.save();
+        res.json({ data: { message: '證書已撤銷' } });
+    } catch (error) {
+        console.error('Revoke certificate error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// POST /api/exams/certificates/:id/unrevoke - restore a revoked certificate
+router.post('/certificates/:id/unrevoke', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的證書 ID');
+        }
+        const cert = await Certificate.findById(req.params.id);
+        if (!cert) {
+            return errorResponse(res, 404, 'NOT_FOUND', '證書不存在');
+        }
+        if (!cert.isRevoked) {
+            return errorResponse(res, 400, 'NOT_REVOKED', '證書尚未撤銷');
+        }
+        cert.isRevoked = false;
+        cert.revokedAt = undefined;
+        cert.revokedBy = undefined;
+        cert.revokeReason = '';
+        await cert.save();
+        res.json({ data: { message: '證書已恢復' } });
+    } catch (error) {
+        console.error('Unrevoke certificate error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
 module.exports = router;

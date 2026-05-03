@@ -52,6 +52,10 @@ const certificateSchema = new mongoose.Schema({
     revokeReason: {
         type: String,
         maxlength: [500, 'Revoke reason cannot exceed 500 characters']
+    },
+    revokedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {
     timestamps: true
