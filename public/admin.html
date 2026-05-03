@@ -12,6 +12,7 @@
     <script src="/components/NewsManagement.js"></script>
     <script src="/components/MembersManagement.js"></script>
     <script src="/components/QuestionBankManagement.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
     <nav class="bg-white shadow-lg sticky top-0 z-40" aria-label="全站與管理後台導覽">
@@ -1545,7 +1546,7 @@
                         <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                             <div class="px-6 py-4 border-b flex justify-between items-center">
                                 <h3 class="text-lg font-semibold">考試統計</h3>
-                                <button @click="showStatisticsModal = false; currentStatisticsExamId = null" class="text-gray-500 hover:text-gray-800">
+                                <button @click="if (_statsChart) { _statsChart.destroy(); _statsChart = null; } showStatisticsModal = false; currentStatisticsExamId = null" class="text-gray-500 hover:text-gray-800">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
@@ -1571,6 +1572,13 @@
                                                 <p class="text-xs text-gray-500">平均分數</p>
                                                 <p class="text-2xl font-bold text-orange-700"><span x-text="(statistics.averageScore || 0).toFixed(1)"></span></p>
                                             </div>
+                                        </div>
+
+                                        <!-- 分數分佈圖 -->
+                                        <div class="mt-6">
+                                            <h4 class="text-md font-semibold mb-3">分數分佈</h4>
+                                            <div x-show="!(statistics.scoreDistribution && statistics.scoreDistribution.length)" class="text-sm text-gray-400 text-center py-4">暫無足夠資料</div>
+                                            <canvas id="scoreDistributionChart" height="200" x-show="statistics.scoreDistribution && statistics.scoreDistribution.length"></canvas>
                                         </div>
 
                                         <!-- 各題正確率 -->
@@ -2556,6 +2564,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 currentStatisticsExamId: null,
                 statistics: null,
                 loadingStatistics: false,
+                _statsChart: null,
                 // Preview
                 showPreviewModal: false,
                 previewData: null,
@@ -2905,6 +2914,11 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 },
                 async loadStatistics(examId) {
                     this.loadingStatistics = true;
+                    // Destroy any existing chart instance before re-fetching
+                    if (this._statsChart) {
+                        this._statsChart.destroy();
+                        this._statsChart = null;
+                    }
                     try {
                         const token = localStorage.getItem('adminToken');
                         const res = await fetch(`/api/exams/${examId}/statistics`, {
@@ -2914,6 +2928,47 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         if (res.ok) {
                             const data = await res.json();
                             this.statistics = data.data || null;
+                            // Render score distribution chart after Alpine.js updates the DOM
+                            this.$nextTick(() => {
+                                const canvas = document.getElementById('scoreDistributionChart');
+                                if (!canvas) return;
+                                const dist = (this.statistics && this.statistics.scoreDistribution) ? this.statistics.scoreDistribution : [];
+                                if (!dist.length) return;
+                                if (this._statsChart) {
+                                    this._statsChart.destroy();
+                                    this._statsChart = null;
+                                }
+                                this._statsChart = new Chart(canvas, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: dist.map(d => d.range),
+                                        datasets: [{
+                                            label: '人數',
+                                            data: dist.map(d => d.count),
+                                            backgroundColor: 'rgba(231, 107, 59, 0.7)',
+                                            borderColor: 'rgba(231, 107, 59, 1)',
+                                            borderWidth: 1
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        plugins: {
+                                            legend: { display: false },
+                                            title: { display: false }
+                                        },
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                                ticks: { stepSize: 1, precision: 0 },
+                                                title: { display: true, text: '人數' }
+                                            },
+                                            x: {
+                                                title: { display: true, text: '分數區間' }
+                                            }
+                                        }
+                                    }
+                                });
+                            });
                         }
                     } catch (e) {
                         console.error('Load statistics error:', e);
