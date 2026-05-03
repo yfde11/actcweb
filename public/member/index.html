@@ -602,6 +602,7 @@
                                     <div>
                                         <p class="font-medium" x-text="currentAttempt.attemptNumber ? '考試編號：' + currentAttempt.attemptNumber : ''"></p>
                                         <p class="text-sm text-gray-600">剩餘時間: <span x-text="formatTimeRemaining()" :class="showTimeWarning ? 'text-red-600 font-bold' : ''"></span></p>
+                                        <span x-show="lastSaved" x-text="'上次儲存：' + lastSavedText" class="text-xs text-gray-400"></span>
                                     </div>
                                     <div x-show="showTimeWarning" class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">
                                         ⚠️ 剩餘時間不足5分鐘！
@@ -623,7 +624,7 @@
                                         <div x-show="question.type === 'multiple_choice'" class="space-y-2">
                                             <template x-for="(opt, optIdx) in question.options">
                                                 <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                    <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" class="text-blue-600">
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
                                                     <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
                                                 </label>
                                             </template>
@@ -631,17 +632,17 @@
                                         <!-- T/F -->
                                         <div x-show="question.type === 'true_false'" class="space-y-2">
                                             <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" class="text-blue-600">
+                                                <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
                                                 <span>正確 (True)</span>
                                             </label>
                                             <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" class="text-blue-600">
+                                                <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
                                                 <span>錯誤 (False)</span>
                                             </label>
                                         </div>
                                         <!-- Fill in blank -->
                                         <div x-show="question.type === 'fill_in_blank'" class="mt-2">
-                                            <input type="text" x-model="answers[question.questionId]" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
+                                            <input type="text" x-model="answers[question.questionId]" @input="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
                                         </div>
                                     </div>
                                 </template>
@@ -1729,6 +1730,11 @@
                 showTimeWarning: false,
                 visibilityChangeCount: 0,
                 suspectedCheating: false,
+                currentAttemptExamId: null,
+                lastSaved: null,
+                lastSavedText: '',
+                autoSaveInterval: null,
+                autoSaveDebounceTimer: null,
                 historyExamId: null,
                 historyAttemptDetail: null,
                 historyLoading: false,
@@ -1781,11 +1787,13 @@
                         const data = await res.json();
                         if (res.ok) {
                             this.currentAttempt = data.data;
+                            this.currentAttemptExamId = examId;
                             this.answers = {};
                             this.visibilityChangeCount = 0;
                             this.suspectedCheating = false;
                             this.startExamError = '';
                             this.startTimeRemainingTimer();
+                            this.startAutoSave();
                         } else {
                             this.startExamError = data.error?.message || '開始考試失敗';
                         }
@@ -1806,6 +1814,7 @@
                         const data = await res.json();
                         if (res.ok) {
                             this.currentAttempt = data.data;
+                            this.currentAttemptExamId = examId;
                             // Restore answers
                             this.answers = {};
                             if (data.data.answers) {
@@ -1813,7 +1822,15 @@
                                     this.answers[a.questionId] = a.answer;
                                 });
                             }
+                            const localKey = `exam_progress_${data.data.attemptId}`;
+                            const local = JSON.parse(localStorage.getItem(localKey) || 'null');
+                            if (local && local.savedAt > new Date(this.currentAttempt.lastSavedAt || 0).getTime()) {
+                                local.answers.forEach(a => {
+                                    this.answers[a.questionId] = a.selectedAnswer;
+                                });
+                            }
                             this.startTimeRemainingTimer();
+                            this.startAutoSave();
                         } else {
                             alert(data.error?.message || '繼續考試失敗');
                         }
@@ -1821,6 +1838,39 @@
                         console.error('Resume exam error:', e);
                         alert('網路錯誤');
                     }
+                },
+
+                startAutoSave() {
+                    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+                    this.autoSaveInterval = setInterval(() => this.autoSaveProgress(), 30000);
+                },
+
+                async autoSaveProgress() {
+                    if (!this.currentAttempt?.attemptId || !this.currentAttemptExamId) return;
+                    const answersArray = Object.keys(this.answers).map(qId => ({
+                        questionId: qId,
+                        selectedAnswer: this.answers[qId]
+                    }));
+                    const attemptId = this.currentAttempt.attemptId;
+                    try {
+                        await fetch(`/api/member/exams/${this.currentAttemptExamId}/save-progress`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                            body: JSON.stringify({ attemptId, answers: answersArray })
+                        });
+                    } catch (e) {
+                        // silent fallback
+                    }
+                    try {
+                        localStorage.setItem(`exam_progress_${attemptId}`, JSON.stringify({ answers: answersArray, savedAt: Date.now() }));
+                    } catch (e) {
+                        // silent fallback
+                    }
+                    this.lastSaved = new Date();
+                    const h = this.lastSaved.getHours().toString().padStart(2, '0');
+                    const m = this.lastSaved.getMinutes().toString().padStart(2, '0');
+                    this.lastSavedText = h + ':' + m;
                 },
 
                 startTimeRemainingTimer() {
@@ -1898,7 +1948,8 @@
                         alert('網路錯誤');
                     } finally {
                         this.submitting = false;
-                        // Remove visibility change listener
+                        if (this.autoSaveInterval) { clearInterval(this.autoSaveInterval); this.autoSaveInterval = null; }
+                        if (this.autoSaveDebounceTimer) { clearTimeout(this.autoSaveDebounceTimer); this.autoSaveDebounceTimer = null; }
                         if (this._visibilityChangeHandler) {
                             document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
                         }
