@@ -703,22 +703,187 @@
                     </div>
 
                     <!-- 考試結果 -->
-                    <div x-show="examResult" class="mt-6 p-4 rounded-lg"
-                         :class="examResult.passed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
-                        <h3 class="text-lg font-semibold" :class="examResult.passed ? 'text-green-800' : 'text-red-800'">
-                            <span x-text="examResult.passed ? '恭喜通過！' : '很遺憾，未通過'"></span>
-                        </h3>
-                    <p class="text-sm mt-2" :class="examResult.passed ? 'text-green-700' : 'text-red-700'">
-                        得分: <span x-text="Math.round(examResult.score)"></span> 分 (通過分數: <span x-text="examResult.passingScore != null ? examResult.passingScore + '%' : '—'"></span>)
-                    </p>
-                    <div class="mt-3 flex gap-2">
-                        <button @click="examResult = null; loadAvailableExams()" class="px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300">關閉</button>
-                        <button x-show="examResult.certificateIssued" 
-                                @click="downloadCertificate(examResult.certificateNumber)" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                            下載證書
-                        </button>
-                    </div>
+                    <div x-show="examResult" class="mt-6 space-y-6">
+
+                        <!-- 分數卡片 -->
+                        <div class="bg-white rounded-2xl shadow-md border p-6 text-center"
+                             :class="examResult && examResult.passed ? 'border-green-200' : 'border-red-200'">
+
+                            <!-- 通過 / 未通過 大標 -->
+                            <div class="flex items-center justify-center gap-2 mb-3">
+                                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-base font-bold"
+                                      :class="examResult && examResult.passed
+                                          ? 'bg-green-100 text-green-700'
+                                          : 'bg-red-100 text-red-700'">
+                                    <span x-text="examResult && examResult.passed ? '✓' : '✗'"></span>
+                                    <span x-text="examResult && examResult.passed ? '通過' : '未通過'"></span>
+                                </span>
+                            </div>
+
+                            <!-- 分數大字 -->
+                            <div class="text-7xl font-extrabold leading-none mb-1"
+                                 :class="examResult && examResult.passed ? 'text-green-600' : 'text-red-500'">
+                                <span x-text="examResult ? Math.round(examResult.score) : 0"></span>
+                                <span class="text-3xl font-semibold ml-1">分</span>
+                            </div>
+
+                            <!-- 及格分數 -->
+                            <p class="text-sm text-gray-500 mt-1">
+                                及格分數：<span x-text="examResult && examResult.passingScore != null ? examResult.passingScore + ' 分' : '—'"></span>
+                            </p>
+
+                            <!-- 作答統計 -->
+                            <div x-show="examResult && examResult.gradingDetails"
+                                 class="mt-4 flex justify-center gap-6 text-sm">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-lg font-bold text-green-600"
+                                          x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.correctCount : 0"></span>
+                                    <span class="text-gray-500">答對</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-lg font-bold text-red-500"
+                                          x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.incorrectCount : 0"></span>
+                                    <span class="text-gray-500">答錯</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-lg font-bold text-gray-400"
+                                          x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.unansweredCount : 0"></span>
+                                    <span class="text-gray-500">未作答</span>
+                                </div>
+                            </div>
+
+                            <!-- 證書核發提示 -->
+                            <div x-show="examResult && examResult.certificateIssued"
+                                 class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700 font-medium">
+                                <span>證書已核發</span>
+                                <span class="text-blue-400">·</span>
+                                <span x-text="examResult && examResult.certificateNumber ? '編號 ' + examResult.certificateNumber : ''"></span>
+                            </div>
+
+                            <!-- 舞弊偵測警告 -->
+                            <div x-show="examResult && examResult.cheatingDetected"
+                                 class="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
+                                系統偵測到異常操作，本次成績已標記為零分。如有疑問，請聯絡管理員。
+                            </div>
+                        </div>
+
+                        <!-- 答題回顧（僅當 API 回傳 questionSnapshot 時顯示） -->
+                        <div x-show="examResult && examResult.questionSnapshot && examResult.questionSnapshot.length > 0"
+                             class="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+                            <div class="px-5 py-3 bg-gray-50 border-b flex items-center justify-between">
+                                <h4 class="font-semibold text-gray-700">答題回顧</h4>
+                                <span class="text-xs text-gray-400"
+                                      x-text="examResult && examResult.questionSnapshot ? examResult.questionSnapshot.length + ' 題' : ''"></span>
+                            </div>
+                            <div class="divide-y divide-gray-100">
+                                <template x-for="(snap, qi) in (examResult && examResult.questionSnapshot ? examResult.questionSnapshot : [])" :key="snap.questionId || qi">
+                                    <div x-data="{ open: false }" class="px-5 py-4">
+
+                                        <!-- 題目標頭（可展開） -->
+                                        <button @click="open = !open"
+                                                class="w-full text-left flex items-start gap-3 group">
+
+                                            <!-- 正確/錯誤圖示 -->
+                                            <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                  :class="(() => {
+                                                      if (!examResult || !examResult.answers) return 'bg-gray-200 text-gray-500';
+                                                      const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                      if (!ans) return 'bg-gray-200 text-gray-500';
+                                                      return ans.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white';
+                                                  })()">
+                                                <span x-text="(() => {
+                                                    if (!examResult || !examResult.answers) return '?';
+                                                    const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                    if (!ans) return '?';
+                                                    return ans.isCorrect ? '✓' : '✗';
+                                                })()"></span>
+                                            </span>
+
+                                            <!-- 題目文字 -->
+                                            <span class="flex-1 text-sm font-medium text-gray-800 group-hover:text-gray-900 leading-snug">
+                                                <span class="text-gray-400 mr-1" x-text="(qi + 1) + '.'"></span>
+                                                <span x-text="snap.content"></span>
+                                            </span>
+
+                                            <!-- 展開箭頭 -->
+                                            <span class="flex-shrink-0 text-gray-400 text-xs mt-0.5 transition-transform"
+                                                  :class="open ? 'rotate-180' : ''"
+                                                  style="display:inline-block">▼</span>
+                                        </button>
+
+                                        <!-- 展開內容 -->
+                                        <div x-show="open" class="mt-3 ml-8 space-y-2">
+
+                                            <!-- 我的作答 -->
+                                            <div class="rounded-lg px-3 py-2 text-sm border-l-4"
+                                                 :class="(() => {
+                                                     if (!examResult || !examResult.answers) return 'bg-gray-50 border-gray-300';
+                                                     const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                     if (!ans) return 'bg-gray-50 border-gray-300 text-gray-500';
+                                                     return ans.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500';
+                                                 })()">
+                                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">我的作答</span>
+                                                <p class="mt-0.5 text-gray-800"
+                                                   x-text="(() => {
+                                                       if (!examResult || !examResult.answers) return '（未作答）';
+                                                       const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                       if (!ans || ans.answer === null || ans.answer === undefined) return '（未作答）';
+                                                       if (snap.type === 'true_false') return String(ans.answer) === 'true' || ans.answer === true ? '正確 (True)' : '錯誤 (False)';
+                                                       if (snap.type === 'multiple_choice') {
+                                                           const idx = Number(ans.answer);
+                                                           return String.fromCharCode(65 + idx) + ' 選項';
+                                                       }
+                                                       return String(ans.answer);
+                                                   })()">
+                                                </p>
+                                            </div>
+
+                                            <!-- 正確答案 -->
+                                            <div class="rounded-lg px-3 py-2 text-sm bg-blue-50 border-l-4 border-blue-400">
+                                                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wide">正確答案</span>
+                                                <p class="mt-0.5 text-blue-900"
+                                                   x-text="(() => {
+                                                       if (snap.type === 'true_false') return snap.correctAnswer === true || snap.correctAnswer === 'true' ? '正確 (True)' : '錯誤 (False)';
+                                                       if (snap.type === 'multiple_choice') {
+                                                           const idx = Number(snap.correctAnswer);
+                                                           return String.fromCharCode(65 + idx) + ' 選項';
+                                                       }
+                                                       return snap.correctAnswer !== undefined && snap.correctAnswer !== null ? String(snap.correctAnswer) : '—';
+                                                   })()">
+                                                </p>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- CTA 按鈕區 -->
+                        <div class="flex flex-wrap gap-3 justify-center">
+
+                            <!-- 返回考試列表 -->
+                            <button @click="examResult = null; loadAvailableExams()"
+                                    class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                返回考試列表
+                            </button>
+
+                            <!-- 重新報考（未通過且有 examId） -->
+                            <button x-show="examResult && !examResult.passed && examResult._examId"
+                                    @click="(() => { const eid = examResult._examId; examResult = null; startExam(eid); })()"
+                                    class="px-5 py-2.5 bg-actc-orange text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                                重新報考
+                            </button>
+
+                            <!-- 下載證書（通過且已核發） -->
+                            <button x-show="examResult && examResult.certificateIssued"
+                                    @click="downloadCertificate(examResult.certificateNumber)"
+                                    class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                                <span>⬇</span>
+                                <span>下載證書</span>
+                            </button>
+
+                        </div>
                     </div>
             </div>
 
@@ -2034,9 +2199,10 @@
                         });
                         const data = await res.json();
                         if (res.ok) {
+                            const examId = this.currentAttemptExamId;
                             this.currentAttempt = null;
                             if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
-                            this.examResult = data.data;
+                            this.examResult = { ...data.data, _examId: examId };
                         } else {
                             alert(data.error?.message || '提交失敗');
                         }
