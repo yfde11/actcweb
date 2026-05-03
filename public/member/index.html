@@ -607,45 +607,97 @@
                                     <div x-show="showTimeWarning" class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">
                                         ⚠️ 剩餘時間不足5分鐘！
                                     </div>
-                                <button @click="submitExam()" :disabled="submitting"
+                                <button @click="confirmSubmit()" :disabled="submitting"
                                         class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
                                     <span x-text="submitting ? '提交中…' : '提交考卷'"></span>
                                 </button>
                             </div>
-                            <!-- 題目列表 -->
-                            <div class="space-y-6">
-                                <template x-for="(question, idx) in currentAttempt.questions" :key="question.questionId">
-                                    <div class="bg-white p-4 rounded border">
-                                        <p class="font-medium text-gray-900 mb-3">
-                                            <span x-text="idx + 1"></span>. <span x-text="question.content"></span>
-                                            <span class="text-xs text-gray-500 ml-2">(<span x-text="question.points"></span> 分, <span x-text="question.difficulty"></span>)</span>
-                                        </p>
-                                        <!-- MC -->
-                                        <div x-show="question.type === 'multiple_choice'" class="space-y-2">
-                                            <template x-for="(opt, optIdx) in question.options">
+                            <!-- 考試主體：題目列表 + 題目導覽面板 -->
+                            <div class="flex gap-4 items-start">
+                                <!-- 題目列表 -->
+                                <div class="flex-1 space-y-6">
+                                    <template x-for="(question, idx) in currentAttempt.questions" :key="question.questionId">
+                                        <div class="bg-white p-4 rounded border scroll-mt-4" :id="'question-' + idx">
+                                            <p class="font-medium text-gray-900 mb-3">
+                                                <span x-text="idx + 1"></span>. <span x-text="question.content"></span>
+                                                <span class="text-xs text-gray-500 ml-2">(<span x-text="question.points"></span> 分, <span x-text="question.difficulty"></span>)</span>
+                                            </p>
+                                            <!-- MC -->
+                                            <div x-show="question.type === 'multiple_choice'" class="space-y-2">
+                                                <template x-for="(opt, optIdx) in question.options">
+                                                    <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                        <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
+                                                        <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
+                                                    </label>
+                                                </template>
+                                            </div>
+                                            <!-- T/F -->
+                                            <div x-show="question.type === 'true_false'" class="space-y-2">
                                                 <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                    <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
-                                                    <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
+                                                    <span>正確 (True)</span>
                                                 </label>
-                                            </template>
+                                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
+                                                    <span>錯誤 (False)</span>
+                                                </label>
+                                            </div>
+                                            <!-- Fill in blank -->
+                                            <div x-show="question.type === 'fill_in_blank'" class="mt-2">
+                                                <input type="text" x-model="answers[question.questionId]" @input="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
+                                            </div>
                                         </div>
-                                        <!-- T/F -->
-                                        <div x-show="question.type === 'true_false'" class="space-y-2">
-                                            <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
-                                                <span>正確 (True)</span>
-                                            </label>
-                                            <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
-                                                <span>錯誤 (False)</span>
-                                            </label>
-                                        </div>
-                                        <!-- Fill in blank -->
-                                        <div x-show="question.type === 'fill_in_blank'" class="mt-2">
-                                            <input type="text" x-model="answers[question.questionId]" @input="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
-                                        </div>
+                                    </template>
+                                </div>
+                                <!-- 題目導覽面板 -->
+                                <div class="hidden md:block w-40 shrink-0 sticky top-4 bg-white border rounded-lg p-3">
+                                    <p class="text-sm font-medium text-gray-600 mb-2">題目導覽</p>
+                                    <div class="grid grid-cols-5 gap-1">
+                                        <template x-for="(q, idx) in currentAttempt.questions" :key="q.questionId || idx">
+                                            <button
+                                                @click="goToQuestion(idx)"
+                                                :class="[
+                                                    'w-8 h-8 rounded text-xs font-medium transition-colors',
+                                                    currentQuestionIndex === idx ? 'ring-2 ring-orange-500' : '',
+                                                    isAnswered(q.questionId) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                                                ]"
+                                                :aria-label="'跳至第 ' + (idx + 1) + ' 題'"
+                                                x-text="idx + 1">
+                                            </button>
+                                        </template>
                                     </div>
-                                </template>
+                                    <p class="text-xs text-gray-400 mt-3">
+                                        已作答 <span class="font-medium text-green-600" x-text="answeredCount"></span> / <span x-text="currentAttempt?.questions?.length || 0"></span>
+                                    </p>
+                                    <div class="mt-2 space-y-1 text-xs text-gray-400">
+                                        <div class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-green-500"></span> 已作答</div>
+                                        <div class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-gray-200 ring-2 ring-orange-500"></span> 目前題目</div>
+                                        <div class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-gray-200"></span> 未作答</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 提交確認 Modal -->
+                    <div x-show="showSubmitConfirm" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display:none;">
+                        <div class="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 space-y-4">
+                            <h3 class="text-lg font-semibold text-gray-900">確認提交考卷</h3>
+                            <div class="text-sm text-gray-700 space-y-2">
+                                <p x-show="unansweredCount > 0" class="text-amber-700 font-medium">
+                                    尚有 <span x-text="unansweredCount"></span> 題未作答
+                                </p>
+                                <p>提交後將無法修改答案，未作答題目將計為錯誤。</p>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-2">
+                                <button @click="showSubmitConfirm = false"
+                                        class="px-4 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">
+                                    繼續作答
+                                </button>
+                                <button @click="showSubmitConfirm = false; submitExam()" :disabled="submitting"
+                                        class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
+                                    確認提交
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1726,6 +1778,9 @@
                 startExamError: '',
                 submitting: false,
                 answers: {},
+                currentQuestionIndex: 0,
+                showSubmitConfirm: false,
+                unansweredCount: 0,
                 timeRemainingInterval: null,
                 showTimeWarning: false,
                 visibilityChangeCount: 0,
@@ -1792,8 +1847,10 @@
                             this.visibilityChangeCount = 0;
                             this.suspectedCheating = false;
                             this.startExamError = '';
+                            this.currentQuestionIndex = 0;
                             this.startTimeRemainingTimer();
                             this.startAutoSave();
+                            this.registerBeforeUnload();
                         } else {
                             this.startExamError = data.error?.message || '開始考試失敗';
                         }
@@ -1829,8 +1886,10 @@
                                     this.answers[a.questionId] = a.selectedAnswer;
                                 });
                             }
+                            this.currentQuestionIndex = 0;
                             this.startTimeRemainingTimer();
                             this.startAutoSave();
+                            this.registerBeforeUnload();
                         } else {
                             alert(data.error?.message || '繼續考試失敗');
                         }
@@ -1838,6 +1897,18 @@
                         console.error('Resume exam error:', e);
                         alert('網路錯誤');
                     }
+                },
+
+                registerBeforeUnload() {
+                    if (this._beforeUnloadHandler) {
+                        window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                    }
+                    window.addEventListener('beforeunload', this._beforeUnloadHandler = (e) => {
+                        if (this.currentAttempt && this.currentAttempt.status === 'in_progress') {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    });
                 },
 
                 startAutoSave() {
@@ -1914,8 +1985,34 @@
                     return `${mins}:${secs.toString().padStart(2, '0')}`;
                 },
 
+                get answeredCount() {
+                    if (!this.currentAttempt?.questions) return 0;
+                    return this.currentAttempt.questions.filter(q => this.isAnswered(q.questionId)).length;
+                },
+
+                isAnswered(questionId) {
+                    const v = this.answers[questionId];
+                    return v !== undefined && v !== null && v !== '';
+                },
+
+                goToQuestion(idx) {
+                    this.currentQuestionIndex = idx;
+                    const el = document.getElementById('question-' + idx);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                },
+
+                confirmSubmit() {
+                    const total = this.currentAttempt?.questions?.length || 0;
+                    const unanswered = total - this.answeredCount;
+                    if (unanswered === 0) {
+                        this.submitExam();
+                    } else {
+                        this.unansweredCount = unanswered;
+                        this.showSubmitConfirm = true;
+                    }
+                },
+
                 async submitExam() {
-                    if (!confirm('確定要提交考卷嗎？')) return;
                     this.submitting = true;
                     try {
                         const answersArray = Object.keys(this.answers).map(qId => ({
@@ -1952,6 +2049,10 @@
                         if (this.autoSaveDebounceTimer) { clearTimeout(this.autoSaveDebounceTimer); this.autoSaveDebounceTimer = null; }
                         if (this._visibilityChangeHandler) {
                             document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+                        }
+                        if (this._beforeUnloadHandler) {
+                            window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                            this._beforeUnloadHandler = null;
                         }
                     }
                 },
