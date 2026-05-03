@@ -45,16 +45,27 @@ router.post('/expired-attempts', validateCronRequest, async (req, res) => {
 
         for (const attempt of expiredAttempts) {
             try {
+                // Guard: skip grading if referenced exam was deleted
+                if (!attempt.exam) {
+                    console.warn(`[cron] expired-attempts: attempt ${attempt._id} has null exam reference, marking expired without grading`);
+                    attempt.status = 'expired';
+                    attempt.submittedAt = attempt.expiresAt;
+                    attempt.timeSpent = Math.floor((attempt.expiresAt - attempt.startedAt) / 1000);
+                    await attempt.save();
+                    processed++;
+                    continue;
+                }
+
                 // Mark as expired
                 attempt.status = 'expired';
                 attempt.submittedAt = attempt.expiresAt;
                 attempt.timeSpent = Math.floor((attempt.expiresAt - attempt.startedAt) / 1000);
-                
+
                 // Auto-grade if exam allows (expired attempts can still be graded)
                 if (attempt.answers && attempt.answers.length > 0) {
                     attempt.status = 'submitted';
                     await attempt.save();
-                    
+
                     // Trigger grading
                     try {
                         await ExamGrading.gradeAttempt(attempt._id);
@@ -64,7 +75,7 @@ router.post('/expired-attempts', validateCronRequest, async (req, res) => {
                 } else {
                     await attempt.save();
                 }
-                
+
                 processed++;
             } catch (error) {
                 console.error(`Process attempt ${attempt._id} error:`, error);
