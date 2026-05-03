@@ -268,8 +268,13 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
         let attempt;
         try {
             // Try to create new attempt (partial unique index prevents duplicate in_progress)
-            const allQuestions = await Question.find({ exam: exam._id });
-            
+            // Questions are stored with 'examIds' (array) — not a singular 'exam' field.
+            const allQuestions = await Question.find({ examIds: exam._id });
+
+            if (allQuestions.length === 0) {
+                return errorResponse(res, 409, 'NO_QUESTIONS', '此考試尚未包含任何題目，請聯絡管理員');
+            }
+
             // Stratified random selection if questionsPerAttempt < total
             let selectedQuestions = allQuestions;
             if (exam.questionsPerAttempt && exam.questionsPerAttempt < allQuestions.length) {
@@ -281,15 +286,15 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
 
                 const [easyQuestions, mediumQuestions, hardQuestions] = await Promise.all([
                     Question.aggregate([
-                        { $match: { exam: exam._id, difficulty: 'easy' } },
+                        { $match: { examIds: exam._id, difficulty: 'easy' } },
                         { $sample: { size: Math.min(easyCount, allQuestions.filter(q => q.difficulty === 'easy').length) } }
                     ]),
                     Question.aggregate([
-                        { $match: { exam: exam._id, difficulty: 'medium' } },
+                        { $match: { examIds: exam._id, difficulty: 'medium' } },
                         { $sample: { size: Math.min(mediumCount, allQuestions.filter(q => q.difficulty === 'medium').length) } }
                     ]),
                     Question.aggregate([
-                        { $match: { exam: exam._id, difficulty: 'hard' } },
+                        { $match: { examIds: exam._id, difficulty: 'hard' } },
                         { $sample: { size: Math.min(hardCount, allQuestions.filter(q => q.difficulty === 'hard').length) } }
                     ])
                 ]);
@@ -316,7 +321,7 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
                 content: q.content,
                 correctAnswer: q.type === 'multiple_choice' ? q.correctOptionIndex :
                               q.type === 'true_false' ? q.correctBoolean :
-                              q.correctAnswers[0],
+                              (q.correctAnswers && q.correctAnswers[0]) || '',
                 points: q.points,
                 difficulty: q.difficulty
             }));
