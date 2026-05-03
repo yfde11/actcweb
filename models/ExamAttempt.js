@@ -62,7 +62,7 @@ const answerSchema = new mongoose.Schema({
 const cheatingDetailSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['visibility_change', 'devtools', 'screenshot'],
+        enum: ['visibility_change', 'devtools', 'screenshot', 'fast_submission'],
         required: true
     },
     timestamp: {

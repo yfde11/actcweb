@@ -81,14 +81,16 @@ router.post('/', adminAuth, async (req, res) => {
             title, description, shortDescription, examType, timeLimit, passingScore,
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
-            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs
+            certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            tags
         } = req.body;
 
         const examData = {
             title, description, shortDescription, examType, timeLimit, passingScore,
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
-            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            tags,
             createdBy: req.user.userId
         };
 
@@ -155,7 +157,8 @@ router.put('/:id', adminAuth, async (req, res) => {
             title, description, shortDescription, examType, timeLimit, passingScore,
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
-            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            tags,
             status: requestedStatus
         } = req.body;
 
@@ -163,18 +166,28 @@ router.put('/:id', adminAuth, async (req, res) => {
             title, description, shortDescription, examType, timeLimit, passingScore,
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
-            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs
+            certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            tags
         };
 
         // Remove undefined keys so existing values are not overwritten with undefined
         Object.keys(allowedUpdates).forEach(k => allowedUpdates[k] === undefined && delete allowedUpdates[k]);
 
-        // Apply status transition if requested (draft → published or draft → active only)
+        // Apply status transition if requested (draft → published, active, or deleted only)
         if (requestedStatus && requestedStatus !== exam.status) {
             const draftTransitions = ['published', 'active', 'deleted'];
             if (!draftTransitions.includes(requestedStatus)) {
                 return errorResponse(res, 400, 'STATUS_TRANSITION_INVALID',
-                    `草稿狀態只能轉換為 published 或 active，無法轉換為 ${requestedStatus}`);
+                    `草稿狀態只能轉換為 published、active 或 deleted，無法轉換為 ${requestedStatus}`);
+            }
+            // Applying the same attempt safeguard as the DELETE endpoint:
+            // if there are graded results, do not allow deletion even via status transition.
+            if (requestedStatus === 'deleted') {
+                const gradedCount = await ExamAttempt.countDocuments({ exam: exam._id, status: 'graded' });
+                if (gradedCount > 0) {
+                    return errorResponse(res, 409, 'EXAM_HAS_RESULTS',
+                        `此考試已有 ${gradedCount} 筆成績紀錄，無法刪除。請改用封存（archived）狀態。`);
+                }
             }
             allowedUpdates.status = requestedStatus;
         }
@@ -1290,6 +1303,7 @@ router.get('/:id/certificates', adminAuth, async (req, res) => {
         }
         const certs = await Certificate.find({ exam: req.params.id })
             .populate('user', 'username email fullName')
+            .populate('attempt', 'score passed attemptNumber')
             .populate('revokedBy', 'username fullName')
             .sort({ issuedAt: -1 });
         res.json({ data: certs });
