@@ -2630,11 +2630,21 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 async saveExam() {
                     try {
                         const token = localStorage.getItem('adminToken');
-                        const url = this.editingExam 
+                        const url = this.editingExam
                             ? `/api/exams/${this.editingExam._id}`
                             : '/api/exams';
                         const method = this.editingExam ? 'PUT' : 'POST';
-                        
+
+                        // Build payload — convert dates and tags to backend-expected formats
+                        const payload = {
+                            ...this.formData,
+                            startDate: this.formData.startDate ? new Date(this.formData.startDate).toISOString() : null,
+                            endDate: this.formData.endDate ? new Date(this.formData.endDate).toISOString() : null,
+                            tags: this.formData.tags
+                                ? this.formData.tags.split(',').map(t => t.trim()).filter(t => t)
+                                : []
+                        };
+
                         const res = await fetch(url, {
                             method,
                             credentials: 'include',
@@ -2642,9 +2652,9 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify(this.formData)
+                            body: JSON.stringify(payload)
                         });
-                        
+
                         if (res.ok) {
                             this.showCreateModal = false;
                             await this.loadExams();
