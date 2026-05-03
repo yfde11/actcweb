@@ -149,12 +149,14 @@ router.put('/:id', adminAuth, async (req, res) => {
             return errorResponse(res, 400, 'STATUS_TRANSITION_INVALID', '只能編輯草稿狀態的考試');
         }
 
-        // Allowlist: only safe fields accepted from req.body; status/createdBy/totalPoints/questionCount not allowed
+        // Allowlist: only safe fields accepted from req.body; createdBy/totalPoints/questionCount not allowed.
+        // status is allowed here only for draft→published or draft→active transitions initiated from the edit form.
         const {
             title, description, shortDescription, examType, timeLimit, passingScore,
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
-            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs
+            certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
+            status: requestedStatus
         } = req.body;
 
         const allowedUpdates = {
@@ -166,6 +168,16 @@ router.put('/:id', adminAuth, async (req, res) => {
 
         // Remove undefined keys so existing values are not overwritten with undefined
         Object.keys(allowedUpdates).forEach(k => allowedUpdates[k] === undefined && delete allowedUpdates[k]);
+
+        // Apply status transition if requested (draft → published or draft → active only)
+        if (requestedStatus && requestedStatus !== exam.status) {
+            const draftTransitions = ['published', 'active', 'deleted'];
+            if (!draftTransitions.includes(requestedStatus)) {
+                return errorResponse(res, 400, 'STATUS_TRANSITION_INVALID',
+                    `草稿狀態只能轉換為 published 或 active，無法轉換為 ${requestedStatus}`);
+            }
+            allowedUpdates.status = requestedStatus;
+        }
 
         Object.assign(exam, allowedUpdates);
         await exam.save();
@@ -240,7 +252,7 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
         }
 
         const validTransitions = {
-            draft: ['published', 'deleted'],
+            draft: ['published', 'active', 'deleted'],
             published: ['active', 'draft', 'archived', 'deleted'],
             active: ['closed', 'archived', 'deleted'],
             closed: ['archived', 'deleted'],

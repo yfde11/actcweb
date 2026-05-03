@@ -233,7 +233,7 @@ examSchema.pre('save', function(next) {
     if (!this.isModified('status')) return next();
     
     const validTransitions = {
-        draft: ['published', 'deleted'],
+        draft: ['published', 'active', 'deleted'],
         published: ['active', 'draft', 'deleted'],
         active: ['closed', 'deleted'],
         closed: ['archived', 'deleted'],
