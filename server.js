@@ -127,10 +127,14 @@ app.get('/api/certificates/verify/:certificateNumber', async (req, res) => {
     }
 });
 
-// Certificate verification redirect: PDF QR codes link here; redirect to frontend
-// so users see a friendly page (frontend reads ?verify= query param to display result)
+// 證書驗證頁面（直接訪問，無證書號碼）
+app.get('/verify-certificate', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'pages', 'verify-certificate.html'));
+});
+
+// 證書驗證重定向：PDF QR code 連結至此，重定向至專屬驗證頁面
 app.get('/verify-certificate/:certificateNumber', (req, res) => {
-    res.redirect(`/?verify=${encodeURIComponent(req.params.certificateNumber)}`);
+    res.redirect(`/pages/verify-certificate.html?verify=${encodeURIComponent(req.params.certificateNumber)}`);
 });
 
 // 會員專區（靜態 SPA）
