@@ -1158,6 +1158,7 @@
                                             <button @click="viewAttempts(exam._id)" class="text-purple-600 hover:underline mr-2">作答</button>
                                             <button @click="viewStatistics(exam._id)" class="text-orange-600 hover:underline mr-2">統計</button>
                                             <button @click="exportAttempts(exam._id, exam.title)" class="text-green-600 hover:text-green-800 text-sm mr-2">匯出CSV</button>
+                                            <button @click="openCertificates(exam._id, exam.title)" class="text-purple-600 hover:text-purple-800 text-sm mr-2">證書</button>
                                             <button @click="deleteExam(exam._id)" class="text-red-600 hover:underline">刪除</button>
                                         </td>
                                     </tr>
@@ -1630,6 +1631,57 @@
                                     </div>
                                 </template>
                                 <p x-show="!loadingStatistics && !statistics" class="text-sm text-gray-500">尚無統計資訊。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 證書管理 Modal -->
+                    <div x-show="showCertificatesModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+                            <div class="p-4 border-b flex items-center justify-between flex-shrink-0">
+                                <h3 class="font-semibold text-lg" x-text="'證書管理：' + currentCertExamTitle"></h3>
+                                <button @click="showCertificatesModal = false" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="overflow-y-auto flex-1 p-4">
+                                <div x-show="loadingCerts" class="text-center py-8 text-gray-400">載入中…</div>
+                                <div x-show="!loadingCerts && !certificates.length" class="text-center py-8 text-gray-400">尚無已核發證書</div>
+                                <table x-show="!loadingCerts && certificates.length" class="w-full text-sm">
+                                    <thead>
+                                        <tr class="border-b text-left text-gray-500">
+                                            <th class="pb-2 pr-3">持有人</th>
+                                            <th class="pb-2 pr-3">證書號碼</th>
+                                            <th class="pb-2 pr-3">分數</th>
+                                            <th class="pb-2 pr-3">核發日期</th>
+                                            <th class="pb-2 pr-3">狀態</th>
+                                            <th class="pb-2">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="cert in certificates" :key="cert._id">
+                                            <tr class="border-b hover:bg-gray-50">
+                                                <td class="py-2 pr-3" x-text="cert.user?.fullName || cert.user?.username || '-'"></td>
+                                                <td class="py-2 pr-3 font-mono text-xs" x-text="cert.certificateNumber"></td>
+                                                <td class="py-2 pr-3" x-text="cert.score !== undefined ? cert.score + ' 分' : '-'"></td>
+                                                <td class="py-2 pr-3 text-xs" x-text="new Date(cert.issuedAt).toLocaleDateString('zh-TW')"></td>
+                                                <td class="py-2 pr-3">
+                                                    <span :class="cert.isRevoked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                          class="px-2 py-0.5 rounded-full text-xs"
+                                                          x-text="cert.isRevoked ? '已撤銷' : '有效'"></span>
+                                                </td>
+                                                <td class="py-2">
+                                                    <button x-show="!cert.isRevoked"
+                                                            @click="revokeCert(cert._id)"
+                                                            class="text-red-600 hover:text-red-800 text-xs">撤銷</button>
+                                                    <button x-show="cert.isRevoked"
+                                                            @click="unrevokeCert(cert._id)"
+                                                            class="text-green-600 hover:text-green-800 text-xs">恢復</button>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -2569,6 +2621,12 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 showPreviewModal: false,
                 previewData: null,
                 previewLoading: false,
+                // Certificates
+                showCertificatesModal: false,
+                currentCertExamId: null,
+                currentCertExamTitle: '',
+                certificates: [],
+                loadingCerts: false,
                 async init() {
                     await this.loadExams();
                 },
@@ -3029,6 +3087,77 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         }
                     } catch (e) {
                         console.error('Remove cooldown error:', e);
+                    }
+                },
+                async openCertificates(examId, examTitle) {
+                    this.currentCertExamId = examId;
+                    this.currentCertExamTitle = examTitle;
+                    this.certificates = [];
+                    this.showCertificatesModal = true;
+                    this.loadingCerts = true;
+                    try {
+                        const res = await fetch(`/api/exams/${examId}/certificates`, {
+                            credentials: 'include',
+                            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.certificates = data.data || [];
+                        } else {
+                            alert('載入證書失敗');
+                        }
+                    } catch (e) {
+                        console.error('Load certificates error:', e);
+                        alert('載入證書失敗');
+                    } finally {
+                        this.loadingCerts = false;
+                    }
+                },
+                async revokeCert(certId) {
+                    const reason = prompt('撤銷原因（可留空）：') ;
+                    if (reason === null) return; // user cancelled
+                    if (!confirm('確定要撤銷此證書？撤銷後持有人將無法通過公開驗證。')) return;
+                    try {
+                        const res = await fetch(`/api/exams/certificates/${certId}/revoke`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ reason: reason || '' })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            await this.openCertificates(this.currentCertExamId, this.currentCertExamTitle);
+                        } else {
+                            alert(data.error?.message || '撤銷失敗');
+                        }
+                    } catch (e) {
+                        console.error('Revoke cert error:', e);
+                        alert('撤銷失敗');
+                    }
+                },
+                async unrevokeCert(certId) {
+                    if (!confirm('確定要恢復此證書的有效狀態？')) return;
+                    try {
+                        const res = await fetch(`/api/exams/certificates/${certId}/unrevoke`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            await this.openCertificates(this.currentCertExamId, this.currentCertExamTitle);
+                        } else {
+                            alert(data.error?.message || '恢復失敗');
+                        }
+                    } catch (e) {
+                        console.error('Unrevoke cert error:', e);
+                        alert('恢復失敗');
                     }
                 },
                 async changeStatus(exam) {
