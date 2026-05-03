@@ -222,7 +222,8 @@
                 <!-- 內含：MemberSummaryCards / MemberFilterBar / MemberTable /  -->
                 <!--      MemberInsightPanel / MemberBatchActionBar             -->
                 <!-- ============================================================ -->
-                <div x-show="currentTab === 'users'" x-data="usersTab()" class="-m-8 p-6 lg:p-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
+                <template x-if="currentTab === 'users'">
+                <div x-data="usersTab()" x-init="init()" class="-m-8 p-6 lg:p-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
 
                     <!-- ====== Header (sticky) ====== -->
                     <div class="sticky top-0 z-20 -mx-6 lg:-mx-8 px-6 lg:px-8 py-4 bg-slate-50/95 backdrop-blur border-b border-slate-200 mb-6">
@@ -735,6 +736,7 @@
                         </div>
                     </div>
                 </div>
+                </template>
 
                 <!-- 最新消息管理 -->
                 <div x-show="currentTab === 'news'">
@@ -1103,7 +1105,8 @@
                 </div>
 
                 <!-- 考试管理 -->
-                <div x-show="currentTab === 'exams'" x-data="examManagementTab()" class="-m-8 p-6 lg:p-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
+                <template x-if="currentTab === 'exams'">
+                <div x-data="examManagementTab()" x-init="init()" class="-m-8 p-6 lg:p-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
                     <div class="sticky top-0 z-20 -mx-6 lg:-mx-8 px-6 lg:px-8 py-4 bg-slate-50/95 backdrop-blur border-b border-slate-200 mb-6">
                         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div>
@@ -1490,6 +1493,7 @@
                         </div>
                     </div>
                 </div>
+                </template>
 
                 <!-- 題庫管理 Tab -->
                 <div x-show="currentTab === 'question-bank'" x-data="questionBankTab()" x-init="init()" class="-m-8 p-6 lg:p-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
