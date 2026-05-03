@@ -318,6 +318,113 @@
                         </div>
                     </div>
 
+                    <!-- 考試規則確認 Modal -->
+                    <div x-show="showRulesModal" x-cloak
+                         @keydown.escape.window="showRulesModal = false"
+                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         @click.self="showRulesModal = false">
+                        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden" @click.stop>
+                            <!-- 標題列 -->
+                            <div class="px-6 py-4 border-b flex justify-between items-center shrink-0">
+                                <h3 class="text-lg font-semibold text-gray-900">考試規則確認</h3>
+                                <button type="button" @click="showRulesModal = false" class="text-gray-500 hover:text-gray-800" aria-label="關閉">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            <div class="p-6 overflow-y-auto flex-1 space-y-5 text-sm text-gray-800">
+                                <!-- 考試資訊 -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <span class="inline-block w-1 h-4 bg-blue-500 rounded"></span>考試資訊
+                                    </h4>
+                                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">考試名稱</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.title || '—'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">題目數量</span>
+                                            <span class="font-medium text-gray-900" x-text="(rulesExam?.questionsPerAttempt || rulesExam?.questionCount || '—') + ' 題'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">考試時間</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.timeLimit > 0 ? rulesExam.timeLimit + ' 分鐘' : '無時間限制'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">及格分數</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.passingScore != null ? rulesExam.passingScore + '%' : '—'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">最多嘗試次數</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.maxAttempts > 0 ? rulesExam.maxAttempts + ' 次' : '無限制'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 考試規則 -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <span class="inline-block w-1 h-4 bg-orange-400 rounded"></span>考試規則
+                                    </h4>
+                                    <ul class="space-y-2 text-gray-700">
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            考試開始後，計時即開始，離開頁面不會暫停計時
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            請勿切換分頁或視窗，系統將記錄切換次數
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            若發生網路中斷，系統將自動儲存您的答題進度
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            請確保網路連線穩定，並使用桌面瀏覽器作答
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- 申訴說明 -->
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                        <span class="inline-block w-1 h-4 bg-amber-500 rounded"></span>申訴說明
+                                    </h4>
+                                    <p class="text-amber-700 leading-relaxed">
+                                        若您認為系統誤判作弊行為，請於考試結束後 7 天內寄信至
+                                        <a :href="'mailto:' + (rulesExam?.contactEmail || 'contact@actcweb.org')"
+                                           class="font-medium underline hover:text-amber-900"
+                                           x-text="rulesExam?.contactEmail || 'contact@actcweb.org'"></a>
+                                        申訴，並於信件中說明情況。
+                                    </p>
+                                </div>
+
+                                <!-- 確認 checkbox -->
+                                <label class="flex items-start gap-3 cursor-pointer select-none">
+                                    <input type="checkbox" x-model="rulesConfirmed"
+                                           class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                                    <span class="text-gray-700 font-medium">我已閱讀並同意以上規則</span>
+                                </label>
+                            </div>
+
+                            <!-- 按鈕列 -->
+                            <div class="px-6 py-4 border-t flex justify-end gap-3 shrink-0 bg-gray-50">
+                                <button type="button" @click="showRulesModal = false"
+                                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition-colors">
+                                    取消
+                                </button>
+                                <button type="button"
+                                        @click="showRulesModal = false; startExam(rulesExam._id)"
+                                        :disabled="!rulesConfirmed || startingExam === rulesExam?._id"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <span x-text="startingExam === rulesExam?._id ? '開始中…' : '確認開始考試'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 可報考列表 -->
                     <div x-show="!currentAttempt">
                         <h3 class="text-lg font-semibold mb-3">可報考考試</h3>
@@ -356,7 +463,7 @@
                                         </div>
                                         <div class="ml-4 flex flex-col gap-2">
                                             <button x-show="exam.canStart.allowed && !exam.userAttempts?.some(a => a.status === 'in_progress')"
-                                                    @click="startExam(exam._id)"
+                                                    @click="openRulesModal(exam)"
                                                     :disabled="startingExam === exam._id"
                                                     class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
                                                 <span x-text="startingExam === exam._id ? '開始中…' : '開始考試'"></span>
@@ -495,6 +602,7 @@
                                     <div>
                                         <p class="font-medium" x-text="currentAttempt.attemptNumber ? '考試編號：' + currentAttempt.attemptNumber : ''"></p>
                                         <p class="text-sm text-gray-600">剩餘時間: <span x-text="formatTimeRemaining()" :class="showTimeWarning ? 'text-red-600 font-bold' : ''"></span></p>
+                                        <span x-show="lastSaved" x-text="'上次儲存：' + lastSavedText" class="text-xs text-gray-400"></span>
                                     </div>
                                     <div x-show="showTimeWarning" class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">
                                         ⚠️ 剩餘時間不足5分鐘！
@@ -516,7 +624,7 @@
                                         <div x-show="question.type === 'multiple_choice'" class="space-y-2">
                                             <template x-for="(opt, optIdx) in question.options">
                                                 <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                    <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" class="text-blue-600">
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
                                                     <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
                                                 </label>
                                             </template>
@@ -524,17 +632,17 @@
                                         <!-- T/F -->
                                         <div x-show="question.type === 'true_false'" class="space-y-2">
                                             <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" class="text-blue-600">
+                                                <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
                                                 <span>正確 (True)</span>
                                             </label>
                                             <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                                                <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" class="text-blue-600">
+                                                <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
                                                 <span>錯誤 (False)</span>
                                             </label>
                                         </div>
                                         <!-- Fill in blank -->
                                         <div x-show="question.type === 'fill_in_blank'" class="mt-2">
-                                            <input type="text" x-model="answers[question.questionId]" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
+                                            <input type="text" x-model="answers[question.questionId]" @input="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
                                         </div>
                                     </div>
                                 </template>
@@ -1622,9 +1730,17 @@
                 showTimeWarning: false,
                 visibilityChangeCount: 0,
                 suspectedCheating: false,
+                currentAttemptExamId: null,
+                lastSaved: null,
+                lastSavedText: '',
+                autoSaveInterval: null,
+                autoSaveDebounceTimer: null,
                 historyExamId: null,
                 historyAttemptDetail: null,
                 historyLoading: false,
+                showRulesModal: false,
+                rulesConfirmed: false,
+                rulesExam: null,
 
                 async init() {
                     await this.loadAvailableExams();
@@ -1633,6 +1749,12 @@
                 authHeaders() {
                     const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
                     return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+                },
+
+                openRulesModal(exam) {
+                    this.rulesExam = exam;
+                    this.rulesConfirmed = false;
+                    this.showRulesModal = true;
                 },
 
                 async loadAvailableExams() {
@@ -1665,11 +1787,13 @@
                         const data = await res.json();
                         if (res.ok) {
                             this.currentAttempt = data.data;
+                            this.currentAttemptExamId = examId;
                             this.answers = {};
                             this.visibilityChangeCount = 0;
                             this.suspectedCheating = false;
                             this.startExamError = '';
                             this.startTimeRemainingTimer();
+                            this.startAutoSave();
                         } else {
                             this.startExamError = data.error?.message || '開始考試失敗';
                         }
@@ -1690,6 +1814,7 @@
                         const data = await res.json();
                         if (res.ok) {
                             this.currentAttempt = data.data;
+                            this.currentAttemptExamId = examId;
                             // Restore answers
                             this.answers = {};
                             if (data.data.answers) {
@@ -1697,7 +1822,15 @@
                                     this.answers[a.questionId] = a.answer;
                                 });
                             }
+                            const localKey = `exam_progress_${data.data.attemptId}`;
+                            const local = JSON.parse(localStorage.getItem(localKey) || 'null');
+                            if (local && local.savedAt > new Date(this.currentAttempt.lastSavedAt || 0).getTime()) {
+                                local.answers.forEach(a => {
+                                    this.answers[a.questionId] = a.selectedAnswer;
+                                });
+                            }
                             this.startTimeRemainingTimer();
+                            this.startAutoSave();
                         } else {
                             alert(data.error?.message || '繼續考試失敗');
                         }
@@ -1705,6 +1838,39 @@
                         console.error('Resume exam error:', e);
                         alert('網路錯誤');
                     }
+                },
+
+                startAutoSave() {
+                    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+                    this.autoSaveInterval = setInterval(() => this.autoSaveProgress(), 30000);
+                },
+
+                async autoSaveProgress() {
+                    if (!this.currentAttempt?.attemptId || !this.currentAttemptExamId) return;
+                    const answersArray = Object.keys(this.answers).map(qId => ({
+                        questionId: qId,
+                        selectedAnswer: this.answers[qId]
+                    }));
+                    const attemptId = this.currentAttempt.attemptId;
+                    try {
+                        await fetch(`/api/member/exams/${this.currentAttemptExamId}/save-progress`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                            body: JSON.stringify({ attemptId, answers: answersArray })
+                        });
+                    } catch (e) {
+                        // silent fallback
+                    }
+                    try {
+                        localStorage.setItem(`exam_progress_${attemptId}`, JSON.stringify({ answers: answersArray, savedAt: Date.now() }));
+                    } catch (e) {
+                        // silent fallback
+                    }
+                    this.lastSaved = new Date();
+                    const h = this.lastSaved.getHours().toString().padStart(2, '0');
+                    const m = this.lastSaved.getMinutes().toString().padStart(2, '0');
+                    this.lastSavedText = h + ':' + m;
                 },
 
                 startTimeRemainingTimer() {
@@ -1782,7 +1948,8 @@
                         alert('網路錯誤');
                     } finally {
                         this.submitting = false;
-                        // Remove visibility change listener
+                        if (this.autoSaveInterval) { clearInterval(this.autoSaveInterval); this.autoSaveInterval = null; }
+                        if (this.autoSaveDebounceTimer) { clearTimeout(this.autoSaveDebounceTimer); this.autoSaveDebounceTimer = null; }
                         if (this._visibilityChangeHandler) {
                             document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
                         }
