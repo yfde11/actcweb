@@ -532,35 +532,37 @@ router.patch('/:id/save-progress', verifiedAuth, async (req, res) => {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '缺少 attemptId');
         }
 
-        const attempt = await ExamAttempt.findOne({
+        const baseFilter = {
             _id: attemptId,
             exam: req.params.id,
             user: req.user.userId,
             status: 'in_progress'
-        });
+        };
 
-        if (!attempt) {
+        const exists = await ExamAttempt.countDocuments(baseFilter);
+        if (!exists) {
             return errorResponse(res, 404, 'ATTEMPT_NOT_FOUND', '作答紀錄不存在');
         }
 
-        // Update answers
-        if (answers && Array.isArray(answers)) {
-            for (const ans of answers) {
-                const existingIdx = attempt.answers.findIndex(a => 
-                    a.questionId.toString() === ans.questionId
-                );
-                if (existingIdx >= 0) {
-                    attempt.answers[existingIdx] = {
-                        ...attempt.answers[existingIdx],
-                        ...ans
-                    };
-                } else {
-                    attempt.answers.push(ans);
+        if (answers && Array.isArray(answers) && answers.length > 0) {
+            // Atomic bulkWrite: update existing answer entries, push new ones.
+            // Avoids the read-modify-save pattern that causes VersionError under concurrent requests.
+            const updateExisting = answers.map(ans => ({
+                updateOne: {
+                    filter: { ...baseFilter, 'answers.questionId': ans.questionId },
+                    update: { $set: { 'answers.$': ans, lastSavedAt: new Date() } }
                 }
-            }
+            }));
+            const insertNew = answers.map(ans => ({
+                updateOne: {
+                    filter: { ...baseFilter, 'answers.questionId': { $ne: ans.questionId } },
+                    update: { $push: { answers: ans }, $set: { lastSavedAt: new Date() } }
+                }
+            }));
+            await ExamAttempt.bulkWrite([...updateExisting, ...insertNew]);
+        } else {
+            await ExamAttempt.updateOne(baseFilter, { $set: { lastSavedAt: new Date() } });
         }
-
-        await attempt.save();
 
         res.json({ message: '進度已儲存' });
     } catch (error) {
