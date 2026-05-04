@@ -471,8 +471,7 @@ router.get('/:id/statistics', adminAuth, async (req, res) => {
             {
                 $match: {
                     exam: examId,
-                    status: 'graded',
-                    cheatingDetected: { $ne: true }
+                    status: { $in: ['graded', 'auto_submitted_cheating'] }
                 }
             },
             {
@@ -516,8 +515,7 @@ router.get('/:id/statistics', adminAuth, async (req, res) => {
             {
                 $match: {
                     exam: examId,
-                    status: 'graded',
-                    cheatingDetected: { $ne: true }
+                    status: { $in: ['graded', 'auto_submitted_cheating'] }
                 }
             },
             { $unwind: '$answers' },
