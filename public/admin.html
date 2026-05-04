@@ -1231,6 +1231,49 @@
                                 <div>
                                     <p class="font-medium text-sm text-gray-700 mb-3 pb-1 border-b">出題設定</p>
                                     <div class="space-y-3">
+                                        <!-- 出題方式：僅建立新考卷時可選 -->
+                                        <div x-show="!editingExam">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">出題方式</label>
+                                            <select x-model="formData.source" class="w-full border rounded px-3 py-2 text-sm"
+                                                    @change="formData.source === 'question_bank' && loadBankStats()">
+                                                <option value="manual">手動出題（建立後點「題目」加入）</option>
+                                                <option value="question_bank">從題庫隨機抽題</option>
+                                            </select>
+                                        </div>
+                                        <!-- 編輯時顯示出題方式標籤 -->
+                                        <div x-show="editingExam" class="text-sm text-gray-500">
+                                            出題方式：<span class="font-medium" x-text="formData.source === 'question_bank' ? '從題庫隨機抽題' : '手動出題'"></span>
+                                        </div>
+
+                                        <!-- 題庫抽題設定 -->
+                                        <div x-show="formData.source === 'question_bank'" class="border rounded-lg p-3 bg-blue-50 space-y-3">
+                                            <p class="text-xs text-blue-700">依下方比例從題庫隨機抽取題目，每次考試題目均不同。「題數」欄位決定總抽題數。</p>
+                                            <div>
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <span class="text-sm font-medium text-gray-700">各領域出題比例</span>
+                                                    <span class="text-xs px-2 py-0.5 rounded-full"
+                                                          :class="domainRatioTotal === 100 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                                          x-text="'合計：' + domainRatioTotal + '%'"></span>
+                                                </div>
+                                                <div class="space-y-1.5">
+                                                    <template x-for="d in domainList" :key="d.id">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-xs text-gray-500 w-5 text-right" x-text="d.id"></span>
+                                                            <span class="text-xs text-gray-700 flex-1 truncate" x-text="d.name"></span>
+                                                            <span class="text-xs text-gray-400 w-10 text-right"
+                                                                  x-text="bankStats && bankStats.byDomain && bankStats.byDomain[d.id] ? bankStats.byDomain[d.id] + '題' : '-'"></span>
+                                                            <input type="number" min="0" max="100"
+                                                                   :value="formData.domainRatio[d.id] || 0"
+                                                                   @input="formData.domainRatio[d.id] = Number($event.target.value)"
+                                                                   class="w-14 border rounded px-2 py-1 text-xs text-right" />
+                                                            <span class="text-xs text-gray-500">%</span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                <p x-show="domainRatioTotal !== 100" class="text-xs text-red-600 mt-1">比例合計必須等於 100%</p>
+                                            </div>
+                                        </div>
+
                                         <label class="flex items-center gap-2">
                                             <input type="checkbox" x-model="formData.shuffleQuestions" class="rounded" />
                                             <span class="text-sm text-gray-700">隨機排列題目順序</span>
@@ -2579,8 +2622,21 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     showCorrectAnswers: 'after_submit',
                     startDate: '',
                     endDate: '',
-                    tags: ''
+                    tags: '',
+                    source: 'manual',
+                    domainRatio: {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11}
                 },
+                bankStats: null,
+                domainList: [
+                    {id:'1', name:'安全與風險管理'},
+                    {id:'2', name:'資產安全'},
+                    {id:'3', name:'安全架構與工程'},
+                    {id:'4', name:'通訊與網路安全'},
+                    {id:'5', name:'身份與存取管理'},
+                    {id:'6', name:'安全評估與測試'},
+                    {id:'7', name:'安全操作'},
+                    {id:'8', name:'軟體開發安全'}
+                ],
                 // Question management
                 showQuestionModal: false,
                 showQuestionListModal: false,
@@ -2628,6 +2684,22 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                 currentCertExamTitle: '',
                 certificates: [],
                 loadingCerts: false,
+                get domainRatioTotal() {
+                    return Object.values(this.formData.domainRatio).reduce((s, v) => s + (Number(v) || 0), 0);
+                },
+                async loadBankStats() {
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch('/api/question-bank/statistics', {
+                            credentials: 'include',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.bankStats = data.data;
+                        }
+                    } catch (e) { /* silent */ }
+                },
                 async init() {
                     await this.loadExams();
                 },
@@ -2664,7 +2736,9 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         showCorrectAnswers: 'after_submit',
                         startDate: '',
                         endDate: '',
-                        tags: ''
+                        tags: '',
+                        source: 'manual',
+                        domainRatio: {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11}
                     };
                     this.showCreateModal = true;
                 },
@@ -2672,9 +2746,11 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     this.editingExam = exam;
                     const toDatetimeLocal = (iso) => {
                         if (!iso) return '';
-                        // Convert ISO 8601 string to datetime-local value (YYYY-MM-DDTHH:MM)
                         return new Date(iso).toISOString().slice(0, 16);
                     };
+                    const domainRatio = exam.domainRatio
+                        ? Object.fromEntries(Object.entries(exam.domainRatio).map(([k, v]) => [k, Number(v)]))
+                        : {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11};
                     this.formData = {
                         title: exam.title,
                         description: exam.description,
@@ -2691,16 +2767,65 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         showCorrectAnswers: exam.showCorrectAnswers || 'after_submit',
                         startDate: toDatetimeLocal(exam.startDate),
                         endDate: toDatetimeLocal(exam.endDate),
-                        tags: Array.isArray(exam.tags) ? exam.tags.join(', ') : (exam.tags || '')
+                        tags: Array.isArray(exam.tags) ? exam.tags.join(', ') : (exam.tags || ''),
+                        source: exam.source || 'manual',
+                        domainRatio
                     };
+                    if (exam.source === 'question_bank') this.loadBankStats();
                     this.showCreateModal = true;
                 },
                 async saveExam() {
                     try {
                         const token = localStorage.getItem('adminToken');
-                        const url = this.editingExam
-                            ? `/api/exams/${this.editingExam._id}`
-                            : '/api/exams';
+
+                        // 從題庫抽題：新建時走 /from-bank，編輯時走一般 PUT
+                        const isNewBankExam = !this.editingExam && this.formData.source === 'question_bank';
+
+                        if (isNewBankExam) {
+                            if (!this.formData.questionsPerAttempt || this.formData.questionsPerAttempt < 1) {
+                                return alert('請填寫題數');
+                            }
+                            if (this.domainRatioTotal !== 100) {
+                                return alert('各領域比例合計必須等於 100%');
+                            }
+                            const nonZeroDomains = Object.fromEntries(
+                                Object.entries(this.formData.domainRatio).filter(([, v]) => Number(v) > 0)
+                            );
+                            const res = await fetch('/api/exams/from-bank', {
+                                method: 'POST',
+                                credentials: 'include',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    mode: 'random',
+                                    title: this.formData.title,
+                                    description: this.formData.description,
+                                    questionsPerAttempt: Number(this.formData.questionsPerAttempt),
+                                    domainRatio: nonZeroDomains,
+                                    timeLimit: this.formData.timeLimit,
+                                    passingScore: this.formData.passingScore,
+                                    examType: this.formData.examType,
+                                    shuffleQuestions: this.formData.shuffleQuestions,
+                                    shuffleOptions: this.formData.shuffleOptions,
+                                    showCorrectAnswers: this.formData.showCorrectAnswers,
+                                    certificateEnabled: this.formData.certificateEnabled,
+                                    maxAttempts: this.formData.maxAttempts,
+                                    cooldownPeriod: this.formData.cooldownPeriod,
+                                    startDate: this.formData.startDate ? new Date(this.formData.startDate).toISOString() : null,
+                                    endDate: this.formData.endDate ? new Date(this.formData.endDate).toISOString() : null,
+                                    tags: this.formData.tags ? this.formData.tags.split(',').map(t => t.trim()).filter(t => t) : []
+                                })
+                            });
+                            if (res.ok) {
+                                this.showCreateModal = false;
+                                await this.loadExams();
+                            } else {
+                                const err = await res.json();
+                                alert(err.error?.message || '建立失敗');
+                            }
+                            return;
+                        }
+
+                        const url = this.editingExam ? `/api/exams/${this.editingExam._id}` : '/api/exams';
                         const method = this.editingExam ? 'PUT' : 'POST';
 
                         // Build payload — convert dates and tags to backend-expected formats
