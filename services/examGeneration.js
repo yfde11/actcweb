@@ -25,6 +25,15 @@ async function generateExamFromBank(params) {
         passingScore = 70,
         examType = 'quiz',
         certificateTemplate,
+        certificateEnabled,
+        maxAttempts,
+        cooldownPeriod,
+        shuffleQuestions,
+        shuffleOptions,
+        showCorrectAnswers,
+        startDate,
+        endDate,
+        tags,
         createdBy
     } = params;
 
@@ -96,21 +105,31 @@ async function generateExamFromBank(params) {
     }
 
     // Create exam
-    const exam = new Exam({
+    const examData = {
         title,
         description,
         questionsPerAttempt: selectedQuestionIds.length,
         timeLimit,
         passingScore,
         examType,
-        certificateEnabled: examType === 'certification',
+        certificateEnabled: certificateEnabled !== undefined ? certificateEnabled : examType === 'certification',
         certificateTemplate,
         source: 'question_bank',
         domainRatio: new Map(Object.entries(domainRatio)),
         questionRefs: selectedQuestionIds,
         questionCount: selectedQuestionIds.length,
         createdBy
-    });
+    };
+    if (maxAttempts !== undefined) examData.maxAttempts = maxAttempts;
+    if (cooldownPeriod !== undefined) examData.cooldownPeriod = cooldownPeriod;
+    if (shuffleQuestions !== undefined) examData.shuffleQuestions = shuffleQuestions;
+    if (shuffleOptions !== undefined) examData.shuffleOptions = shuffleOptions;
+    if (showCorrectAnswers !== undefined) examData.showCorrectAnswers = showCorrectAnswers;
+    if (startDate !== undefined) examData.startDate = startDate;
+    if (endDate !== undefined) examData.endDate = endDate;
+    if (tags !== undefined) examData.tags = tags;
+
+    const exam = new Exam(examData);
 
     await exam.save();
 
