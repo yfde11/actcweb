@@ -457,17 +457,23 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
 });
 
 // GET /api/member/exams/:id/resume - resume in-progress exam
+// Accepts optional ?attemptId= to target a specific attempt (used by standalone exam window)
 router.get('/:id/resume', verifiedAuth, async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
-        const attempt = await ExamAttempt.findOne({
+        const filter = {
             exam: req.params.id,
             user: req.user.userId,
             status: 'in_progress'
-        });
+        };
+        if (req.query.attemptId && mongoose.Types.ObjectId.isValid(req.query.attemptId)) {
+            filter._id = req.query.attemptId;
+        }
+
+        const attempt = await ExamAttempt.findOne(filter);
 
         if (!attempt) {
             return errorResponse(res, 404, 'NO_IN_PROGRESS', '沒有進行中的考試');
@@ -510,6 +516,7 @@ router.get('/:id/resume', verifiedAuth, async (req, res) => {
                 startedAt: attempt.startedAt,
                 expiresAt: attempt.expiresAt,
                 timeLimit: exam.timeLimit,
+                examTitle: exam.title,
                 questions: returnQuestions,
                 answers: attempt.answers || []
             }
@@ -527,7 +534,7 @@ router.patch('/:id/save-progress', verifiedAuth, async (req, res) => {
             return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
         }
 
-        const { attemptId, answers } = req.body;
+        const { attemptId, answers, visibilityChangeCount } = req.body;
         if (!attemptId) {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '缺少 attemptId');
         }
@@ -544,24 +551,31 @@ router.patch('/:id/save-progress', verifiedAuth, async (req, res) => {
             return errorResponse(res, 404, 'ATTEMPT_NOT_FOUND', '作答紀錄不存在');
         }
 
+        const topLevelUpdate = { lastSavedAt: new Date() };
+        // Only ratchet visibilityChangeCount upward — prevents a malicious client from
+        // resetting it to 0 on every autosave to clear the cheat signal.
+        if (typeof visibilityChangeCount === 'number' && visibilityChangeCount > (exists.visibilityChangeCount || 0)) {
+            topLevelUpdate.visibilityChangeCount = visibilityChangeCount;
+        }
+
         if (answers && Array.isArray(answers) && answers.length > 0) {
             // Atomic bulkWrite: update existing answer entries, push new ones.
             // Avoids the read-modify-save pattern that causes VersionError under concurrent requests.
             const updateExisting = answers.map(ans => ({
                 updateOne: {
                     filter: { ...baseFilter, 'answers.questionId': ans.questionId },
-                    update: { $set: { 'answers.$': ans, lastSavedAt: new Date() } }
+                    update: { $set: { 'answers.$': ans, ...topLevelUpdate } }
                 }
             }));
             const insertNew = answers.map(ans => ({
                 updateOne: {
                     filter: { ...baseFilter, 'answers.questionId': { $ne: ans.questionId } },
-                    update: { $push: { answers: ans }, $set: { lastSavedAt: new Date() } }
+                    update: { $push: { answers: ans }, $set: topLevelUpdate }
                 }
             }));
             await ExamAttempt.bulkWrite([...updateExisting, ...insertNew]);
         } else {
-            await ExamAttempt.updateOne(baseFilter, { $set: { lastSavedAt: new Date() } });
+            await ExamAttempt.updateOne(baseFilter, { $set: topLevelUpdate });
         }
 
         res.json({ message: '進度已儲存' });
@@ -732,6 +746,35 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
         res.json({ data: result });
     } catch (error) {
         console.error('Submit exam error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// POST /api/member/exams/:id/abandon - abandon in-progress attempt (standalone window closed without submitting)
+// Used when timeLimit=0 so the cron job never expires the attempt naturally.
+router.post('/:id/abandon', verifiedAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的考試 ID');
+        }
+        const { attemptId } = req.body;
+        if (!attemptId || !mongoose.Types.ObjectId.isValid(attemptId)) {
+            return errorResponse(res, 400, 'VALIDATION_ERROR', '缺少 attemptId');
+        }
+
+        const result = await ExamAttempt.findOneAndUpdate(
+            { _id: attemptId, exam: req.params.id, user: req.user.userId, status: 'in_progress' },
+            { $set: { status: 'expired', submittedAt: new Date() } },
+            { new: true }
+        );
+
+        if (!result) {
+            return errorResponse(res, 404, 'ATTEMPT_NOT_FOUND', '找不到進行中的作答紀錄');
+        }
+
+        res.json({ message: '考試已放棄' });
+    } catch (error) {
+        console.error('Abandon exam error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
     }
 });

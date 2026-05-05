@@ -1961,9 +1961,70 @@
                 showRulesModal: false,
                 rulesConfirmed: false,
                 rulesExam: null,
+                _examWindow: null,
+                _examWindowPollInterval: null,
+                _examWindowExamId: null,
+                _examWindowAttemptId: null,
+                _examCompletedNormally: false,
 
                 async init() {
                     await this.loadAvailableExams();
+                    window.addEventListener('message', (event) => {
+                        if (event.origin !== location.origin) return;
+                        if (event.data?.type === 'EXAM_COMPLETED') {
+                            this._examCompletedNormally = true;
+                            this._stopExamWindowPoll();
+                            this.loadAvailableExams();
+                        }
+                    });
+                },
+
+                _openExamWindow(examId, attemptId) {
+                    // If the previous exam window is still open, focus it instead of opening a new one.
+                    // Opening a new exam while one is in progress would navigate away from the old attempt
+                    // without triggering the close-poll, leaving it stuck in_progress.
+                    if (this._examWindow && !this._examWindow.closed) {
+                        this._examWindow.focus();
+                        return;
+                    }
+                    this._examWindowExamId = examId;
+                    this._examWindowAttemptId = attemptId;
+                    this._examCompletedNormally = false;
+                    const url = `/exam?examId=${encodeURIComponent(examId)}&attemptId=${encodeURIComponent(attemptId)}`;
+                    this._examWindow = window.open(url, 'actc-exam', 'width=1280,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
+                    if (!this._examWindow) {
+                        alert('無法開啟考試視窗，請允許此網站開啟彈出式視窗後重試。');
+                        return;
+                    }
+                    this._startExamWindowPoll(examId, attemptId);
+                },
+
+                _startExamWindowPoll(examId, attemptId) {
+                    this._stopExamWindowPoll();
+                    this._examWindowPollInterval = setInterval(async () => {
+                        if (!this._examWindow || this._examWindow.closed) {
+                            this._stopExamWindowPoll();
+                            if (!this._examCompletedNormally) {
+                                // Window closed without submitting — abandon the attempt
+                                try {
+                                    await fetch(`/api/member/exams/${examId}/abandon`, {
+                                        method: 'POST',
+                                        headers: this.authHeaders(),
+                                        credentials: 'include',
+                                        body: JSON.stringify({ attemptId })
+                                    });
+                                } catch { /* ignore */ }
+                            }
+                            this.loadAvailableExams();
+                        }
+                    }, 3000);
+                },
+
+                _stopExamWindowPoll() {
+                    if (this._examWindowPollInterval) {
+                        clearInterval(this._examWindowPollInterval);
+                        this._examWindowPollInterval = null;
+                    }
                 },
 
                 authHeaders() {
@@ -2006,16 +2067,7 @@
                         });
                         const data = await res.json();
                         if (res.ok) {
-                            this.currentAttempt = data.data;
-                            this.currentAttemptExamId = examId;
-                            this.answers = {};
-                            this.visibilityChangeCount = 0;
-                            this.suspectedCheating = false;
-                            this.startExamError = '';
-                            this.currentQuestionIndex = 0;
-                            this.startTimeRemainingTimer();
-                            this.startAutoSave();
-                            this.registerBeforeUnload();
+                            this._openExamWindow(examId, data.data.attemptId);
                         } else {
                             this.startExamError = data.error?.message || '開始考試失敗';
                         }
@@ -2027,41 +2079,8 @@
                     }
                 },
 
-                async resumeExam(examId, attemptId) {
-                    try {
-                        const res = await fetch(`/api/member/exams/${examId}/resume`, {
-                            headers: this.authHeaders(),
-                            credentials: 'include',
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                            this.currentAttempt = data.data;
-                            this.currentAttemptExamId = examId;
-                            // Restore answers
-                            this.answers = {};
-                            if (data.data.answers) {
-                                data.data.answers.forEach(a => {
-                                    this.answers[a.questionId] = a.answer;
-                                });
-                            }
-                            const localKey = `exam_progress_${data.data.attemptId}`;
-                            const local = JSON.parse(localStorage.getItem(localKey) || 'null');
-                            if (local && local.savedAt > new Date(this.currentAttempt.lastSavedAt || 0).getTime()) {
-                                local.answers.forEach(a => {
-                                    this.answers[a.questionId] = a.selectedAnswer;
-                                });
-                            }
-                            this.currentQuestionIndex = 0;
-                            this.startTimeRemainingTimer();
-                            this.startAutoSave();
-                            this.registerBeforeUnload();
-                        } else {
-                            alert(data.error?.message || '繼續考試失敗');
-                        }
-                    } catch (e) {
-                        console.error('Resume exam error:', e);
-                        alert('網路錯誤');
-                    }
+                resumeExam(examId, attemptId) {
+                    this._openExamWindow(examId, attemptId);
                 },
 
                 registerBeforeUnload() {

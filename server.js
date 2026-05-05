@@ -145,6 +145,11 @@ app.get('/member/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'member', 'index.html'));
 });
 
+// 獨立考試視窗
+app.get('/exam', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'exam.html'));
+});
+
 // 首頁路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
