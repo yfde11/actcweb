@@ -2245,7 +2245,7 @@
                 async loadCertificates() {
                     this.loadingCertificates = true;
                     try {
-                        const res = await fetch('/api/member/certificates', {
+                        const res = await fetch('/api/member/exams/certificates', {
                             headers: this.authHeaders(),
                             credentials: 'include',
                         });

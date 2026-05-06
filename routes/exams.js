@@ -452,6 +452,27 @@ router.get('/:id/attempts', adminAuth, async (req, res) => {
     }
 });
 
+// DELETE /api/exams/:id/attempts/:attemptId/cooldown - waive cooldown for a specific attempt
+router.delete('/:id/attempts/:attemptId/cooldown', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id) || !mongoose.Types.ObjectId.isValid(req.params.attemptId)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的 ID');
+        }
+        const attempt = await ExamAttempt.findOneAndUpdate(
+            { _id: req.params.attemptId, exam: req.params.id },
+            { $set: { cooldownWaived: true } },
+            { new: true }
+        );
+        if (!attempt) {
+            return errorResponse(res, 404, 'ATTEMPT_NOT_FOUND', '作答紀錄不存在');
+        }
+        res.json({ message: '冷卻限制已解除' });
+    } catch (error) {
+        console.error('Remove cooldown error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
 // GET /api/exams/:id/statistics - exam statistics (aggregation-based, no OOM risk)
 router.get('/:id/statistics', adminAuth, async (req, res) => {
     try {

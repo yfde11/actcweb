@@ -575,10 +575,14 @@
                 async submitExam() {
                     this.submitting = true;
                     try {
-                        const answersArray = Object.keys(this.answers).map(qId => ({
-                            questionId: qId,
-                            answer: this.answers[qId]
-                        }));
+                        const answersArray = Object.keys(this.answers).map(qId => {
+                            const qIndex = this.attempt.questions.findIndex(q => q.questionId === qId);
+                            return {
+                                questionId: qId,
+                                questionNumber: qIndex + 1,
+                                answer: this.answers[qId]
+                            };
+                        });
                         const res = await fetch(`/api/member/exams/${this.examId}/submit`, {
                             method: 'POST',
                             headers: this.authHeaders(),

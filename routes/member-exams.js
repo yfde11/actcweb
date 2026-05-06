@@ -99,16 +99,16 @@ router.get('/', verifiedAuth, async (req, res) => {
                     return { allowed: false, reason: 'MAX_ATTEMPTS_REACHED' };
                 }
                 // Check cooldown
-                const lastAttempt = gradedAttempts.sort((a,b) => 
+                const lastAttempt = gradedAttempts.sort((a,b) =>
                     b.submittedAt - a.submittedAt)[0];
-                if (lastAttempt && exam.cooldownPeriod > 0) {
+                if (lastAttempt && exam.cooldownPeriod > 0 && !lastAttempt.cooldownWaived) {
                     const cooldownEnd = new Date(lastAttempt.submittedAt);
                     cooldownEnd.setDate(cooldownEnd.getDate() + exam.cooldownPeriod);
                     if (now < cooldownEnd) {
-                        return { 
-                            allowed: false, 
+                        return {
+                            allowed: false,
                             reason: 'COOLDOWN_ACTIVE',
-                            nextAttemptAt: cooldownEnd 
+                            nextAttemptAt: cooldownEnd
                         };
                     }
                 }
@@ -253,14 +253,16 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
 
         // Check cooldown
         if (gradedAttempts.length > 0 && exam.cooldownPeriod > 0) {
-            const lastAttempt = gradedAttempts.sort((a,b) => 
+            const lastAttempt = gradedAttempts.sort((a,b) =>
                 b.submittedAt - a.submittedAt)[0];
-            const cooldownEnd = new Date(lastAttempt.submittedAt);
-            cooldownEnd.setDate(cooldownEnd.getDate() + exam.cooldownPeriod);
-            if (new Date() < cooldownEnd) {
-                return errorResponse(res, 403, 'COOLDOWN_ACTIVE', '冷卻中，尚未可重考', {
-                    nextAttemptAt: cooldownEnd
-                });
+            if (!lastAttempt.cooldownWaived) {
+                const cooldownEnd = new Date(lastAttempt.submittedAt);
+                cooldownEnd.setDate(cooldownEnd.getDate() + exam.cooldownPeriod);
+                if (new Date() < cooldownEnd) {
+                    return errorResponse(res, 403, 'COOLDOWN_ACTIVE', '冷卻中，尚未可重考', {
+                        nextAttemptAt: cooldownEnd
+                    });
+                }
             }
         }
 
@@ -395,6 +397,7 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
             let options = fullQ ? [...fullQ.options] : [];
 
             // Shuffle options when enabled; update snapshot's correctAnswer to reflect new index
+            // Store shuffled order in snapshot so resume returns the same sequence
             if (exam.shuffleOptions && snapshot.type === 'multiple_choice' && options.length > 0) {
                 const originalCorrectIndex = snapshot.correctAnswer;
                 const correctOption = options[originalCorrectIndex];
@@ -407,12 +410,13 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
 
                 // Find where the correct option landed in the shuffled array
                 const newCorrectIndex = options.findIndex(
-                    (opt, idx) => opt === correctOption ||
-                        (opt && correctOption && opt.text === correctOption.text)
+                    opt => opt && correctOption && opt.text === correctOption.text
                 );
                 if (newCorrectIndex !== -1) {
                     snapshot.correctAnswer = newCorrectIndex;
                 }
+                // Persist shuffled order so resume returns the same sequence
+                snapshot.shuffledOptions = options;
             }
 
             return {
@@ -423,13 +427,13 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
                 points: snapshot.points,
                 difficulty: snapshot.difficulty,
                 options,
-                correctOptionIndex: undefined, // Don't send correct answer
+                correctOptionIndex: undefined,
                 correctBoolean: undefined,
                 correctAnswers: undefined
             };
         });
 
-        // Persist any correctAnswer updates caused by option shuffling
+        // Persist correctAnswer updates and shuffled option order
         if (exam.shuffleOptions) {
             await attempt.save();
         }
@@ -498,6 +502,8 @@ router.get('/:id/resume', verifiedAuth, async (req, res) => {
 
         const returnQuestions = attempt.questionSnapshot.map(snapshot => {
             const fullQ = questionMap[snapshot.questionId.toString()];
+            // Use shuffledOptions stored at start time so the order matches correctAnswer in snapshot
+            const options = snapshot.shuffledOptions || (fullQ ? fullQ.options : []);
             return {
                 questionId: snapshot.questionId,
                 questionNumber: snapshot.questionNumber,
@@ -505,7 +511,7 @@ router.get('/:id/resume', verifiedAuth, async (req, res) => {
                 content: snapshot.content,
                 points: snapshot.points,
                 difficulty: snapshot.difficulty,
-                options: fullQ ? fullQ.options : []
+                options
             };
         });
 
@@ -649,10 +655,11 @@ router.post('/:id/submit', verifiedAuth, async (req, res) => {
         let cheatingDetected = false;
 
         // Rule 1: Time spent too short (less than 30 seconds per question)
-        if (serverTimeSpent < attempt.questionSnapshot.length * 30) {
+        // Only applies when the exam has a time limit — open-ended exams allow fast answers
+        if (exam.timeLimit > 0 && serverTimeSpent < attempt.questionSnapshot.length * 30) {
             cheatingDetected = true;
             attempt.cheatingDetails.push({
-                type: 'fast_submission', // E2: was incorrectly 'devtools'
+                type: 'fast_submission',
                 timestamp: new Date(),
                 warningNumber: 999
             });

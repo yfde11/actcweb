@@ -32,6 +32,11 @@ const questionSnapshotSchema = new mongoose.Schema({
         type: String,
         enum: ['easy', 'medium', 'hard'],
         required: true
+    },
+    // Stores shuffled options so resume returns the same order as start
+    shuffledOptions: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
     }
 }, { _id: false });
 
@@ -149,6 +154,10 @@ const examAttemptSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
         index: true
+    },
+    cooldownWaived: {
+        type: Boolean,
+        default: false
     },
     cheatingDetails: [cheatingDetailSchema],
     ipAddress: {

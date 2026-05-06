@@ -76,7 +76,7 @@ async function gradeAttempt(attemptId) {
         const userAnswer = answer.answer;
 
         if (snapshot.type === 'multiple_choice') {
-            isCorrect = userAnswer === snapshot.correctAnswer;
+            isCorrect = Number(userAnswer) === Number(snapshot.correctAnswer);
         } else if (snapshot.type === 'true_false') {
             isCorrect = String(userAnswer).toLowerCase() === String(snapshot.correctAnswer).toLowerCase();
         } else if (snapshot.type === 'fill_in_blank') {
