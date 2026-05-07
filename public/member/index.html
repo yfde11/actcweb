@@ -424,6 +424,7 @@
                                                 @click="cancelMyEventRegistration(row.event.id)"
                                                 :disabled="eventRegCancellingId === row.event.id"
                                                 class="px-3 py-1.5 text-xs rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors">取消報名</button>
+                                        <span x-show="row.actions?.canDownloadCertificate === false" class="text-xs text-gray-400">證書未開放</span>
                                     </div>
                                 </div>
                             </div>
@@ -1328,16 +1329,18 @@
                     if (p.get('verify') === 'invalid') this.verifyMsg = '驗證連結無效或已過期。';
                     this.resetTokenFromUrl = p.get('resetToken') || '';
                     if (this.token) await this.loadMe();
-                    const h = window.location.hash;
+                    const h = (window.location.hash || '').toLowerCase();
                     if (h === '#account') this.activeTab = 'account';
                     else if (h === '#my-registrations') this.activeTab = 'events';
                     else if (h === '#exams') this.activeTab = 'exams';
+                    else if (h === '#workgroups-panel') this.activeTab = 'account';
                     this.scrollToHashTarget();
                     window.addEventListener('hashchange', () => {
-                        const hash = window.location.hash;
+                        const hash = (window.location.hash || '').toLowerCase();
                         if (hash === '#account') this.activeTab = 'account';
                         else if (hash === '#my-registrations') this.activeTab = 'events';
                         else if (hash === '#exams') this.activeTab = 'exams';
+                        else if (hash === '#workgroups-panel') this.activeTab = 'account';
                         this.scrollToHashTarget();
                     });
                     window.addEventListener('actc-member-logout', () => {
