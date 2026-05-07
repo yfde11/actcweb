@@ -82,7 +82,7 @@ router.post('/', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags
+            tags, requiresPurchase, price, currency
         } = req.body;
 
         const examData = {
@@ -90,7 +90,7 @@ router.post('/', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags,
+            tags, requiresPurchase, price, currency,
             createdBy: req.user.userId
         };
 
@@ -158,7 +158,7 @@ router.put('/:id', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags,
+            tags, requiresPurchase, price, currency,
             status: requestedStatus
         } = req.body;
 
@@ -167,7 +167,7 @@ router.put('/:id', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags
+            tags, requiresPurchase, price, currency
         };
 
         // Remove undefined keys so existing values are not overwritten with undefined

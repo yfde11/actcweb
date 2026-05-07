@@ -212,6 +212,10 @@
                        class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
                         <span>證書管理</span>
                     </a>
+                    <a href="/admin/exam-access"
+                       class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span>考試授權管理</span>
+                    </a>
                     <a @click="currentTab = 'my-password'"
                        :class="currentTab === 'my-password' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                        class="flex items-center px-6 py-3 cursor-pointer">
@@ -1340,6 +1344,34 @@
                                             <label class="block text-sm font-medium text-gray-700 mb-1">標籤（逗號分隔，選填）</label>
                                             <input type="text" x-model="formData.tags" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：CISSP, 資訊安全, 模擬考" />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section: 付費設定 -->
+                                <div class="border rounded-lg p-4">
+                                    <p class="font-medium text-sm text-gray-700 mb-3 pb-1 border-b">付費設定</p>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" x-model="formData.requiresPurchase" class="rounded" />
+                                            <span class="text-sm text-gray-700">需要購買才能參加</span>
+                                        </label>
+                                        <div x-show="formData.requiresPurchase" class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">定價</label>
+                                                <input type="number" x-model.number="formData.price" min="0" step="1"
+                                                       class="w-full border rounded px-3 py-2 text-sm" placeholder="0" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">幣別</label>
+                                                <select x-model="formData.currency" class="w-full border rounded px-3 py-2 text-sm">
+                                                    <option value="TWD">TWD（新台幣）</option>
+                                                    <option value="USD">USD（美元）</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <p x-show="formData.requiresPurchase" class="text-xs text-amber-700 bg-amber-50 rounded p-2">
+                                            啟用後，未購買的會員將無法開始考試。可至「考試授權管理」手動授予特定會員存取權。
+                                        </p>
                                     </div>
                                 </div>
 
@@ -2635,7 +2667,10 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     endDate: '',
                     tags: '',
                     source: 'manual',
-                    domainRatio: {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11}
+                    domainRatio: {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11},
+                    requiresPurchase: false,
+                    price: 0,
+                    currency: 'TWD'
                 },
                 bankStats: null,
                 domainList: [
@@ -2782,7 +2817,10 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         endDate: toDatetimeLocal(exam.endDate),
                         tags: Array.isArray(exam.tags) ? exam.tags.join(', ') : (exam.tags || ''),
                         source: exam.source || 'manual',
-                        domainRatio
+                        domainRatio,
+                        requiresPurchase: exam.requiresPurchase || false,
+                        price: exam.price || 0,
+                        currency: exam.currency || 'TWD'
                     };
                     if (exam.source === 'question_bank') this.loadBankStats();
                     this.showCreateModal = true;

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>考試授權管理 | ACTC 後台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { 'actc-orange': '#f97316' } } }
+        };
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="examAccessAdmin()" x-init="init()">
+
+<!-- Header -->
+<div class="bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <a href="/admin" class="text-gray-500 hover:text-gray-700 text-sm">← 返回後台</a>
+        <span class="text-gray-300">|</span>
+        <h1 class="text-lg font-semibold text-gray-900">考試授權管理</h1>
+    </div>
+    <div class="flex items-center gap-2">
+        <button @click="showGrantModal = true"
+                class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+            手動授予授權
+        </button>
+    </div>
+</div>
+
+<!-- Filter bar -->
+<div class="bg-white border-b px-6 py-3 flex flex-wrap gap-3 items-end">
+    <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">考試 ID</label>
+        <input type="text" x-model="filterExamId" placeholder="貼上考試 ObjectId"
+               class="border rounded px-3 py-1.5 text-sm w-60" />
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">使用者 ID</label>
+        <input type="text" x-model="filterUserId" placeholder="貼上使用者 ObjectId"
+               class="border rounded px-3 py-1.5 text-sm w-60" />
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">狀態</label>
+        <select x-model="filterRevoked" class="border rounded px-3 py-1.5 text-sm">
+            <option value="">全部</option>
+            <option value="false">有效</option>
+            <option value="true">已撤銷</option>
+        </select>
+    </div>
+    <button @click="resetAndLoad()" class="px-4 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">
+        篩選
+    </button>
+    <button @click="filterExamId=''; filterUserId=''; filterRevoked=''; resetAndLoad()"
+            class="px-4 py-1.5 border text-gray-600 rounded text-sm hover:bg-gray-50">
+        重置
+    </button>
+</div>
+
+<!-- Main content -->
+<div class="max-w-7xl mx-auto px-6 py-6">
+
+    <!-- Error -->
+    <div x-show="error" class="bg-red-50 border border-red-200 rounded p-3 mb-4 text-sm text-red-700" x-text="error"></div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-lg border overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用者</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">考試</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">授權來源</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">到期日</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">備註</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <template x-for="rec in records" :key="rec._id">
+                    <tr :class="rec.isRevoked ? 'bg-red-50 opacity-70' : ''">
+                        <td class="px-4 py-3">
+                            <div class="font-medium" x-text="rec.user?.fullName || rec.user?.username || '—'"></div>
+                            <div class="text-xs text-gray-400" x-text="rec.user?.email || ''"></div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div x-text="rec.exam?.title || '—'"></div>
+                            <div x-show="rec.exam?.requiresPurchase" class="text-xs text-amber-600">
+                                付費考試 <span x-show="rec.exam?.price > 0" x-text="rec.exam?.currency + ' ' + rec.exam?.price"></span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded text-xs font-medium"
+                                  :class="{
+                                      'bg-blue-100 text-blue-700': rec.grantedBy === 'admin_manual',
+                                      'bg-green-100 text-green-700': rec.grantedBy === 'payment',
+                                      'bg-gray-100 text-gray-600': rec.grantedBy === 'free_exam'
+                                  }"
+                                  x-text="{ admin_manual: '管理員手動', payment: '付款', free_exam: '免費' }[rec.grantedBy] || rec.grantedBy">
+                            </span>
+                            <div class="text-xs text-gray-400 mt-0.5"
+                                 x-show="rec.grantedByUser"
+                                 x-text="'by ' + (rec.grantedByUser?.username || '')"></div>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <span x-show="!rec.expiresAt" class="text-gray-500">永久</span>
+                            <span x-show="rec.expiresAt"
+                                  :class="rec.expiresAt && new Date(rec.expiresAt) < new Date() && !rec.isRevoked ? 'text-red-600 font-medium' : 'text-gray-700'"
+                                  x-text="rec.expiresAt ? new Date(rec.expiresAt).toLocaleDateString('zh-TW') : ''"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span x-show="rec.isRevoked" class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">已撤銷</span>
+                            <span x-show="!rec.isRevoked && rec.expiresAt && new Date(rec.expiresAt) < new Date()"
+                                  class="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">已到期</span>
+                            <span x-show="!rec.isRevoked && (!rec.expiresAt || new Date(rec.expiresAt) >= new Date())"
+                                  class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">有效</span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" x-text="rec.adminNote || rec.revokeReason || '—'"></td>
+                        <td class="px-4 py-3">
+                            <button x-show="!rec.isRevoked"
+                                    @click="openRevokeModal(rec)"
+                                    class="text-red-600 hover:underline text-xs">撤銷</button>
+                            <span x-show="rec.isRevoked" class="text-gray-400 text-xs" x-text="rec.revokedAt ? new Date(rec.revokedAt).toLocaleDateString('zh-TW') : ''"></span>
+                        </td>
+                    </tr>
+                </template>
+                <tr x-show="records.length === 0 && !loading">
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-400 text-sm">尚無授權記錄</td>
+                </tr>
+                <tr x-show="loading">
+                    <td colspan="7" class="px-4 py-6 text-center text-gray-400 text-sm">載入中…</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div x-show="hasMore" class="mt-4 text-center">
+        <button @click="loadMore()" :disabled="loading"
+                class="px-6 py-2 border rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+            載入更多
+        </button>
+    </div>
+</div>
+
+<!-- Grant Modal -->
+<div x-show="showGrantModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+     @keydown.escape.window="showGrantModal = false">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-lg font-semibold mb-4">手動授予考試授權</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">使用者 ID <span class="text-red-500">*</span></label>
+                <input type="text" x-model="grantForm.userId" class="w-full border rounded px-3 py-2 text-sm"
+                       placeholder="使用者的 MongoDB ObjectId" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">考試 ID <span class="text-red-500">*</span></label>
+                <input type="text" x-model="grantForm.examId" class="w-full border rounded px-3 py-2 text-sm"
+                       placeholder="考試的 MongoDB ObjectId" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">到期日（留空預設 +1 年）</label>
+                <input type="date" x-model="grantForm.expiresAt" class="w-full border rounded px-3 py-2 text-sm" />
+                <p class="text-xs text-gray-500 mt-1">留空 = 自動設為今日起 1 年後；填入日期 = 指定到期日；設為永久請填入 "永久" 並留意欄位說明</p>
+            </div>
+            <div>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" x-model="grantForm.permanent" class="rounded" />
+                    <span class="text-sm text-gray-700">永久有效（覆蓋上方到期日）</span>
+                </label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">管理備註（選填）</label>
+                <input type="text" x-model="grantForm.adminNote" class="w-full border rounded px-3 py-2 text-sm"
+                       placeholder="例：研討會贈票、補償授權…" />
+            </div>
+        </div>
+        <div x-show="grantError" class="mt-3 text-sm text-red-600" x-text="grantError"></div>
+        <div class="mt-6 flex gap-3 justify-end">
+            <button @click="showGrantModal = false; resetGrantForm()"
+                    class="px-4 py-2 border rounded text-sm text-gray-600 hover:bg-gray-50">取消</button>
+            <button @click="submitGrant()" :disabled="grantLoading"
+                    class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+                <span x-text="grantLoading ? '授予中…' : '授予授權'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Revoke Modal -->
+<div x-show="showRevokeModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+     @keydown.escape.window="showRevokeModal = false">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-lg font-semibold mb-2">撤銷考試授權</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            確定要撤銷 <strong x-text="revokeTarget?.user?.fullName || revokeTarget?.user?.username"></strong>
+            對「<strong x-text="revokeTarget?.exam?.title"></strong>」的授權？
+        </p>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">撤銷原因（選填）</label>
+            <input type="text" x-model="revokeReason" class="w-full border rounded px-3 py-2 text-sm"
+                   placeholder="例：退款、資格不符…" />
+        </div>
+        <div x-show="revokeError" class="mt-3 text-sm text-red-600" x-text="revokeError"></div>
+        <div class="mt-6 flex gap-3 justify-end">
+            <button @click="showRevokeModal = false; revokeTarget = null; revokeReason = ''"
+                    class="px-4 py-2 border rounded text-sm text-gray-600 hover:bg-gray-50">取消</button>
+            <button @click="submitRevoke()" :disabled="revokeLoading"
+                    class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
+                <span x-text="revokeLoading ? '撤銷中…' : '確認撤銷'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function examAccessAdmin() {
+    return {
+        records: [],
+        loading: false,
+        error: null,
+        hasMore: false,
+        nextCursor: null,
+
+        filterExamId: '',
+        filterUserId: '',
+        filterRevoked: '',
+
+        showGrantModal: false,
+        grantForm: { userId: '', examId: '', expiresAt: '', permanent: false, adminNote: '' },
+        grantLoading: false,
+        grantError: null,
+
+        showRevokeModal: false,
+        revokeTarget: null,
+        revokeReason: '',
+        revokeLoading: false,
+        revokeError: null,
+
+        async init() {
+            const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+            if (!token) { window.location.href = '/admin'; return; }
+            await this.loadRecords();
+        },
+
+        getToken() {
+            return localStorage.getItem('adminToken') || localStorage.getItem('token');
+        },
+
+        buildQuery(cursor) {
+            const p = new URLSearchParams({ limit: 30 });
+            if (this.filterExamId.trim()) p.set('examId', this.filterExamId.trim());
+            if (this.filterUserId.trim()) p.set('userId', this.filterUserId.trim());
+            if (this.filterRevoked !== '') p.set('isRevoked', this.filterRevoked);
+            if (cursor) p.set('cursor', cursor);
+            return p.toString();
+        },
+
+        async loadRecords() {
+            this.loading = true;
+            this.error = null;
+            try {
+                const res = await fetch(`/api/admin/exam-access?${this.buildQuery()}`, {
+                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                });
+                if (res.status === 401) { window.location.href = '/admin'; return; }
+                if (!res.ok) throw new Error((await res.json()).error?.message || '載入失敗');
+                const { data, pagination } = await res.json();
+                this.records = data;
+                this.hasMore = pagination.hasMore;
+                this.nextCursor = pagination.nextCursor;
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadMore() {
+            if (!this.hasMore || this.loading) return;
+            this.loading = true;
+            try {
+                const res = await fetch(`/api/admin/exam-access?${this.buildQuery(this.nextCursor)}`, {
+                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                });
+                const { data, pagination } = await res.json();
+                this.records.push(...data);
+                this.hasMore = pagination.hasMore;
+                this.nextCursor = pagination.nextCursor;
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        resetAndLoad() {
+            this.nextCursor = null;
+            this.loadRecords();
+        },
+
+        resetGrantForm() {
+            this.grantForm = { userId: '', examId: '', expiresAt: '', permanent: false, adminNote: '' };
+            this.grantError = null;
+        },
+
+        async submitGrant() {
+            this.grantError = null;
+            if (!this.grantForm.userId.trim() || !this.grantForm.examId.trim()) {
+                this.grantError = '使用者 ID 和考試 ID 為必填';
+                return;
+            }
+            this.grantLoading = true;
+            try {
+                const body = {
+                    userId: this.grantForm.userId.trim(),
+                    examId: this.grantForm.examId.trim(),
+                    adminNote: this.grantForm.adminNote.trim() || undefined
+                };
+                if (this.grantForm.permanent) {
+                    body.expiresAt = null;
+                } else if (this.grantForm.expiresAt) {
+                    body.expiresAt = this.grantForm.expiresAt;
+                }
+                // 未填且非永久 → 不傳，後端預設 +1 年
+
+                const res = await fetch('/api/admin/exam-access/grant', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    this.grantError = err.error?.message || '授予失敗';
+                    return;
+                }
+                this.showGrantModal = false;
+                this.resetGrantForm();
+                await this.loadRecords();
+            } catch (e) {
+                this.grantError = e.message;
+            } finally {
+                this.grantLoading = false;
+            }
+        },
+
+        openRevokeModal(rec) {
+            this.revokeTarget = rec;
+            this.revokeReason = '';
+            this.revokeError = null;
+            this.showRevokeModal = true;
+        },
+
+        async submitRevoke() {
+            this.revokeError = null;
+            this.revokeLoading = true;
+            try {
+                const res = await fetch(`/api/admin/exam-access/${this.revokeTarget._id}/revoke`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: this.revokeReason.trim() || undefined })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    this.revokeError = err.error?.message || '撤銷失敗';
+                    return;
+                }
+                this.showRevokeModal = false;
+                this.revokeTarget = null;
+                await this.loadRecords();
+            } catch (e) {
+                this.revokeError = e.message;
+            } finally {
+                this.revokeLoading = false;
+            }
+        }
+    };
+}
+</script>
+</body>
+</html>
