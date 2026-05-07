@@ -93,6 +93,35 @@
         </div>
     </nav>
 
+    <!-- 會員分頁導覽（登入後顯示） -->
+    <div x-show="token" x-cloak class="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4">
+            <nav class="flex gap-0 -mb-px overflow-x-auto" aria-label="會員專區導覽">
+                <button @click="activeTab='overview'"
+                        :class="activeTab==='overview' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-house mr-1.5"></i>總覽
+                </button>
+                <button @click="activeTab='account'"
+                        :class="activeTab==='account' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-user-gear mr-1.5"></i>帳號設定
+                </button>
+                <button @click="activeTab='events'"
+                        :class="activeTab==='events' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-calendar-days mr-1.5"></i>我的活動
+                    <span x-show="activeEventRegs.length > 0" class="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-actc-orange text-white text-xs" x-text="activeEventRegs.length"></span>
+                </button>
+                <button @click="activeTab='exams'"
+                        :class="activeTab==='exams' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-graduation-cap mr-1.5"></i>考試與證書
+                </button>
+            </nav>
+        </div>
+    </div>
+
     <main class="max-w-5xl mx-auto px-4 py-8">
         <div x-show="verifyMsg" class="mb-4 p-4 rounded bg-blue-50 text-blue-800" x-text="verifyMsg"></div>
 
@@ -111,21 +140,8 @@
                 </form>
             </div>
             <div class="grid md:grid-cols-2 gap-8">
-            <div id="register" class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">註冊</h2>
-                <form class="space-y-3" @submit.prevent="register" novalidate>
-                    <input x-model="reg.username" autocomplete="username" placeholder="使用者名稱（至少3字）" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名（選填）" class="w-full border rounded px-3 py-2" />
-                    <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
-                    <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
-                        <span x-text="registerSending ? '送出中…' : '註冊'"></span>
-                    </button>
-                </form>
-            </div>
-            <div id="login" class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">登入</h2>
+            <div id="login" class="bg-white p-6 rounded-lg shadow border-l-4 border-actc-orange">
+                <h2 class="text-xl font-bold mb-4">登入會員</h2>
                 <form class="space-y-3" @submit.prevent="login" novalidate>
                     <input x-model="loginForm.username" autocomplete="username" placeholder="使用者名稱或 Email" class="w-full border rounded px-3 py-2" />
                     <input x-model="loginForm.password" type="password" autocomplete="current-password" placeholder="密碼" class="w-full border rounded px-3 py-2" />
@@ -149,144 +165,317 @@
                     <button type="submit" class="px-3 py-2 bg-gray-200 rounded text-sm">重寄</button>
                 </form>
             </div>
+            <div id="register" class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-1">建立帳號</h2>
+                <p class="text-sm text-gray-500 mb-4">尚未有帳號？在此免費註冊。</p>
+                <form class="space-y-3" @submit.prevent="register" novalidate>
+                    <input x-model="reg.username" autocomplete="username" placeholder="使用者名稱（至少3字）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名（選填）" class="w-full border rounded px-3 py-2" />
+                    <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="registerSending ? '送出中…' : '註冊'"></span>
+                    </button>
+                </form>
+            </div>
             </div>
         </div>
 
         <!-- 已登入 -->
         <div id="account" x-show="token" class="space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-2">帳號狀態</h2>
-                <p class="text-sm text-gray-600">信箱驗證：<span class="font-medium" x-text="me.emailVerified ? '已完成' : '未完成（部分功能受限）'"></span></p>
-                <p class="text-sm text-gray-600">會員審核：<span class="font-medium" x-text="statusLabel(me.membershipStatus)"></span></p>
-                <p class="text-xs text-gray-500 mt-3 leading-relaxed border-t border-gray-100 pt-3">
-                    管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-700">不會</strong>自動變成「已核准」會員。
-                    最新消息與活動內容由管理員於管理後台維護。
-                </p>
-                <a href="/admin" x-show="token && me.role === 'admin'" class="inline-flex items-center mt-3 px-3 py-2 rounded bg-gray-900 text-white text-sm hover:bg-black">
-                    前往管理後台
-                </a>
-                <button type="button" @click="loadMe()" class="mt-3 text-sm text-actc-orange hover:underline">重新整理狀態</button>
-                <span class="text-xs text-gray-400 ml-2">（管理員已核准後若畫面未更新，請按此或重新登入）</span>
-                <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
-                    <button @click="applyMembership" class="mt-3 px-4 py-2 bg-orange-600 text-white rounded text-sm">申請成為會員</button>
-                </template>
+
+            <!-- 總覽 tab -->
+            <div x-show="activeTab === 'overview'" class="space-y-6">
+                <!-- 歡迎 banner -->
+                <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-xl p-5 flex items-center gap-4">
+                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-actc-orange/10 flex items-center justify-center">
+                        <i class="fa-solid fa-user-circle text-actc-orange text-3xl"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-lg font-bold text-gray-900">歡迎回來，<span x-text="me.profile?.fullName || me.username || me.email || '會員'"></span>！</h2>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="me.emailVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
+                                <i :class="me.emailVerified ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" class="text-xs"></i>
+                                <span x-text="me.emailVerified ? '信箱已驗證' : '信箱未驗證'"></span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="me.membershipStatus === 'approved' ? 'bg-blue-100 text-blue-700' : me.membershipStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'">
+                                <span x-text="statusLabel(me.membershipStatus)"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <a href="/admin" x-show="me.role === 'admin'" class="flex-shrink-0 px-3 py-1.5 rounded bg-gray-900 text-white text-xs hover:bg-black">管理後台</a>
+                </div>
+
+                <!-- 快速行動卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 帳號狀態 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-gray-700">
+                            <i class="fa-solid fa-shield-halved text-actc-orange"></i>
+                            <h3 class="font-semibold text-sm">帳號狀態</h3>
+                        </div>
+                        <div class="space-y-1.5 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">信箱驗證</span>
+                                <span :class="me.emailVerified ? 'text-green-600' : 'text-amber-600'" x-text="me.emailVerified ? '已完成 ✓' : '未完成'"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">會員資格</span>
+                                <span class="font-medium text-gray-800" x-text="statusLabel(me.membershipStatus)"></span>
+                            </div>
+                        </div>
+                        <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
+                            <button @click="applyMembership" class="w-full mt-1 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">申請成為會員</button>
+                        </template>
+                        <button type="button" @click="activeTab='account'" class="w-full text-xs text-actc-orange hover:underline text-left">前往帳號設定 →</button>
+                    </div>
+
+                    <!-- 我的活動 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-gray-700">
+                            <i class="fa-solid fa-calendar-days text-actc-orange"></i>
+                            <h3 class="font-semibold text-sm">我的活動</h3>
+                        </div>
+                        <div x-show="eventRegsLoading" class="space-y-2 animate-pulse">
+                            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                        <div x-show="!eventRegsLoading" class="text-sm">
+                            <template x-if="activeEventRegs.length === 0">
+                                <p class="text-gray-400 text-xs">尚無進行中的活動報名。<br><a href="/#events" class="text-actc-orange hover:underline">瀏覽活動</a></p>
+                            </template>
+                            <template x-if="activeEventRegs.length > 0">
+                                <div>
+                                    <p class="text-2xl font-bold text-gray-900" x-text="activeEventRegs.length"></p>
+                                    <p class="text-gray-500 text-xs mt-0.5">筆進行中報名</p>
+                                    <p class="text-xs text-gray-700 mt-2 truncate" x-text="activeEventRegs[0]?.event?.title || ''"></p>
+                                </div>
+                            </template>
+                        </div>
+                        <button type="button" @click="activeTab='events'" class="w-full text-xs text-actc-orange hover:underline text-left">查看全部活動 →</button>
+                    </div>
+
+                    <!-- 考試 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-gray-700">
+                            <i class="fa-solid fa-graduation-cap text-actc-orange"></i>
+                            <h3 class="font-semibold text-sm">考試與證書</h3>
+                        </div>
+                        <div class="text-sm">
+                            <p class="text-gray-500 text-xs">前往考試專區查看可報考考試與您的證書紀錄。</p>
+                        </div>
+                        <button type="button" @click="activeTab='exams'" class="w-full text-xs text-actc-orange hover:underline text-left">前往考試專區 →</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">個人資料</h2>
-                <form class="space-y-3 max-w-md" @submit.prevent="saveProfile(false)">
-                    <div><label class="text-sm text-gray-600">Email</label><p class="font-mono text-sm" x-text="me.email || '-'"></p></div>
-                    <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="姓名" class="w-full border rounded px-3 py-2" />
-                    <input x-model="profile.phone" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="電話（選填）" class="w-full border rounded px-3 py-2" />
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="checkbox" x-model="profile.emailSubscribed" @change="saveProfile(true)" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
-                    </label>
-                    <p class="text-sm min-h-[1.25rem]" :class="profileSending ? 'text-gray-500' : (profileOk ? 'text-green-600' : 'text-red-600')" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
-                    <button type="submit" :disabled="profileSending" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed">
-                        <span x-text="profileSending ? '儲存中…' : '立即同步'"></span>
+            <!-- 帳號設定 tab -->
+            <div x-show="activeTab === 'account'" class="space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-actc-orange text-base"></i>帳號狀態
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-4">
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">信箱驗證</p>
+                            <p class="font-medium" :class="me.emailVerified ? 'text-green-700' : 'text-amber-600'" x-text="me.emailVerified ? '已完成 ✓' : '未完成（部分功能受限）'"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">會員審核</p>
+                            <p class="font-medium text-gray-800" x-text="statusLabel(me.membershipStatus)"></p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
+                        管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-600">不會</strong>自動變成「已核准」會員。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <a href="/admin" x-show="me.role === 'admin'" class="inline-flex items-center px-3 py-1.5 rounded bg-gray-900 text-white text-xs hover:bg-black">前往管理後台</a>
+                        <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
+                            <button @click="applyMembership" class="px-3 py-1.5 bg-orange-600 text-white rounded text-xs hover:bg-orange-700">申請成為會員</button>
+                        </template>
+                        <button type="button" @click="loadMe()" class="px-3 py-1.5 border border-gray-200 text-gray-600 rounded text-xs hover:bg-gray-50">
+                            <i class="fa-solid fa-rotate-right mr-1"></i>重新整理狀態
+                        </button>
+                    </div>
+
+                    <div class="border-t border-gray-100 mt-5 pt-5">
+                        <h3 class="text-base font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-id-card text-actc-orange text-sm"></i>個人資料
+                        </h3>
+                        <form class="space-y-3 max-w-md" @submit.prevent="saveProfile(false)">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Email</label>
+                                <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-700" x-text="me.email || '-'"></p>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">姓名</label>
+                                <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="請輸入姓名" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">電話（選填）</label>
+                                <input x-model="profile.phone" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="電話號碼" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
+                            </div>
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" x-model="profile.emailSubscribed" @change="saveProfile(true)" class="rounded" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
+                            </label>
+                            <p class="text-sm min-h-[1.25rem]" :class="profileSending ? 'text-gray-500' : (profileOk ? 'text-green-600' : 'text-red-600')" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
+                            <button type="submit" :disabled="profileSending" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed">
+                                <span x-text="profileSending ? '儲存中…' : '立即同步'"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 工作小組（已核准會員才顯示） -->
+                <div id="workgroups-panel" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 scroll-mt-24" x-show="me.membershipStatus === 'approved'">
+                    <h3 class="text-base font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-people-group text-actc-orange text-sm"></i>工作小組
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups" class="text-actc-orange underline">工作小組介紹</a>。</p>
+                    <div class="space-y-3 mb-4" x-show="wgCatalog.length">
+                        <template x-for="g in wgCatalog" :key="g._id">
+                            <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">
+                                <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" @change="saveWorkingGroups(true)" />
+                                <span>
+                                    <span class="font-medium text-gray-900" x-text="g.title"></span>
+                                    <span class="block text-sm text-gray-600 mt-0.5" x-text="g.description"></span>
+                                </span>
+                            </label>
+                        </template>
+                    </div>
+                    <p x-show="wgCatalog.length === 0" class="text-sm text-gray-500">目前無可加入的工作小組。</p>
+                    <p class="text-sm min-h-[1.25rem]" :class="wgPanelSaving ? 'text-gray-500' : (wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600')" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
+                    <button type="button" @click="saveWorkingGroups(false)" :disabled="wgPanelSaving" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
+                        <span x-text="wgPanelSaving ? '儲存中…' : '重試儲存'"></span>
                     </button>
-                </form>
+                </div>
             </div>
 
-            <div id="my-registrations" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token">
-                <h2 class="text-xl font-bold mb-2">我的活動中心</h2>
-                <p class="text-sm text-gray-600 mb-4">顯示您的活動報名、付款、出席與教材/問卷操作。MVP 付款為人工審核流程。</p>
-                <p x-show="eventRegsLoading" class="text-sm text-gray-500">載入中…</p>
-                <p x-show="!eventRegsLoading && eventRegs.length === 0" class="text-sm text-gray-500">尚無報名紀錄。</p>
-                <div x-show="!eventRegsLoading && activeEventRegs.length" class="overflow-x-auto border border-gray-200 rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">活動</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">時間</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">報名狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">出席狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <template x-for="row in activeEventRegs" :key="row.registrationId">
-                                <tr :id="'event-reg-row-' + row.event.id" :class="highlightedEventId === String(row.event.id) ? 'bg-yellow-50' : ''">
-                                    <td class="px-3 py-2">
-                                        <div class="font-medium text-gray-900" x-text="row.event.title"></div>
-                                        <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-gray-700" x-text="formatEventDate(row.event.date)"></td>
-                                    <td class="px-3 py-2">
-                                        <span x-text="registrationStatusLabel(row.status)"></span>
-                                        <span x-show="row.status === 'waitlisted' && row.waitlistPosition" class="text-amber-800" x-text="'（第 ' + row.waitlistPosition + ' 號）'"></span>
-                                    </td>
-                                    <td class="px-3 py-2" x-text="paymentStatusLabel(row.paymentStatus || 'none')"></td>
-                                    <td class="px-3 py-2" x-text="attendanceStatusLabel(row.attendanceStatus || 'not_checked_in')"></td>
-                                    <td class="px-3 py-2 whitespace-nowrap space-x-2">
-                                        <button type="button" @click="openEventDetailModal(row)" class="text-sm text-actc-orange hover:underline">查看活動</button>
+            <!-- 我的活動 tab -->
+            <div id="my-registrations" class="scroll-mt-24" x-show="activeTab === 'events'">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="text-lg font-bold mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-actc-orange text-base"></i>我的活動中心
+                    </h2>
+                    <p class="text-sm text-gray-500 mb-5">活動報名、付款、出席與教材/問卷操作。</p>
+
+                    <!-- Loading skeleton -->
+                    <div x-show="eventRegsLoading" class="space-y-3 animate-pulse">
+                        <div class="h-20 bg-gray-100 rounded-xl"></div>
+                        <div class="h-20 bg-gray-100 rounded-xl"></div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div x-show="!eventRegsLoading && eventRegs.length === 0" class="text-center py-10">
+                        <i class="fa-regular fa-calendar text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500 text-sm">尚無報名紀錄。</p>
+                        <a href="/#events" class="mt-3 inline-block text-sm text-actc-orange hover:underline">瀏覽活動</a>
+                    </div>
+
+                    <!-- Active registrations — card layout -->
+                    <div x-show="!eventRegsLoading && activeEventRegs.length > 0" class="space-y-3">
+                        <template x-for="row in activeEventRegs" :key="row.registrationId">
+                            <div :id="'event-reg-row-' + row.event.id"
+                                 class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+                                 :class="highlightedEventId === String(row.event.id) ? 'bg-yellow-50 border-yellow-300' : 'bg-white'">
+                                <div class="flex flex-col md:flex-row md:items-start md:gap-4">
+                                    <!-- 左：活動資訊 -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <p class="font-semibold text-gray-900 text-sm leading-snug" x-text="row.event.title"></p>
+                                            <p class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0" x-text="formatEventDate(row.event.date)"></p>
+                                        </div>
+                                        <p x-show="row.event.location" class="text-xs text-gray-400 mt-0.5 truncate" x-text="row.event.location"></p>
+                                        <!-- 狀態 pills -->
+                                        <div class="flex flex-wrap gap-1.5 mt-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                                報名：<span x-text="registrationStatusLabel(row.status)"></span>
+                                                <span x-show="row.status === 'waitlisted' && row.waitlistPosition" x-text="'（第 ' + row.waitlistPosition + ' 號）'"></span>
+                                            </span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700">
+                                                付款：<span x-text="paymentStatusLabel(row.paymentStatus || 'none')"></span>
+                                            </span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                                出席：<span x-text="attendanceStatusLabel(row.attendanceStatus || 'not_checked_in')"></span>
+                                            </span>
+                                        </div>
+                                        <p x-show="Number(row.amountDue || 0) > 0 && row.paymentStatus === 'payment_pending'" class="text-xs text-orange-700 mt-1.5 font-medium">⚠ 請先上傳後五碼與繳費憑證</p>
+                                    </div>
+                                    <!-- 右：操作 -->
+                                    <div class="flex flex-wrap gap-2 mt-3 md:mt-0 md:flex-col md:items-end md:flex-shrink-0">
+                                        <button type="button" @click="openEventDetailModal(row)" class="px-3 py-1.5 text-xs rounded-lg border border-actc-orange text-actc-orange hover:bg-orange-50 transition-colors">查看活動</button>
+                                        <button type="button"
+                                                x-show="row.actions?.canSubmitPayment"
+                                                @click="openPaymentModal(row)"
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-blue-500 text-blue-700 hover:bg-blue-50 transition-colors">上傳付款</button>
+                                        <button type="button"
+                                                x-show="row.actions?.canDownloadMaterials"
+                                                @click="openMaterialsModal(row)"
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-emerald-500 text-emerald-700 hover:bg-emerald-50 transition-colors">下載資料</button>
+                                        <button type="button"
+                                                x-show="row.actions?.canFillSurvey"
+                                                @click="openSurveyModal(row)"
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-purple-500 text-purple-700 hover:bg-purple-50 transition-colors">填寫問卷</button>
                                         <button type="button"
                                                 x-show="row.actions?.canCancel"
                                                 @click="cancelMyEventRegistration(row.event.id)"
                                                 :disabled="eventRegCancellingId === row.event.id"
-                                                class="text-sm text-red-600 hover:underline disabled:opacity-50">取消</button>
-                                        <button type="button"
-                                                x-show="row.actions?.canSubmitPayment"
-                                                @click="openPaymentModal(row)"
-                                                class="text-sm text-blue-700 hover:underline">上傳付款</button>
-                                        <button type="button"
-                                                x-show="row.actions?.canDownloadMaterials"
-                                                @click="openMaterialsModal(row)"
-                                                class="text-sm text-emerald-700 hover:underline">下載資料</button>
-                                        <button type="button"
-                                                x-show="row.actions?.canFillSurvey"
-                                                @click="openSurveyModal(row)"
-                                                class="text-sm text-purple-700 hover:underline">填寫問卷</button>
-                                        <span x-show="!row.actions?.canDownloadCertificate" class="text-xs text-gray-400">證書未開放</span>
-                                        <span x-show="Number(row.amountDue || 0) > 0 && row.paymentStatus === 'payment_pending'" class="block text-xs text-orange-700 mt-1">請先上傳後五碼與繳費憑證</span>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <p x-show="!eventRegsLoading && !activeEventRegs.length && cancelledEventRegs.length" class="text-sm text-gray-500">
-                    目前沒有進行中的報名紀錄。
-                </p>
-                <div x-show="!eventRegsLoading && cancelledEventRegs.length" class="mt-5">
-                    <h3 class="text-base font-semibold text-gray-800 mb-2">已取消</h3>
-                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">活動</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">時間</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">報名狀態</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <template x-for="row in cancelledEventRegs" :key="'cancelled-' + row.registrationId">
-                                    <tr>
-                                        <td class="px-3 py-2">
-                                            <div class="font-medium text-gray-900" x-text="row.event.title"></div>
-                                            <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
-                                        </td>
-                                        <td class="px-3 py-2 whitespace-nowrap text-gray-700" x-text="formatEventDate(row.event.date)"></td>
-                                        <td class="px-3 py-2 text-gray-600" x-text="registrationStatusLabel(row.status)"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors">取消報名</button>
+                                        <span x-show="row.actions?.canDownloadCertificate === false" class="text-xs text-gray-400">證書未開放</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
+
+                    <p x-show="!eventRegsLoading && !activeEventRegs.length && cancelledEventRegs.length" class="text-sm text-gray-500 mt-2">目前沒有進行中的報名紀錄。</p>
+
+                    <!-- 已取消（可收合） -->
+                    <details x-show="!eventRegsLoading && cancelledEventRegs.length > 0" class="mt-5 group">
+                        <summary class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 select-none flex items-center gap-1.5">
+                            <i class="fa-solid fa-chevron-right text-xs transition-transform group-open:rotate-90"></i>
+                            已取消的報名（<span x-text="cancelledEventRegs.length"></span> 筆）
+                        </summary>
+                        <div class="mt-3 space-y-2">
+                            <template x-for="row in cancelledEventRegs" :key="'cancelled-' + row.registrationId">
+                                <div class="border border-gray-200 rounded-lg p-3 bg-gray-50 flex items-center justify-between gap-4">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium text-gray-700 truncate" x-text="row.event.title"></p>
+                                        <p class="text-xs text-gray-400 mt-0.5" x-text="formatEventDate(row.event.date)"></p>
+                                    </div>
+                                    <span class="text-xs text-gray-500 flex-shrink-0" x-text="registrationStatusLabel(row.status)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </details>
+
+                    <p class="text-sm text-red-600 mt-3 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
                 </div>
-                <p class="text-sm text-red-600 mt-2 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
             </div>
 
+            <!-- 考試與證書 tab -->
+            <div x-show="activeTab === 'exams'">
             <!-- 考試專區 -->
-            <div id="exams" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-data="examsTab()" x-init="init()">
-                    <div class="flex justify-between items-center mb-2">
-                        <h2 class="text-xl font-bold">考試專區</h2>
-                        <button @click="showCertificates = true; loadCertificates()" class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
-                            我的證書
+            <div id="exams" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 scroll-mt-24" x-data="examsTab()" x-init="init()">
+                    <div class="mb-5">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-actc-orange text-base"></i>考試與證書
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">參加考試、查看成績與下載證書</p>
+                    </div>
+                    <!-- 我的證書 — 頂部醒目入口 -->
+                    <div class="mb-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-green-800">我的證書</p>
+                            <p class="text-xs text-green-600 mt-0.5">查看及下載您的考試合格證書</p>
+                        </div>
+                        <button @click="showCertificates = true; loadCertificates()" class="flex-shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-certificate"></i>查看證書
                         </button>
                     </div>
-                    <p class="text-sm text-gray-600 mb-4">參加考試、查看成績與證書</p>
 
                     <!-- 證書列表 Modal -->
                     <div x-show="showCertificates" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -886,6 +1075,7 @@
                         </div>
                     </div>
             </div>
+            </div><!-- /考試與證書 tab -->
 
             <div x-show="showPaymentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                 <div class="bg-white rounded-lg shadow max-w-lg w-full p-6 space-y-3">
@@ -1056,27 +1246,6 @@
                 </div>
             </div>
 
-            <div id="workgroups-panel" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token && me.membershipStatus === 'approved'">
-                <h2 class="text-xl font-bold mb-2">工作小組</h2>
-                <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups" class="text-actc-orange underline">工作小組介紹</a>。</p>
-                <div class="space-y-3 mb-4" x-show="wgCatalog.length">
-                    <template x-for="g in wgCatalog" :key="g._id">
-                        <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">
-                            <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" @change="saveWorkingGroups(true)" />
-                            <span>
-                                <span class="font-medium text-gray-900" x-text="g.title"></span>
-                                <span class="block text-sm text-gray-600 mt-0.5" x-text="g.description"></span>
-                            </span>
-                        </label>
-                    </template>
-                </div>
-                <p x-show="token && me.membershipStatus === 'approved' && wgCatalog.length === 0" class="text-sm text-gray-500">目前無可加入的工作小組。</p>
-                <p class="text-sm min-h-[1.25rem]" :class="wgPanelSaving ? 'text-gray-500' : (wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600')" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
-                <button type="button" @click="saveWorkingGroups(false)" :disabled="wgPanelSaving" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
-                    <span x-text="wgPanelSaving ? '儲存中…' : '重試儲存'"></span>
-                </button>
-            </div>
-
         </div>
     </main>
 
@@ -1084,6 +1253,7 @@
         function memberApp() {
             return {
                 token: localStorage.getItem('memberToken') || '',
+                activeTab: 'overview',
                 me: {},
                 profile: { fullName: '', phone: '', emailSubscribed: true },
                 reg: { username: '', email: '', password: '', fullName: '' },
@@ -1159,8 +1329,20 @@
                     if (p.get('verify') === 'invalid') this.verifyMsg = '驗證連結無效或已過期。';
                     this.resetTokenFromUrl = p.get('resetToken') || '';
                     if (this.token) await this.loadMe();
+                    const h = (window.location.hash || '').toLowerCase();
+                    if (h === '#account') this.activeTab = 'account';
+                    else if (h === '#my-registrations') this.activeTab = 'events';
+                    else if (h === '#exams') this.activeTab = 'exams';
+                    else if (h === '#workgroups-panel') this.activeTab = 'account';
                     this.scrollToHashTarget();
-                    window.addEventListener('hashchange', () => this.scrollToHashTarget());
+                    window.addEventListener('hashchange', () => {
+                        const hash = (window.location.hash || '').toLowerCase();
+                        if (hash === '#account') this.activeTab = 'account';
+                        else if (hash === '#my-registrations') this.activeTab = 'events';
+                        else if (hash === '#exams') this.activeTab = 'exams';
+                        else if (hash === '#workgroups-panel') this.activeTab = 'account';
+                        this.scrollToHashTarget();
+                    });
                     window.addEventListener('actc-member-logout', () => {
                         this.logout();
                     });
