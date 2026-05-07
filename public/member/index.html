@@ -491,15 +491,45 @@
                                 <p x-show="!loadingCertificates && certificates.length === 0" class="text-sm text-gray-500">尚無證書。</p>
                                 <div x-show="!loadingCertificates && certificates.length > 0" class="space-y-3">
                                     <template x-for="cert in certificates" :key="cert._id">
-                                        <div class="border rounded p-4 flex justify-between items-center">
-                                            <div>
-                                                <p class="font-medium" x-text="cert.exam?.title || '考試'"></p>
-                                                <p class="text-xs text-gray-500">證書編號：<span x-text="cert.certificateNumber"></span></p>
-                                                <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString()"></span></p>
+                                        <div class="border rounded p-4"
+                                             :class="cert.isRevoked ? 'border-red-200 bg-red-50' : (cert.expiresAt && new Date(cert.expiresAt) < new Date() ? 'border-gray-200 bg-gray-50 opacity-70' : 'border-gray-200')">
+                                            <div class="flex justify-between items-start gap-3">
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <!-- certType badge -->
+                                                        <span :class="cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                                              class="px-1.5 py-0.5 text-xs rounded font-medium">
+                                                            <span x-text="cert.certType === 'course' ? '課程型' : '考試型'"></span>
+                                                        </span>
+                                                        <!-- status badge -->
+                                                        <span x-show="cert.isRevoked"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800 font-medium">已撤銷</span>
+                                                        <span x-show="!cert.isRevoked && cert.expiresAt && new Date(cert.expiresAt) < new Date()"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-gray-200 text-gray-600 font-medium">已過期</span>
+                                                        <span x-show="!cert.isRevoked && !(cert.expiresAt && new Date(cert.expiresAt) < new Date())"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-green-100 text-green-800 font-medium">有效</span>
+                                                    </div>
+                                                    <p class="font-medium text-sm"
+                                                       x-text="cert.certType === 'course' ? (cert.course?.courseName || '課程') : (cert.exam?.title || '考試')"></p>
+                                                    <p class="text-xs text-gray-500 mt-0.5">證書編號：<span x-text="cert.certificateNumber"></span></p>
+                                                    <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString('zh-TW')"></span></p>
+                                                    <p x-show="cert.expiresAt" class="text-xs text-gray-500">到期日：<span x-text="cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString('zh-TW') : ''"></span></p>
+                                                    <p x-show="cert.isRevoked && cert.revokeReason" class="text-xs text-red-600 mt-0.5">撤銷原因：<span x-text="cert.revokeReason"></span></p>
+                                                </div>
+                                                <div class="flex flex-col gap-2 shrink-0">
+                                                    <!-- 下載按鈕（未撤銷才顯示） -->
+                                                    <button x-show="!cert.isRevoked"
+                                                            @click="downloadCertificate(cert.certificateNumber)"
+                                                            class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                                                        下載
+                                                    </button>
+                                                    <!-- 複製驗證連結 -->
+                                                    <button @click="copyCertLink(cert.certificateNumber)"
+                                                            class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                                                        複製驗證連結
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <button @click="downloadCertificate(cert.certificateNumber)" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                                                下載
-                                            </button>
                                         </div>
                                     </template>
                                 </div>
@@ -622,15 +652,38 @@
                         <p x-show="!loading && availableExams.length === 0" class="text-sm text-gray-500">目前沒有可報考的考試。</p>
                         <div x-show="!loading && availableExams.length > 0" class="space-y-4">
                             <template x-for="exam in availableExams" :key="exam._id">
-                                <div class="border rounded-lg p-4 hover:bg-gray-50">
+                                <div class="border rounded-lg p-4 hover:bg-gray-50"
+                                     :class="exam.requiresPurchase && !exam.userAccess?.hasAccess ? 'bg-gray-50 border-gray-200' : ''">
                                     <div class="flex justify-between items-start">
                                         <div class="flex-1">
-                                            <h4 class="font-semibold text-gray-900" x-text="exam.title"></h4>
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <h4 class="font-semibold text-gray-900" x-text="exam.title"></h4>
+                                                <!-- 付費標籤 -->
+                                                <span x-show="exam.requiresPurchase && !exam.userAccess?.hasAccess"
+                                                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                                    🔒 需購買
+                                                </span>
+                                                <span x-show="exam.requiresPurchase && exam.userAccess?.hasAccess"
+                                                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                    ✓ 已授權
+                                                </span>
+                                            </div>
                                             <p class="text-sm text-gray-600 mt-1" x-text="exam.shortDescription || exam.description?.substring(0, 100) + '...'"></p>
-                                            <div class="flex gap-4 mt-2 text-xs text-gray-500">
+                                            <div class="flex gap-4 mt-2 text-xs text-gray-500 flex-wrap">
                                                 <span x-show="exam.timeLimit > 0">限時: <span x-text="exam.timeLimit"></span> 分鐘</span>
                                                 <span>通過分數: <span x-text="exam.passingScore"></span>%</span>
                                                 <span>題數: <span x-text="exam.questionsPerAttempt || exam.questionCount"></span></span>
+                                                <!-- 授權到期日 -->
+                                                <span x-show="exam.requiresPurchase && exam.userAccess?.hasAccess && exam.userAccess?.expiresAt"
+                                                      class="text-blue-600">
+                                                    授權至 <span x-text="new Date(exam.userAccess.expiresAt).toLocaleDateString('zh-TW')"></span>
+                                                </span>
+                                            </div>
+                                            <!-- 付費牆提示 -->
+                                            <div x-show="exam.requiresPurchase && !exam.userAccess?.hasAccess" class="mt-2 p-2 bg-amber-50 rounded text-xs text-amber-800">
+                                                <span x-show="exam.price > 0">定價：<span class="font-semibold" x-text="exam.currency + ' ' + exam.price.toLocaleString()"></span>｜</span>
+                                                <span x-show="exam.userAccess?.reason === 'ACCESS_EXPIRED'">您的授權已到期。</span>
+                                                <span x-show="exam.userAccess?.reason !== 'ACCESS_EXPIRED'">請聯絡協會取得考試授權。</span>
                                             </div>
                                             <!-- 用戶嘗試資訊 -->
                                             <div x-show="exam.userAttempts && exam.userAttempts.length > 0" class="mt-2">
@@ -651,26 +704,36 @@
                                             </div>
                                         </div>
                                         <div class="ml-4 flex flex-col gap-2">
-                                            <button x-show="exam.canStart.allowed && !exam.userAttempts?.some(a => a.status === 'in_progress')"
-                                                    @click="openRulesModal(exam)"
-                                                    :disabled="startingExam === exam._id"
-                                                    class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                                                <span x-text="startingExam === exam._id ? '開始中…' : '開始考試'"></span>
-                                            </button>
-                                            <button x-show="exam.userAttempts?.some(a => a.status === 'in_progress')"
-                                                    @click="resumeExam(exam._id, exam.userAttempts.find(a => a.status === 'in_progress')._id)"
-                                                    class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
-                                                繼續考試
-                                            </button>
-                                            <button x-show="exam.userAttempts?.filter(a => a.status === 'graded' || a.status === 'auto_submitted_cheating').length > 0"
-                                                    @click="toggleHistory(exam._id)"
-                                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50">
-                                                <span x-text="historyExamId === exam._id ? '收起歷史' : '查看歷史'"></span>
-                                            </button>
-                                            <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'MAX_ATTEMPTS_REACHED'"
-                                                  class="text-xs text-red-600">已達最大次數</span>
-                                            <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'COOLDOWN_ACTIVE'"
-                                                  class="text-xs text-amber-600">冷卻中，可於 <span x-text="new Date(exam.canStart.nextAttemptAt).toLocaleDateString()"></span> 重考</span>
+                                            <!-- 付費牆：未授權時顯示鎖定 -->
+                                            <div x-show="exam.requiresPurchase && !exam.userAccess?.hasAccess"
+                                                 class="px-4 py-2 bg-gray-200 text-gray-500 rounded text-sm text-center cursor-not-allowed">
+                                                🔒 未授權
+                                            </div>
+                                            <!-- 已授權或免費：正常操作按鈕 -->
+                                            <template x-if="!exam.requiresPurchase || exam.userAccess?.hasAccess">
+                                                <div class="flex flex-col gap-2">
+                                                    <button x-show="exam.canStart.allowed && !exam.userAttempts?.some(a => a.status === 'in_progress')"
+                                                            @click="openRulesModal(exam)"
+                                                            :disabled="startingExam === exam._id"
+                                                            class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+                                                        <span x-text="startingExam === exam._id ? '開始中…' : '開始考試'"></span>
+                                                    </button>
+                                                    <button x-show="exam.userAttempts?.some(a => a.status === 'in_progress')"
+                                                            @click="resumeExam(exam._id, exam.userAttempts.find(a => a.status === 'in_progress')._id)"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                                        繼續考試
+                                                    </button>
+                                                    <button x-show="exam.userAttempts?.filter(a => a.status === 'graded' || a.status === 'auto_submitted_cheating').length > 0"
+                                                            @click="toggleHistory(exam._id)"
+                                                            class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50">
+                                                        <span x-text="historyExamId === exam._id ? '收起歷史' : '查看歷史'"></span>
+                                                    </button>
+                                                    <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'MAX_ATTEMPTS_REACHED'"
+                                                          class="text-xs text-red-600">已達最大次數</span>
+                                                    <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'COOLDOWN_ACTIVE'"
+                                                          class="text-xs text-amber-600">冷卻中，可於 <span x-text="new Date(exam.canStart.nextAttemptAt).toLocaleDateString()"></span> 重考</span>
+                                                </div>
+                                            </template>
                                         </div>
                                     </div>
 
@@ -2464,6 +2527,24 @@
                     } catch (e) {
                         console.error('Download certificate error:', e);
                         alert('下載失敗');
+                    }
+                },
+
+                async copyCertLink(certificateNumber) {
+                    const siteUrl = window.location.origin;
+                    const link = `${siteUrl}/verify-certificate/${certificateNumber}`;
+                    try {
+                        await navigator.clipboard.writeText(link);
+                        alert('驗證連結已複製！');
+                    } catch (e) {
+                        // Fallback for browsers that don't support clipboard API
+                        const ta = document.createElement('textarea');
+                        ta.value = link;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        alert('驗證連結已複製！');
                     }
                 },
 

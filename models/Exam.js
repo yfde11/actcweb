@@ -124,6 +124,12 @@ const examSchema = new mongoose.Schema({
             type: Number,
             default: 24
         },
+        certValidityYears: {
+            type: Number,
+            min: 0,
+            max: 99,
+            default: 3
+        },
         language: {
             type: String,
             default: 'zh-TW'
@@ -181,6 +187,21 @@ const examSchema = new mongoose.Schema({
         ref: 'Question'
     }],
     tags: [String],
+    // 付費控制
+    requiresPurchase: {
+        type: Boolean,
+        default: false
+    },
+    price: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    currency: {
+        type: String,
+        default: 'TWD',
+        enum: ['TWD', 'USD']
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

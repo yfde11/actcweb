@@ -10,6 +10,7 @@ const { verifiedAuth } = require('../middleware/memberAuth');
 const { gradeAttempt, generateCertificate } = require('../services/examGrading');
 const { verifyCertificate, generateCertificatePDF } = require('../services/examCertificates');
 const { sendExamSubmittedEmail, sendExamPassedEmail, sendExamFailedEmail } = require('../services/examNotifications');
+const { checkExamAccess } = require('../services/examAccess');
 
 const router = express.Router();
 
@@ -68,16 +69,22 @@ router.get('/', verifiedAuth, async (req, res) => {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit))
-                .select('title shortDescription examType timeLimit passingScore certificateEnabled tags'),
+                .select('title shortDescription examType timeLimit passingScore certificateEnabled tags requiresPurchase price currency'),
             Exam.countDocuments(query)
         ]);
 
         // Get user's attempts for these exams
         const examIds = exams.map(e => e._id);
-        const attempts = await ExamAttempt.find({
-            exam: { $in: examIds },
-            user: userId
-        }).select('exam status attemptNumber score passed cheatingDetected submittedAt');
+        const [attempts, accessRecords] = await Promise.all([
+            ExamAttempt.find({
+                exam: { $in: examIds },
+                user: userId
+            }).select('exam status attemptNumber score passed cheatingDetected submittedAt'),
+            require('../models/ExamAccess').find({
+                exam: { $in: examIds },
+                user: userId
+            }).select('exam isRevoked expiresAt grantedBy').lean()
+        ]);
 
         const attemptsMap = {};
         attempts.forEach(a => {
@@ -87,8 +94,32 @@ router.get('/', verifiedAuth, async (req, res) => {
             attemptsMap[a.exam.toString()].push(a);
         });
 
-        const data = exams.map(exam => ({
+        const accessMap = {};
+        accessRecords.forEach(r => {
+            accessMap[r.exam.toString()] = r;
+        });
+
+        const data = exams.map(exam => {
+            // 計算此考試的 userAccess 狀態
+            let userAccess;
+            if (!exam.requiresPurchase) {
+                userAccess = { hasAccess: true, reason: null, expiresAt: null, grantedBy: 'free_exam' };
+            } else {
+                const rec = accessMap[exam._id.toString()];
+                if (!rec) {
+                    userAccess = { hasAccess: false, reason: 'NO_ACCESS', expiresAt: null, grantedBy: null };
+                } else if (rec.isRevoked) {
+                    userAccess = { hasAccess: false, reason: 'ACCESS_REVOKED', expiresAt: null, grantedBy: rec.grantedBy };
+                } else if (rec.expiresAt && new Date() > new Date(rec.expiresAt)) {
+                    userAccess = { hasAccess: false, reason: 'ACCESS_EXPIRED', expiresAt: rec.expiresAt, grantedBy: rec.grantedBy };
+                } else {
+                    userAccess = { hasAccess: true, reason: null, expiresAt: rec.expiresAt, grantedBy: rec.grantedBy };
+                }
+            }
+
+            return {
             ...exam.toObject(),
+            userAccess,
             userAttempts: attemptsMap[exam._id.toString()] || [],
             canStart: (() => {
                 const userAttempts = attemptsMap[exam._id.toString()] || [];
@@ -119,7 +150,8 @@ router.get('/', verifiedAuth, async (req, res) => {
                 }
                 return { allowed: true };
             })()
-        }));
+            };
+        });
 
         res.json({
             data,
@@ -136,29 +168,37 @@ router.get('/', verifiedAuth, async (req, res) => {
     }
 });
 
-// GET /api/member/certificates - my certificates
+// GET /api/member/certificates - my certificates (exam + course type, including revoked for display)
 router.get('/certificates', verifiedAuth, async (req, res) => {
     try {
         const { page = 1, limit = 20 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
+        // 除了以 user ID 查詢外，也用 email 查課程型證書（外部人士後來關聯帳號的情況）
+        const currentUser = await User.findById(req.user.userId).select('email').lean();
+        const certQuery = currentUser?.email
+            ? { $or: [{ user: req.user.userId }, { recipientEmail: currentUser.email.toLowerCase() }] }
+            : { user: req.user.userId };
+
         const [certificates, total] = await Promise.all([
-            Certificate.find({
-                user: req.user.userId,
-                isRevoked: { $ne: true }
-            })
+            Certificate.find(certQuery)
                 .sort({ issuedAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit))
-                .populate('exam', 'title examType'),
-            Certificate.countDocuments({
-                user: req.user.userId,
-                isRevoked: { $ne: true }
-            })
+                .populate('exam', 'title examType')
+                .populate('course', 'courseName'),
+            Certificate.countDocuments(certQuery)
         ]);
 
+        // Return certType alongside each certificate
+        const data = certificates.map(cert => {
+            const obj = cert.toObject();
+            obj.certType = cert.certType || 'exam';
+            return obj;
+        });
+
         res.json({
-            data: certificates,
+            data,
             pagination: {
                 total,
                 totalPages: Math.ceil(total / parseInt(limit)),
@@ -228,6 +268,16 @@ router.post('/:id/start', verifiedAuth, async (req, res) => {
         // Check if exam is available
         if (!exam.isAvailable) {
             return errorResponse(res, 403, 'EXAM_NOT_ACTIVE', '考試尚未開放或已結束');
+        }
+
+        // Paywall access control
+        if (exam.requiresPurchase) {
+            const access = await checkExamAccess(userId, exam._id.toString());
+            if (!access.hasAccess) {
+                return errorResponse(res, 403, 'EXAM_ACCESS_REQUIRED', '此考試需要購買後才能參加', {
+                    reason: access.reason
+                });
+            }
         }
 
         // Specific-member access control
@@ -860,9 +910,14 @@ router.get('/verify/:certificateNumber', async (req, res) => {
 // GET /api/member/exams/certificate/:certificateNumber - download certificate PDF
 router.get('/certificate/:certificateNumber', verifiedAuth, async (req, res) => {
     try {
+        const currentUser = await User.findById(req.user.userId).select('email').lean();
+        const ownerQuery = currentUser?.email
+            ? { $or: [{ user: req.user.userId }, { recipientEmail: currentUser.email.toLowerCase() }] }
+            : { user: req.user.userId };
+
         const certificate = await Certificate.findOne({
             certificateNumber: req.params.certificateNumber,
-            user: req.user.userId,
+            ...ownerQuery,
             isRevoked: { $ne: true }
         }).populate('exam');
 

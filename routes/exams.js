@@ -7,6 +7,7 @@ const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const ExamAttempt = require('../models/ExamAttempt');
 const Certificate = require('../models/Certificate');
+const ExamAccess = require('../models/ExamAccess');
 const User = require('../models/User');
 const { generateExamFromBank, generateExamManual } = require('../services/examGeneration');
 const { adminAuth } = require('../middleware/adminAuth');
@@ -82,7 +83,7 @@ router.post('/', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags
+            tags, requiresPurchase, price, currency
         } = req.body;
 
         const examData = {
@@ -90,7 +91,7 @@ router.post('/', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags,
+            tags, requiresPurchase, price, currency,
             createdBy: req.user.userId
         };
 
@@ -158,7 +159,7 @@ router.put('/:id', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags,
+            tags, requiresPurchase, price, currency,
             status: requestedStatus
         } = req.body;
 
@@ -167,7 +168,7 @@ router.put('/:id', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags
+            tags, requiresPurchase, price, currency
         };
 
         // Remove undefined keys so existing values are not overwritten with undefined
@@ -231,11 +232,12 @@ router.delete('/:id', adminAuth, async (req, res) => {
             });
         }
 
-        // Cascade delete: questions, attempts, certificates
+        // Cascade delete: questions, attempts, certificates, access grants
         await Promise.all([
             Question.deleteMany({ examIds: exam._id }),
             ExamAttempt.deleteMany({ exam: exam._id }),
-            Certificate.deleteMany({ exam: exam._id })
+            Certificate.deleteMany({ exam: exam._id }),
+            ExamAccess.deleteMany({ exam: exam._id })
         ]);
 
         await exam.deleteOne();
@@ -1345,10 +1347,14 @@ router.post('/certificates/:id/revoke', adminAuth, async (req, res) => {
         if (cert.isRevoked) {
             return errorResponse(res, 400, 'ALREADY_REVOKED', '證書已撤銷');
         }
+        const reason = (req.body.reason || '').trim();
+        if (!reason) {
+            return errorResponse(res, 400, 'REASON_REQUIRED', '撤銷原因為必填');
+        }
         cert.isRevoked = true;
         cert.revokedAt = new Date();
         cert.revokedBy = req.user.userId;
-        cert.revokeReason = req.body.reason || '';
+        cert.revokeReason = reason;
         await cert.save();
         res.json({ data: { message: '證書已撤銷' } });
     } catch (error) {

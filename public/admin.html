@@ -203,10 +203,18 @@
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>考試管理</span>
                     </a>
-                    <a @click="currentTab = 'question-bank'" 
+                    <a @click="currentTab = 'question-bank'"
                        :class="currentTab === 'question-bank' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>題庫管理</span>
+                    </a>
+                    <a href="/admin/certificates"
+                       class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span>證書管理</span>
+                    </a>
+                    <a href="/admin/exam-access"
+                       class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span>考試授權管理</span>
                     </a>
                     <a @click="currentTab = 'my-password'"
                        :class="currentTab === 'my-password' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
@@ -1139,7 +1147,14 @@
                             <tbody>
                                 <template x-for="exam in exams" :key="exam._id">
                                     <tr class="border-t">
-                                        <td class="px-2 py-2" x-text="exam.title"></td>
+                                        <td class="px-2 py-2">
+                                            <div x-text="exam.title"></div>
+                                            <div class="text-xs text-gray-400 font-mono mt-0.5 flex items-center gap-1">
+                                                <span x-text="exam._id"></span>
+                                                <button @click="navigator.clipboard.writeText(exam._id).then(() => $el.textContent = '✓').catch(() => {}); setTimeout(() => $el.textContent = '複製', 1500)"
+                                                        class="text-gray-400 hover:text-gray-600 text-xs px-1">複製</button>
+                                            </div>
+                                        </td>
                                         <td class="px-2 py-2">
                                             <span class="px-2 py-1 rounded text-xs font-medium"
                                                   :class="exam.status === 'active' ? 'bg-green-100 text-green-800' : 
@@ -1326,10 +1341,44 @@
                                             <input type="checkbox" x-model="formData.certificateEnabled" class="rounded" />
                                             <span class="text-sm text-gray-700">啟用證書</span>
                                         </label>
+                                        <div x-show="formData.certificateEnabled">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">證書有效年限（年）</label>
+                                            <input type="number" x-model.number="formData.certValidityYears" min="0" max="99"
+                                                   class="w-32 border rounded px-3 py-2 text-sm" placeholder="3" />
+                                            <p class="text-xs text-gray-500 mt-1">0 表示永久有效；預設 3 年。此設定僅影響本考試未來新發出的證書。</p>
+                                        </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-1">標籤（逗號分隔，選填）</label>
                                             <input type="text" x-model="formData.tags" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：CISSP, 資訊安全, 模擬考" />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section: 付費設定 -->
+                                <div class="border rounded-lg p-4">
+                                    <p class="font-medium text-sm text-gray-700 mb-3 pb-1 border-b">付費設定</p>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" x-model="formData.requiresPurchase" class="rounded" />
+                                            <span class="text-sm text-gray-700">需要購買才能參加</span>
+                                        </label>
+                                        <div x-show="formData.requiresPurchase" class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">定價</label>
+                                                <input type="number" x-model.number="formData.price" min="0" step="1"
+                                                       class="w-full border rounded px-3 py-2 text-sm" placeholder="0" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">幣別</label>
+                                                <select x-model="formData.currency" class="w-full border rounded px-3 py-2 text-sm">
+                                                    <option value="TWD">TWD（新台幣）</option>
+                                                    <option value="USD">USD（美元）</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <p x-show="formData.requiresPurchase" class="text-xs text-amber-700 bg-amber-50 rounded p-2">
+                                            啟用後，未購買的會員將無法開始考試。可至「考試授權管理」手動授予特定會員存取權。
+                                        </p>
                                     </div>
                                 </div>
 
@@ -2616,6 +2665,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     cooldownPeriod: 15,
                     questionsPerAttempt: '',
                     certificateEnabled: false,
+                    certValidityYears: 3,
                     status: 'draft',
                     shuffleQuestions: false,
                     shuffleOptions: false,
@@ -2624,7 +2674,10 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     endDate: '',
                     tags: '',
                     source: 'manual',
-                    domainRatio: {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11}
+                    domainRatio: {'1':15,'2':10,'3':13,'4':13,'5':13,'6':12,'7':13,'8':11},
+                    requiresPurchase: false,
+                    price: 0,
+                    currency: 'TWD'
                 },
                 bankStats: null,
                 domainList: [
@@ -2730,6 +2783,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         cooldownPeriod: 15,
                         questionsPerAttempt: '',
                         certificateEnabled: false,
+                        certValidityYears: 3,
                         status: 'draft',
                         shuffleQuestions: false,
                         shuffleOptions: false,
@@ -2761,6 +2815,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         cooldownPeriod: exam.cooldownPeriod || 15,
                         questionsPerAttempt: exam.questionsPerAttempt || '',
                         certificateEnabled: exam.certificateEnabled || false,
+                        certValidityYears: exam.certificateTemplate?.certValidityYears !== undefined ? exam.certificateTemplate.certValidityYears : 3,
                         status: exam.status,
                         shuffleQuestions: exam.shuffleQuestions || false,
                         shuffleOptions: exam.shuffleOptions || false,
@@ -2769,7 +2824,10 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         endDate: toDatetimeLocal(exam.endDate),
                         tags: Array.isArray(exam.tags) ? exam.tags.join(', ') : (exam.tags || ''),
                         source: exam.source || 'manual',
-                        domainRatio
+                        domainRatio,
+                        requiresPurchase: exam.requiresPurchase || false,
+                        price: exam.price || 0,
+                        currency: exam.currency || 'TWD'
                     };
                     if (exam.source === 'question_bank') this.loadBankStats();
                     this.showCreateModal = true;
@@ -2829,13 +2887,18 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const method = this.editingExam ? 'PUT' : 'POST';
 
                         // Build payload — convert dates and tags to backend-expected formats
+                        const { certValidityYears, ...restFormData } = this.formData;
                         const payload = {
-                            ...this.formData,
+                            ...restFormData,
                             startDate: this.formData.startDate ? new Date(this.formData.startDate).toISOString() : null,
                             endDate: this.formData.endDate ? new Date(this.formData.endDate).toISOString() : null,
                             tags: this.formData.tags
                                 ? this.formData.tags.split(',').map(t => t.trim()).filter(t => t)
-                                : []
+                                : [],
+                            certificateTemplate: {
+                                ...(this.editingExam && this.editingExam.certificateTemplate ? this.editingExam.certificateTemplate : {}),
+                                certValidityYears: certValidityYears !== undefined ? Number(certValidityYears) : 3
+                            }
                         };
 
                         const res = await fetch(url, {
