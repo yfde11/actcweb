@@ -237,6 +237,10 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
                 return errorResponse(res, 404, 'USER_NOT_FOUND', '找不到指定的使用者');
             }
             linkedUserId = userId;
+        } else if (recipientEmail) {
+            // 沒填 userId 時，嘗試以 Email 自動關聯會員帳號
+            const user = await User.findOne({ email: recipientEmail.trim().toLowerCase() }).select('_id');
+            if (user) linkedUserId = user._id;
         }
 
         const attendance = new CourseAttendance({
