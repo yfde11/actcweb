@@ -203,10 +203,14 @@
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>考試管理</span>
                     </a>
-                    <a @click="currentTab = 'question-bank'" 
+                    <a @click="currentTab = 'question-bank'"
                        :class="currentTab === 'question-bank' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>題庫管理</span>
+                    </a>
+                    <a href="/admin/certificates"
+                       class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span>證書管理</span>
                     </a>
                     <a @click="currentTab = 'my-password'"
                        :class="currentTab === 'my-password' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
