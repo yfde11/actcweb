@@ -393,6 +393,8 @@
             revokeLoading: false,
 
             async init() {
+                const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+                if (!token) { window.location.href = '/admin'; return; }
                 await this.loadCerts();
             },
 
@@ -432,6 +434,7 @@
                         headers: this.getAuthHeaders()
                     });
                     const json = await res.json();
+                    if (res.status === 401) { window.location.href = '/admin'; return; }
                     if (!res.ok) throw new Error(json.error?.message || '載入失敗');
                     this.certs.push(...(json.data || []));
                     this.hasMore = json.pagination?.hasMore || false;

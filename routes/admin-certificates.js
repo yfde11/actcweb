@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const csv = require('csv-parser');
 const stream = require('stream');
+const validator = require('validator');
 const Certificate = require('../models/Certificate');
 const CourseAttendance = require('../models/CourseAttendance');
 const User = require('../models/User');
@@ -238,16 +239,21 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
             }
             linkedUserId = userId;
         } else if (recipientEmail) {
-            // 沒填 userId 時，嘗試以 Email 自動關聯會員帳號
-            const user = await User.findOne({ email: recipientEmail.trim().toLowerCase() }).select('_id');
+            const emailNorm = recipientEmail.trim().toLowerCase();
+            if (!validator.isEmail(emailNorm)) {
+                return errorResponse(res, 400, 'INVALID_EMAIL', '受證者 Email 格式不正確');
+            }
+            const user = await User.findOne({ email: emailNorm }).select('_id');
             if (user) linkedUserId = user._id;
         }
+
+        const normalizedEmail = recipientEmail ? recipientEmail.trim().toLowerCase() : undefined;
 
         const attendance = new CourseAttendance({
             courseName: courseName.trim(),
             courseCode: courseCode ? courseCode.trim() : undefined,
             recipientName: recipientName.trim(),
-            recipientEmail: recipientEmail ? recipientEmail.trim().toLowerCase() : undefined,
+            recipientEmail: normalizedEmail,
             user: linkedUserId,
             attendanceDate: attendanceDateParsed,
             completionHours: completionHours ? Number(completionHours) : undefined,
@@ -288,7 +294,7 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
             return errorResponse(res, 400, 'NO_FILE', '請上傳 CSV 檔案');
         }
 
-        const certValidityYears = req.body.certValidityYears !== undefined
+        const certValidityYears = (req.body.certValidityYears !== undefined && req.body.certValidityYears !== '')
             ? Number(req.body.certValidityYears)
             : undefined;
 
@@ -333,6 +339,12 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
             if (!courseName || !recipientName || !attendanceDateStr) {
                 results.failed++;
                 results.errors.push({ row: rowNum, message: '課程名稱、姓名及出席日期為必填欄位' });
+                continue;
+            }
+
+            if (recipientEmail && !validator.isEmail(recipientEmail)) {
+                results.failed++;
+                results.errors.push({ row: rowNum, message: `Email 格式不正確：${recipientEmail}` });
                 continue;
             }
 

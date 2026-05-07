@@ -3,6 +3,7 @@ const Certificate = require('../models/Certificate');
 const ExamAttempt = require('../models/ExamAttempt');
 const Exam = require('../models/Exam');
 const CourseAttendance = require('../models/CourseAttendance');
+const Counter = require('../models/Counter');
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
@@ -44,10 +45,11 @@ async function verifyCertificate(certificateNumber) {
             expiresAt: certificate.expiresAt,
             exam: certificate.exam,
             course: certificate.course,
-            user: {
-                username: certificate.user.username,
-                fullName: certificate.user.fullName
-            }
+            recipientName: certificate.recipientName || null,
+            recipientEmail: certificate.recipientEmail || null,
+            user: certificate.user
+                ? { username: certificate.user.username, fullName: certificate.user.fullName }
+                : { username: null, fullName: certificate.recipientName || null }
         }
     };
 }
@@ -258,13 +260,13 @@ async function regenerateCertificate(attemptId) {
     }
 
     // Check if already exists (non-revoked)
-    let certificate = await Certificate.findOne({ attempt: attemptId, isRevoked: false });
+    let certificate = await Certificate.findOne({ attempt: attemptId });
     if (certificate) {
         return certificate;
     }
 
     // Generate new certificate
-    const Counter = require('../models/Counter');
+
     const seq = await Counter.getNextSequence('certificate_number');
     const year = new Date().getFullYear();
     const certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
@@ -315,7 +317,7 @@ async function issueCourseAttendanceCertificate(attendanceId, certValidityYears)
         throw new Error('CERTIFICATE_ALREADY_ISSUED');
     }
 
-    const Counter = require('../models/Counter');
+
     const seq = await Counter.getNextSequence('certificate_course_number');
     const year = new Date().getFullYear();
     const certNumber = `ACTC-COURSE-${year}-${String(seq).padStart(6, '0')}`;
