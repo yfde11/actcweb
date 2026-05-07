@@ -203,10 +203,14 @@
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>考試管理</span>
                     </a>
-                    <a @click="currentTab = 'question-bank'" 
+                    <a @click="currentTab = 'question-bank'"
                        :class="currentTab === 'question-bank' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
                        class="flex items-center px-6 py-3 cursor-pointer">
                         <span>題庫管理</span>
+                    </a>
+                    <a href="/admin/certificates"
+                       class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span>證書管理</span>
                     </a>
                     <a @click="currentTab = 'my-password'"
                        :class="currentTab === 'my-password' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'"
@@ -1326,6 +1330,12 @@
                                             <input type="checkbox" x-model="formData.certificateEnabled" class="rounded" />
                                             <span class="text-sm text-gray-700">啟用證書</span>
                                         </label>
+                                        <div x-show="formData.certificateEnabled">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">證書有效年限（年）</label>
+                                            <input type="number" x-model.number="formData.certValidityYears" min="0" max="99"
+                                                   class="w-32 border rounded px-3 py-2 text-sm" placeholder="3" />
+                                            <p class="text-xs text-gray-500 mt-1">0 表示永久有效；預設 3 年。此設定僅影響本考試未來新發出的證書。</p>
+                                        </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-1">標籤（逗號分隔，選填）</label>
                                             <input type="text" x-model="formData.tags" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：CISSP, 資訊安全, 模擬考" />
@@ -2616,6 +2626,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     cooldownPeriod: 15,
                     questionsPerAttempt: '',
                     certificateEnabled: false,
+                    certValidityYears: 3,
                     status: 'draft',
                     shuffleQuestions: false,
                     shuffleOptions: false,
@@ -2730,6 +2741,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         cooldownPeriod: 15,
                         questionsPerAttempt: '',
                         certificateEnabled: false,
+                        certValidityYears: 3,
                         status: 'draft',
                         shuffleQuestions: false,
                         shuffleOptions: false,
@@ -2761,6 +2773,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         cooldownPeriod: exam.cooldownPeriod || 15,
                         questionsPerAttempt: exam.questionsPerAttempt || '',
                         certificateEnabled: exam.certificateEnabled || false,
+                        certValidityYears: exam.certificateTemplate?.certValidityYears !== undefined ? exam.certificateTemplate.certValidityYears : 3,
                         status: exam.status,
                         shuffleQuestions: exam.shuffleQuestions || false,
                         shuffleOptions: exam.shuffleOptions || false,
@@ -2829,13 +2842,18 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const method = this.editingExam ? 'PUT' : 'POST';
 
                         // Build payload — convert dates and tags to backend-expected formats
+                        const { certValidityYears, ...restFormData } = this.formData;
                         const payload = {
-                            ...this.formData,
+                            ...restFormData,
                             startDate: this.formData.startDate ? new Date(this.formData.startDate).toISOString() : null,
                             endDate: this.formData.endDate ? new Date(this.formData.endDate).toISOString() : null,
                             tags: this.formData.tags
                                 ? this.formData.tags.split(',').map(t => t.trim()).filter(t => t)
-                                : []
+                                : [],
+                            certificateTemplate: {
+                                ...(this.editingExam && this.editingExam.certificateTemplate ? this.editingExam.certificateTemplate : {}),
+                                certValidityYears: certValidityYears !== undefined ? Number(certValidityYears) : 3
+                            }
                         };
 
                         const res = await fetch(url, {

@@ -1345,10 +1345,14 @@ router.post('/certificates/:id/revoke', adminAuth, async (req, res) => {
         if (cert.isRevoked) {
             return errorResponse(res, 400, 'ALREADY_REVOKED', '證書已撤銷');
         }
+        const reason = (req.body.reason || '').trim();
+        if (!reason) {
+            return errorResponse(res, 400, 'REASON_REQUIRED', '撤銷原因為必填');
+        }
         cert.isRevoked = true;
         cert.revokedAt = new Date();
         cert.revokedBy = req.user.userId;
-        cert.revokeReason = req.body.reason || '';
+        cert.revokeReason = reason;
         await cert.save();
         res.json({ data: { message: '證書已撤銷' } });
     } catch (error) {

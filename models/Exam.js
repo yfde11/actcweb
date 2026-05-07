@@ -124,6 +124,12 @@ const examSchema = new mongoose.Schema({
             type: Number,
             default: 24
         },
+        certValidityYears: {
+            type: Number,
+            min: 0,
+            max: 99,
+            default: 3
+        },
         language: {
             type: String,
             default: 'zh-TW'

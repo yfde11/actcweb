@@ -31,6 +31,7 @@ const examRoutes = require('./routes/exams');
 const memberExamRoutes = require('./routes/member-exams');
 const questionBankRoutes = require('./routes/question-bank');
 const cronRoutes = require('./routes/cron');
+const adminCertRoutes = require('./routes/admin-certificates');
 const { ensureMongo } = require('./middleware/mongoReady');
 const { bootstrapDatabase } = require('./lib/bootstrapDb');
 
@@ -111,6 +112,8 @@ app.use('/api/exams', examRoutes);
 app.use('/api/member/exams', memberExamRoutes);
 app.use('/api/question-bank', questionBankRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/api/admin/certificates', adminCertRoutes);
+
 
 // Certificate verification (public)
 const { verifyCertificate } = require('./services/examCertificates');
@@ -183,6 +186,10 @@ app.get('/corporate-members', (req, res) => {
 
 app.get('/admin/corporate-members', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'pages', 'admin-corporate-members.html'));
+});
+
+app.get('/admin/certificates', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'certificates.html'));
 });
 
 // 其他頁面路由

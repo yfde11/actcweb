@@ -136,29 +136,37 @@ router.get('/', verifiedAuth, async (req, res) => {
     }
 });
 
-// GET /api/member/certificates - my certificates
+// GET /api/member/certificates - my certificates (exam + course type, including revoked for display)
 router.get('/certificates', verifiedAuth, async (req, res) => {
     try {
         const { page = 1, limit = 20 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
+        // 除了以 user ID 查詢外，也用 email 查課程型證書（外部人士後來關聯帳號的情況）
+        const currentUser = await User.findById(req.user.userId).select('email').lean();
+        const certQuery = currentUser?.email
+            ? { $or: [{ user: req.user.userId }, { recipientEmail: currentUser.email.toLowerCase() }] }
+            : { user: req.user.userId };
+
         const [certificates, total] = await Promise.all([
-            Certificate.find({
-                user: req.user.userId,
-                isRevoked: { $ne: true }
-            })
+            Certificate.find(certQuery)
                 .sort({ issuedAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit))
-                .populate('exam', 'title examType'),
-            Certificate.countDocuments({
-                user: req.user.userId,
-                isRevoked: { $ne: true }
-            })
+                .populate('exam', 'title examType')
+                .populate('course', 'courseName'),
+            Certificate.countDocuments(certQuery)
         ]);
 
+        // Return certType alongside each certificate
+        const data = certificates.map(cert => {
+            const obj = cert.toObject();
+            obj.certType = cert.certType || 'exam';
+            return obj;
+        });
+
         res.json({
-            data: certificates,
+            data,
             pagination: {
                 total,
                 totalPages: Math.ceil(total / parseInt(limit)),
@@ -860,9 +868,14 @@ router.get('/verify/:certificateNumber', async (req, res) => {
 // GET /api/member/exams/certificate/:certificateNumber - download certificate PDF
 router.get('/certificate/:certificateNumber', verifiedAuth, async (req, res) => {
     try {
+        const currentUser = await User.findById(req.user.userId).select('email').lean();
+        const ownerQuery = currentUser?.email
+            ? { $or: [{ user: req.user.userId }, { recipientEmail: currentUser.email.toLowerCase() }] }
+            : { user: req.user.userId };
+
         const certificate = await Certificate.findOne({
             certificateNumber: req.params.certificateNumber,
-            user: req.user.userId,
+            ...ownerQuery,
             isRevoked: { $ne: true }
         }).populate('exam');
 
