@@ -60,24 +60,26 @@ router.get('/', adminAuth, async (req, res) => {
 });
 
 // POST /api/admin/exam-access/grant - 手動授予存取權
-// Body: { userId, examId, adminNote?, expiresAt? }
+// Body: { userEmail, examId, adminNote?, expiresAt? }
 router.post('/grant', adminAuth, async (req, res) => {
     try {
-        const { userId, examId, adminNote, expiresAt } = req.body;
+        const { userEmail, examId, adminNote, expiresAt } = req.body;
 
-        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-            return errorResponse(res, 400, 'INVALID_USER_ID', '無效的使用者 ID');
+        if (!userEmail || typeof userEmail !== 'string') {
+            return errorResponse(res, 400, 'INVALID_USER_EMAIL', '請填入會員 Email');
         }
         if (!examId || !mongoose.Types.ObjectId.isValid(examId)) {
             return errorResponse(res, 400, 'INVALID_EXAM_ID', '無效的考試 ID');
         }
 
         const [user, exam] = await Promise.all([
-            User.findById(userId).select('username fullName email'),
+            User.findOne({ email: userEmail.trim().toLowerCase() }).select('username fullName email _id'),
             Exam.findById(examId).select('title requiresPurchase')
         ]);
-        if (!user) return errorResponse(res, 404, 'USER_NOT_FOUND', '找不到使用者');
+        if (!user) return errorResponse(res, 404, 'USER_NOT_FOUND', `找不到 Email 為 ${userEmail} 的會員`);
         if (!exam) return errorResponse(res, 404, 'EXAM_NOT_FOUND', '找不到考試');
+
+        const userId = user._id.toString();
 
         let resolvedExpiresAt = null;
         if (expiresAt === null || expiresAt === '') {
