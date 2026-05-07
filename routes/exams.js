@@ -7,6 +7,7 @@ const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const ExamAttempt = require('../models/ExamAttempt');
 const Certificate = require('../models/Certificate');
+const ExamAccess = require('../models/ExamAccess');
 const User = require('../models/User');
 const { generateExamFromBank, generateExamManual } = require('../services/examGeneration');
 const { adminAuth } = require('../middleware/adminAuth');
@@ -231,11 +232,12 @@ router.delete('/:id', adminAuth, async (req, res) => {
             });
         }
 
-        // Cascade delete: questions, attempts, certificates
+        // Cascade delete: questions, attempts, certificates, access grants
         await Promise.all([
             Question.deleteMany({ examIds: exam._id }),
             ExamAttempt.deleteMany({ exam: exam._id }),
-            Certificate.deleteMany({ exam: exam._id })
+            Certificate.deleteMany({ exam: exam._id }),
+            ExamAccess.deleteMany({ exam: exam._id })
         ]);
 
         await exam.deleteOne();

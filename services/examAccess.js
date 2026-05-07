@@ -43,14 +43,14 @@ async function checkExamAccess(userId, examId) {
  * @returns {Promise<Object>} ExamAccess document
  */
 async function grantExamAccess({ userId, examId, grantedBy, grantedByUserId = null, expiresAt, adminNote }) {
-    let resolvedExpiresAt = expiresAt !== undefined ? expiresAt : null;
-
-    // 付款型和管理員手動型預設 +1 年
-    if (resolvedExpiresAt === undefined || (resolvedExpiresAt === null && grantedBy !== 'free_exam')) {
-        if (grantedBy !== 'free_exam') {
-            resolvedExpiresAt = new Date();
-            resolvedExpiresAt.setFullYear(resolvedExpiresAt.getFullYear() + ACCESS_VALIDITY_YEARS);
-        }
+    let resolvedExpiresAt;
+    if (expiresAt !== undefined) {
+        resolvedExpiresAt = expiresAt; // null = 永久，Date = 指定到期
+    } else if (grantedBy !== 'free_exam') {
+        resolvedExpiresAt = new Date();
+        resolvedExpiresAt.setFullYear(resolvedExpiresAt.getFullYear() + ACCESS_VALIDITY_YEARS);
+    } else {
+        resolvedExpiresAt = null;
     }
 
     const access = await ExamAccess.findOneAndUpdate(
