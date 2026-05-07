@@ -135,6 +135,8 @@ router.get('/export', adminAuth, async (req, res) => {
 
         for (const cert of certs) {
             const user = cert.user || {};
+            const displayName = cert.recipientName || user.fullName || user.username || '';
+            const displayEmail = cert.recipientEmail || user.email || '';
             const examOrCourse = cert.certType === 'course'
                 ? (cert.course ? cert.course.courseName : '')
                 : (cert.exam ? cert.exam.title : '');
@@ -143,9 +145,9 @@ router.get('/export', adminAuth, async (req, res) => {
             const row = [
                 escapeCSVField(cert.certificateNumber),
                 escapeCSVField(cert.certType === 'exam' ? '考試型' : '課程型'),
-                escapeCSVField(user.fullName || ''),
+                escapeCSVField(displayName),
                 escapeCSVField(user.username || ''),
-                escapeCSVField(user.email || ''),
+                escapeCSVField(displayEmail),
                 escapeCSVField(examOrCourse),
                 formatTaipeiDate(cert.issuedAt),
                 cert.expiresAt ? formatTaipeiDate(cert.expiresAt) : '永久',
@@ -209,22 +211,14 @@ router.patch('/:id/expiry', adminAuth, async (req, res) => {
 });
 
 // POST /api/admin/certificates/course-attendances - 手動單筆發課程型證書
-// Body: { courseName, userId, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears? }
+// Body: { courseName, courseCode?, recipientName, recipientEmail?, userId?, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears? }
+// userId 選填：填入時嘗試關聯本會會員帳號，否則視為外部人士
 router.post('/course-attendances', adminAuth, async (req, res) => {
     try {
-        const { courseName, courseCode, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears } = req.body;
+        const { courseName, courseCode, recipientName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears } = req.body;
 
-        if (!courseName || !userId || !attendanceDate) {
-            return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、使用者 ID 及出席日期為必填');
-        }
-
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return errorResponse(res, 400, 'INVALID_USER_ID', '無效的使用者 ID');
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return errorResponse(res, 404, 'USER_NOT_FOUND', '使用者不存在');
+        if (!courseName || !recipientName || !attendanceDate) {
+            return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名及出席日期為必填');
         }
 
         const attendanceDateParsed = new Date(attendanceDate);
@@ -232,10 +226,25 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
             return errorResponse(res, 400, 'INVALID_DATE', '無效的出席日期格式');
         }
 
+        // 選填：嘗試關聯會員帳號
+        let linkedUserId = null;
+        if (userId) {
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return errorResponse(res, 400, 'INVALID_USER_ID', '無效的使用者 ID 格式');
+            }
+            const user = await User.findById(userId);
+            if (!user) {
+                return errorResponse(res, 404, 'USER_NOT_FOUND', '找不到指定的使用者');
+            }
+            linkedUserId = userId;
+        }
+
         const attendance = new CourseAttendance({
             courseName: courseName.trim(),
             courseCode: courseCode ? courseCode.trim() : undefined,
-            user: userId,
+            recipientName: recipientName.trim(),
+            recipientEmail: recipientEmail ? recipientEmail.trim().toLowerCase() : undefined,
+            user: linkedUserId,
             attendanceDate: attendanceDateParsed,
             completionHours: completionHours ? Number(completionHours) : undefined,
             instructorName: instructorName ? instructorName.trim() : undefined,
@@ -310,15 +319,16 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
 
             const courseName = (row.courseName || row['課程名稱'] || '').trim();
             const courseCode = (row.courseCode || row['課程代碼'] || '').trim();
-            const userEmail = (row.email || row['Email'] || '').trim();
+            const recipientName = (row.recipientName || row['姓名'] || '').trim();
+            const recipientEmail = (row.recipientEmail || row.email || row['Email'] || '').trim().toLowerCase();
             const attendanceDateStr = (row.attendanceDate || row['出席日期'] || '').trim();
             const completionHoursStr = (row.completionHours || row['完成時數'] || '').trim();
             const instructorName = (row.instructorName || row['講師'] || '').trim();
             const notes = (row.notes || row['備註'] || '').trim();
 
-            if (!courseName || !userEmail || !attendanceDateStr) {
+            if (!courseName || !recipientName || !attendanceDateStr) {
                 results.failed++;
-                results.errors.push({ row: rowNum, message: '課程名稱、Email 及出席日期為必填欄位' });
+                results.errors.push({ row: rowNum, message: '課程名稱、姓名及出席日期為必填欄位' });
                 continue;
             }
 
@@ -330,17 +340,19 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
             }
 
             try {
-                const user = await User.findOne({ email: userEmail }).select('_id email fullName');
-                if (!user) {
-                    results.failed++;
-                    results.errors.push({ row: rowNum, message: `找不到 Email 對應的使用者：${userEmail}` });
-                    continue;
+                // 嘗試以 Email 關聯會員帳號（找不到不報錯，視為外部人士）
+                let linkedUserId = null;
+                if (recipientEmail) {
+                    const user = await User.findOne({ email: recipientEmail }).select('_id');
+                    if (user) linkedUserId = user._id;
                 }
 
                 const attendance = new CourseAttendance({
                     courseName,
                     courseCode: courseCode || undefined,
-                    user: user._id,
+                    recipientName,
+                    recipientEmail: recipientEmail || undefined,
+                    user: linkedUserId,
                     attendanceDate,
                     completionHours: completionHoursStr ? Number(completionHoursStr) : undefined,
                     instructorName: instructorName || undefined,
@@ -357,7 +369,8 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
                 results.success++;
                 successList.push({
                     row: rowNum,
-                    email: userEmail,
+                    recipientName,
+                    email: recipientEmail || null,
                     certificateNumber: certificate.certificateNumber
                 });
             } catch (err) {

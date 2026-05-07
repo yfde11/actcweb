@@ -24,11 +24,21 @@ const certificateSchema = new mongoose.Schema({
         ref: 'CourseAttendance',
         sparse: true
     },
+    recipientName: {
+        type: String,
+        trim: true
+    },
+    recipientEmail: {
+        type: String,
+        trim: true,
+        lowercase: true
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
-        index: true
+        default: null,
+        index: true,
+        sparse: true
     },
     attempt: {
         type: mongoose.Schema.Types.ObjectId,

@@ -160,11 +160,15 @@ async function generateCertificatePDF(certificateId, res) {
 
     doc.moveDown(1);
 
-    // Recipient
+    // Recipient name: prefer certificate.recipientName, fallback to user fields
+    const recipientDisplayName = certificate.recipientName
+        || (user && (user.fullName || user.username))
+        || '—';
+
     doc.font('Bold')
        .fontSize(24)
        .fillColor('#2d3748')
-       .text(user.fullName || user.username, { align: 'center' });
+       .text(recipientDisplayName, { align: 'center' });
 
     doc.moveDown(0.5);
 
@@ -244,7 +248,7 @@ async function generateCertificatePDF(certificateId, res) {
  * @returns {Promise<Object>} New or existing certificate
  */
 async function regenerateCertificate(attemptId) {
-    const attempt = await ExamAttempt.findById(attemptId).populate('exam');
+    const attempt = await ExamAttempt.findById(attemptId).populate('exam').populate('user', 'fullName username');
     if (!attempt) {
         throw new Error('ATTEMPT_NOT_FOUND');
     }
@@ -284,7 +288,8 @@ async function regenerateCertificate(attemptId) {
         certificateNumber: certNumber,
         certType: 'exam',
         exam: attempt.exam._id,
-        user: attempt.user,
+        user: attempt.user._id || attempt.user,
+        recipientName: attempt.user.fullName || attempt.user.username || null,
         attempt: attempt._id,
         expiresAt
     });
@@ -329,7 +334,9 @@ async function issueCourseAttendanceCertificate(attendanceId, certValidityYears)
         certificateNumber: certNumber,
         certType: 'course',
         course: attendance._id,
-        user: attendance.user._id,
+        user: attendance.user ? attendance.user._id : null,
+        recipientName: attendance.recipientName,
+        recipientEmail: attendance.recipientEmail || null,
         expiresAt
     });
 

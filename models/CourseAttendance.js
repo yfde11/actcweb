@@ -10,10 +10,20 @@ const courseAttendanceSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    recipientName: {
+        type: String,
+        required: [true, '受證者姓名為必填'],
+        trim: true
+    },
+    recipientEmail: {
+        type: String,
+        trim: true,
+        lowercase: true
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, '使用者為必填']
+        default: null
     },
     attendanceDate: {
         type: Date,
@@ -49,7 +59,8 @@ const courseAttendanceSchema = new mongoose.Schema({
     timestamps: true
 });
 
-courseAttendanceSchema.index({ user: 1, attendanceDate: -1 });
+courseAttendanceSchema.index({ user: 1, attendanceDate: -1 }, { sparse: true });
+courseAttendanceSchema.index({ recipientEmail: 1, attendanceDate: -1 }, { sparse: true });
 courseAttendanceSchema.index({ certificateIssued: 1 });
 
 module.exports = mongoose.model('CourseAttendance', courseAttendanceSchema);
