@@ -188,6 +188,10 @@ app.get('/admin/corporate-members', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'pages', 'admin-corporate-members.html'));
 });
 
+app.get('/admin/certificates', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'certificates.html'));
+});
+
 // 其他頁面路由
 app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'about.html'));

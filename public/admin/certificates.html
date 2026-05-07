@@ -147,7 +147,7 @@
         <!-- 手動發證 Modal -->
         <div x-show="showIssueModal" x-cloak
              class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-             @click.self="showIssueModal = false">
+             @click.self="showIssueModal = false" @keydown.escape.window="showIssueModal = false">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-lg" @click.stop>
                 <div class="p-6 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold">手動發課程型證書</h3>
@@ -222,7 +222,7 @@
         <!-- 批次上傳 Modal -->
         <div x-show="showBulkModal" x-cloak
              class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-             @click.self="showBulkModal = false">
+             @click.self="showBulkModal = false" @keydown.escape.window="showBulkModal = false">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-lg" @click.stop>
                 <div class="p-6 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold">批次發課程型證書</h3>
@@ -271,7 +271,7 @@
         <!-- 修改到期日 Modal -->
         <div x-show="showExpiryModal" x-cloak
              class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-             @click.self="showExpiryModal = false">
+             @click.self="showExpiryModal = false" @keydown.escape.window="showExpiryModal = false">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md" @click.stop>
                 <div class="p-6 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold">修改到期日</h3>
@@ -311,7 +311,7 @@
         <!-- 撤銷 Modal -->
         <div x-show="showRevokeModal" x-cloak
              class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-             @click.self="showRevokeModal = false">
+             @click.self="showRevokeModal = false" @keydown.escape.window="showRevokeModal = false">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md" @click.stop>
                 <div class="p-6 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold text-red-700">撤銷證書</h3>
