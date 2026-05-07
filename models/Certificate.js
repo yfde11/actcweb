@@ -5,13 +5,24 @@ const certificateSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        match: [/^ACTC-EXAM-\d{4}-\d{6}$/, 'Certificate number must match format ACTC-EXAM-YYYY-XXXXXX']
+        match: [/^ACTC-(EXAM|COURSE)-\d{4}-\d{6}$/, 'Certificate number must match format ACTC-EXAM-YYYY-XXXXXX or ACTC-COURSE-YYYY-XXXXXX']
+    },
+    certType: {
+        type: String,
+        enum: ['exam', 'course'],
+        required: true,
+        default: 'exam'
     },
     exam: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Exam',
-        required: true,
+        required: false,
         index: true
+    },
+    course: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CourseAttendance',
+        sparse: true
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -22,8 +33,7 @@ const certificateSchema = new mongoose.Schema({
     attempt: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ExamAttempt',
-        required: true,
-        unique: true
+        required: false
     },
     issuedAt: {
         type: Date,
@@ -56,6 +66,10 @@ const certificateSchema = new mongoose.Schema({
     revokedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    adminNote: {
+        type: String,
+        maxlength: [1000, 'Admin note cannot exceed 1000 characters']
     }
 }, {
     timestamps: true
@@ -63,5 +77,8 @@ const certificateSchema = new mongoose.Schema({
 
 certificateSchema.index({ user: 1, exam: 1 });
 certificateSchema.index({ issuedAt: -1 });
+certificateSchema.index({ attempt: 1 }, { unique: true, sparse: true });
+certificateSchema.index({ certType: 1, issuedAt: -1 });
+certificateSchema.index({ isRevoked: 1, expiresAt: 1 });
 
 module.exports = mongoose.model('Certificate', certificateSchema);

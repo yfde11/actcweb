@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>證書管理 - ACTC 管理後台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div x-data="certAdmin()" x-init="init()" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">證書管理</h1>
+                <a href="/admin" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-arrow-left"></i> 返回管理後台
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6">
+
+            <!-- Toolbar -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex gap-3">
+                        <button @click="showIssueModal = true; resetIssueForm()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>手動發證
+                        </button>
+                        <button @click="showBulkModal = true"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-file-import mr-2"></i>批次上傳
+                        </button>
+                        <a :href="exportUrl()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
+                            <i class="fas fa-download mr-2"></i>匯出 CSV
+                        </a>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <select x-model="filters.certType" @change="resetAndLoad()"
+                                class="border rounded-lg px-3 py-2 text-sm">
+                            <option value="">全部類型</option>
+                            <option value="exam">考試型</option>
+                            <option value="course">課程型</option>
+                        </select>
+                        <select x-model="filters.isRevoked" @change="resetAndLoad()"
+                                class="border rounded-lg px-3 py-2 text-sm">
+                            <option value="">全部狀態</option>
+                            <option value="false">有效</option>
+                            <option value="true">已撤銷</option>
+                        </select>
+                        <input type="text" x-model="filters.userId" placeholder="使用者 ID"
+                               class="border rounded-lg px-3 py-2 text-sm w-48">
+                        <button @click="resetAndLoad()"
+                                class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-search"></i> 篩選
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast -->
+            <div x-show="toast.visible" x-transition
+                 :class="toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'"
+                 class="fixed top-4 right-4 z-50 text-white px-5 py-3 rounded-lg shadow-lg text-sm">
+                <span x-text="toast.message"></span>
+            </div>
+
+            <!-- Certificates Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">類型</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">證書編號</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">持有人</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">考試/課程</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">發證日期</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">到期日</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr x-show="loading">
+                            <td colspan="8" class="px-4 py-6 text-center text-gray-500 text-sm">載入中…</td>
+                        </tr>
+                        <tr x-show="!loading && certs.length === 0">
+                            <td colspan="8" class="px-4 py-6 text-center text-gray-500 text-sm">無符合條件的證書</td>
+                        </tr>
+                        <template x-for="cert in certs" :key="cert._id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span :class="cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                          class="px-2 py-0.5 text-xs rounded-full font-medium"
+                                          x-text="cert.certType === 'course' ? '課程型' : '考試型'"></span>
+                                </td>
+                                <td class="px-4 py-3 text-sm font-mono text-gray-900" x-text="cert.certificateNumber"></td>
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-gray-900" x-text="cert.user?.fullName || cert.user?.username || 'N/A'"></div>
+                                    <div class="text-xs text-gray-500" x-text="cert.user?.email || ''"></div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-700"
+                                    x-text="cert.certType === 'course' ? (cert.course?.courseName || 'N/A') : (cert.exam?.title || 'N/A')"></td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span x-show="cert.isRevoked"
+                                          class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 font-medium">已撤銷</span>
+                                    <span x-show="!cert.isRevoked && cert.expiresAt && new Date(cert.expiresAt) < new Date()"
+                                          class="px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600 font-medium">已過期</span>
+                                    <span x-show="!cert.isRevoked && !(cert.expiresAt && new Date(cert.expiresAt) < new Date())"
+                                          class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">有效</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-700"
+                                    x-text="cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString('zh-TW') : '-'"></td>
+                                <td class="px-4 py-3 text-sm text-gray-700"
+                                    x-text="cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString('zh-TW') : '永久'"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <button @click="openExpiryModal(cert)"
+                                            class="text-indigo-600 hover:text-indigo-900 mr-3">修改到期</button>
+                                    <button x-show="!cert.isRevoked"
+                                            @click="openRevokeModal(cert)"
+                                            class="text-red-600 hover:text-red-900">撤銷</button>
+                                    <button x-show="cert.isRevoked"
+                                            @click="unrevokeConfirm(cert)"
+                                            class="text-green-600 hover:text-green-900">恢復</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <!-- Load More -->
+                <div class="bg-white px-6 py-4 border-t flex justify-center">
+                    <button x-show="hasMore" @click="loadMore()"
+                            :disabled="loading"
+                            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm disabled:opacity-50">
+                        載入更多
+                    </button>
+                    <span x-show="!hasMore && certs.length > 0" class="text-sm text-gray-500">已顯示全部</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- 手動發證 Modal -->
+        <div x-show="showIssueModal" x-cloak
+             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             @click.self="showIssueModal = false">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg" @click.stop>
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-bold">手動發課程型證書</h3>
+                    <button @click="showIssueModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">課程名稱 <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="issueForm.courseName"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="課程名稱">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">課程代碼</label>
+                        <input type="text" x-model="issueForm.courseCode"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="選填">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">使用者 ID <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="issueForm.userId"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="MongoDB ObjectId">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">出席日期 <span class="text-red-500">*</span></label>
+                        <input type="date" x-model="issueForm.attendanceDate"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">完成時數</label>
+                            <input type="number" x-model="issueForm.completionHours" min="0"
+                                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="選填">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">有效年限</label>
+                            <input type="number" x-model="issueForm.certValidityYears" min="0" max="99"
+                                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="0=永久">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">講師</label>
+                        <input type="text" x-model="issueForm.instructorName"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="選填">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                        <textarea x-model="issueForm.notes" rows="2"
+                                  class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="選填"></textarea>
+                    </div>
+                    <div x-show="issueError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="issueError"></div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3">
+                    <button @click="showIssueModal = false"
+                            class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button @click="submitIssue()" :disabled="issueLoading"
+                            class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
+                        <span x-show="issueLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                        發證
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批次上傳 Modal -->
+        <div x-show="showBulkModal" x-cloak
+             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             @click.self="showBulkModal = false">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg" @click.stop>
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-bold">批次發課程型證書</h3>
+                    <button @click="showBulkModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                        <p class="font-medium mb-1">CSV 格式說明（上限 500 筆）</p>
+                        <p>必要欄位：<code>courseName</code>（課程名稱）、<code>email</code>（使用者 Email）、<code>attendanceDate</code>（出席日期 YYYY-MM-DD）</p>
+                        <p class="mt-1">選填欄位：<code>courseCode</code>、<code>completionHours</code>、<code>instructorName</code>、<code>notes</code></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">全局有效年限（0=永久，留空=永久）</label>
+                        <input type="number" x-model="bulkForm.certValidityYears" min="0" max="99"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="0 或留空 = 永久">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">CSV 檔案 <span class="text-red-500">*</span></label>
+                        <input type="file" accept=".csv" @change="bulkFile = $event.target.files[0]"
+                               class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div x-show="bulkResult" class="text-sm bg-gray-50 border rounded p-3 space-y-1">
+                        <p>成功：<span class="text-green-700 font-medium" x-text="bulkResult?.success"></span> 筆</p>
+                        <p>失敗：<span class="text-red-700 font-medium" x-text="bulkResult?.failed"></span> 筆</p>
+                        <template x-for="err in (bulkResult?.errors || [])" :key="err.row">
+                            <p class="text-red-600 text-xs">第 <span x-text="err.row"></span> 行：<span x-text="err.message"></span></p>
+                        </template>
+                    </div>
+                    <div x-show="bulkError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="bulkError"></div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3">
+                    <button @click="showBulkModal = false"
+                            class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">關閉</button>
+                    <button @click="submitBulk()" :disabled="bulkLoading || !bulkFile"
+                            class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50">
+                        <span x-show="bulkLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                        上傳並發證
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改到期日 Modal -->
+        <div x-show="showExpiryModal" x-cloak
+             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             @click.self="showExpiryModal = false">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md" @click.stop>
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-bold">修改到期日</h3>
+                    <button @click="showExpiryModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-sm text-gray-600">
+                        證書：<span class="font-mono font-medium" x-text="expiryTarget?.certificateNumber"></span>
+                    </p>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">新到期日（留空 = 永久有效）</label>
+                        <input type="date" x-model="expiryForm.expiresAt"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">管理備註 <span class="text-red-500">*</span></label>
+                        <textarea x-model="expiryForm.adminNote" rows="2"
+                                  class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="請說明修改原因（必填）"></textarea>
+                    </div>
+                    <div x-show="expiryError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="expiryError"></div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3">
+                    <button @click="showExpiryModal = false"
+                            class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button @click="submitExpiry()" :disabled="expiryLoading"
+                            class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">
+                        <span x-show="expiryLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                        儲存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 撤銷 Modal -->
+        <div x-show="showRevokeModal" x-cloak
+             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             @click.self="showRevokeModal = false">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md" @click.stop>
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-red-700">撤銷證書</h3>
+                    <button @click="showRevokeModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-sm text-gray-600">
+                        即將撤銷：<span class="font-mono font-medium" x-text="revokeTarget?.certificateNumber"></span>
+                    </p>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">撤銷原因 <span class="text-red-500">*</span></label>
+                        <textarea x-model="revokeForm.reason" rows="3"
+                                  class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                  placeholder="請輸入撤銷原因（必填）"></textarea>
+                    </div>
+                    <div x-show="revokeError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="revokeError"></div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3">
+                    <button @click="showRevokeModal = false"
+                            class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button @click="submitRevoke()" :disabled="revokeLoading"
+                            class="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">
+                        <span x-show="revokeLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                        確認撤銷
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function certAdmin() {
+        return {
+            certs: [],
+            loading: false,
+            hasMore: false,
+            nextCursor: null,
+            filters: { certType: '', isRevoked: '', userId: '' },
+
+            // Toast
+            toast: { visible: false, message: '', type: 'success' },
+
+            // Issue modal
+            showIssueModal: false,
+            issueForm: { courseName: '', courseCode: '', userId: '', attendanceDate: '', completionHours: '', certValidityYears: '', instructorName: '', notes: '' },
+            issueError: '',
+            issueLoading: false,
+
+            // Bulk modal
+            showBulkModal: false,
+            bulkForm: { certValidityYears: '' },
+            bulkFile: null,
+            bulkError: '',
+            bulkResult: null,
+            bulkLoading: false,
+
+            // Expiry modal
+            showExpiryModal: false,
+            expiryTarget: null,
+            expiryForm: { expiresAt: '', adminNote: '' },
+            expiryError: '',
+            expiryLoading: false,
+
+            // Revoke modal
+            showRevokeModal: false,
+            revokeTarget: null,
+            revokeForm: { reason: '' },
+            revokeError: '',
+            revokeLoading: false,
+
+            async init() {
+                await this.loadCerts();
+            },
+
+            getAuthHeaders() {
+                const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+                return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+            },
+
+            buildQueryString() {
+                const params = new URLSearchParams();
+                if (this.filters.certType) params.set('certType', this.filters.certType);
+                if (this.filters.isRevoked !== '') params.set('isRevoked', this.filters.isRevoked);
+                if (this.filters.userId.trim()) params.set('userId', this.filters.userId.trim());
+                return params.toString();
+            },
+
+            exportUrl() {
+                const qs = this.buildQueryString();
+                return `/api/admin/certificates/export${qs ? '?' + qs : ''}`;
+            },
+
+            async resetAndLoad() {
+                this.certs = [];
+                this.nextCursor = null;
+                this.hasMore = false;
+                await this.loadCerts();
+            },
+
+            async loadCerts() {
+                this.loading = true;
+                try {
+                    let qs = this.buildQueryString();
+                    if (this.nextCursor) {
+                        qs += (qs ? '&' : '') + 'cursor=' + encodeURIComponent(this.nextCursor);
+                    }
+                    const res = await fetch(`/api/admin/certificates${qs ? '?' + qs : ''}`, {
+                        headers: this.getAuthHeaders()
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '載入失敗');
+                    this.certs.push(...(json.data || []));
+                    this.hasMore = json.pagination?.hasMore || false;
+                    this.nextCursor = json.pagination?.nextCursor || null;
+                } catch (e) {
+                    this.showToast(e.message, 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async loadMore() {
+                await this.loadCerts();
+            },
+
+            showToast(message, type = 'success') {
+                this.toast = { visible: true, message, type };
+                setTimeout(() => { this.toast.visible = false; }, 3000);
+            },
+
+            resetIssueForm() {
+                this.issueForm = { courseName: '', courseCode: '', userId: '', attendanceDate: '', completionHours: '', certValidityYears: '', instructorName: '', notes: '' };
+                this.issueError = '';
+            },
+
+            async submitIssue() {
+                this.issueError = '';
+                const f = this.issueForm;
+                if (!f.courseName.trim() || !f.userId.trim() || !f.attendanceDate) {
+                    this.issueError = '課程名稱、使用者 ID 及出席日期為必填';
+                    return;
+                }
+                this.issueLoading = true;
+                try {
+                    const body = {
+                        courseName: f.courseName.trim(),
+                        courseCode: f.courseCode.trim() || undefined,
+                        userId: f.userId.trim(),
+                        attendanceDate: f.attendanceDate,
+                        completionHours: f.completionHours !== '' ? Number(f.completionHours) : undefined,
+                        certValidityYears: f.certValidityYears !== '' ? Number(f.certValidityYears) : undefined,
+                        instructorName: f.instructorName.trim() || undefined,
+                        notes: f.notes.trim() || undefined
+                    };
+                    const res = await fetch('/api/admin/certificates/course-attendances', {
+                        method: 'POST',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify(body)
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '發證失敗');
+                    this.showToast(`證書已發出：${json.data.certificate.certificateNumber}`);
+                    this.showIssueModal = false;
+                    await this.resetAndLoad();
+                } catch (e) {
+                    this.issueError = e.message;
+                } finally {
+                    this.issueLoading = false;
+                }
+            },
+
+            async submitBulk() {
+                this.bulkError = '';
+                this.bulkResult = null;
+                if (!this.bulkFile) return;
+                this.bulkLoading = true;
+                try {
+                    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+                    const fd = new FormData();
+                    fd.append('file', this.bulkFile);
+                    if (this.bulkForm.certValidityYears !== '') {
+                        fd.append('certValidityYears', this.bulkForm.certValidityYears);
+                    }
+                    const res = await fetch('/api/admin/certificates/course-attendances/bulk', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: fd
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '批次上傳失敗');
+                    this.bulkResult = json.data;
+                    if (json.data.success > 0) {
+                        await this.resetAndLoad();
+                    }
+                } catch (e) {
+                    this.bulkError = e.message;
+                } finally {
+                    this.bulkLoading = false;
+                }
+            },
+
+            openExpiryModal(cert) {
+                this.expiryTarget = cert;
+                this.expiryForm = {
+                    expiresAt: cert.expiresAt ? new Date(cert.expiresAt).toISOString().slice(0, 10) : '',
+                    adminNote: cert.adminNote || ''
+                };
+                this.expiryError = '';
+                this.showExpiryModal = true;
+            },
+
+            async submitExpiry() {
+                this.expiryError = '';
+                if (!this.expiryForm.adminNote.trim()) {
+                    this.expiryError = '管理備註為必填';
+                    return;
+                }
+                this.expiryLoading = true;
+                try {
+                    const res = await fetch(`/api/admin/certificates/${this.expiryTarget._id}/expiry`, {
+                        method: 'PATCH',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify({
+                            expiresAt: this.expiryForm.expiresAt || null,
+                            adminNote: this.expiryForm.adminNote.trim()
+                        })
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '修改失敗');
+                    this.showToast('到期日已更新');
+                    this.showExpiryModal = false;
+                    await this.resetAndLoad();
+                } catch (e) {
+                    this.expiryError = e.message;
+                } finally {
+                    this.expiryLoading = false;
+                }
+            },
+
+            openRevokeModal(cert) {
+                this.revokeTarget = cert;
+                this.revokeForm = { reason: '' };
+                this.revokeError = '';
+                this.showRevokeModal = true;
+            },
+
+            async submitRevoke() {
+                this.revokeError = '';
+                if (!this.revokeForm.reason.trim()) {
+                    this.revokeError = '撤銷原因為必填';
+                    return;
+                }
+                this.revokeLoading = true;
+                try {
+                    // Use the admin-certificates route if it's course type, else use exam cert route
+                    const endpoint = `/api/exams/certificates/${this.revokeTarget._id}/revoke`;
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify({ reason: this.revokeForm.reason.trim() })
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '撤銷失敗');
+                    this.showToast('證書已撤銷');
+                    this.showRevokeModal = false;
+                    await this.resetAndLoad();
+                } catch (e) {
+                    this.revokeError = e.message;
+                } finally {
+                    this.revokeLoading = false;
+                }
+            },
+
+            async unrevokeConfirm(cert) {
+                if (!confirm(`確定要恢復證書 ${cert.certificateNumber} 嗎？`)) return;
+                try {
+                    const res = await fetch(`/api/exams/certificates/${cert._id}/unrevoke`, {
+                        method: 'POST',
+                        headers: this.getAuthHeaders()
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '恢復失敗');
+                    this.showToast('證書已恢復');
+                    await this.resetAndLoad();
+                } catch (e) {
+                    this.showToast(e.message, 'error');
+                }
+            }
+        };
+    }
+    </script>
+</body>
+</html>

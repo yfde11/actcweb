@@ -31,6 +31,7 @@ const examRoutes = require('./routes/exams');
 const memberExamRoutes = require('./routes/member-exams');
 const questionBankRoutes = require('./routes/question-bank');
 const cronRoutes = require('./routes/cron');
+const adminCertRoutes = require('./routes/admin-certificates');
 const { ensureMongo } = require('./middleware/mongoReady');
 const { bootstrapDatabase } = require('./lib/bootstrapDb');
 
@@ -111,6 +112,8 @@ app.use('/api/exams', examRoutes);
 app.use('/api/member/exams', memberExamRoutes);
 app.use('/api/question-bank', questionBankRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/api/admin/certificates', adminCertRoutes);
+
 
 // Certificate verification (public)
 const { verifyCertificate } = require('./services/examCertificates');

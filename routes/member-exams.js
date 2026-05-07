@@ -136,29 +136,31 @@ router.get('/', verifiedAuth, async (req, res) => {
     }
 });
 
-// GET /api/member/certificates - my certificates
+// GET /api/member/certificates - my certificates (exam + course type, including revoked for display)
 router.get('/certificates', verifiedAuth, async (req, res) => {
     try {
         const { page = 1, limit = 20 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const [certificates, total] = await Promise.all([
-            Certificate.find({
-                user: req.user.userId,
-                isRevoked: { $ne: true }
-            })
+            Certificate.find({ user: req.user.userId })
                 .sort({ issuedAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit))
-                .populate('exam', 'title examType'),
-            Certificate.countDocuments({
-                user: req.user.userId,
-                isRevoked: { $ne: true }
-            })
+                .populate('exam', 'title examType')
+                .populate('course', 'courseName'),
+            Certificate.countDocuments({ user: req.user.userId })
         ]);
 
+        // Return certType alongside each certificate
+        const data = certificates.map(cert => {
+            const obj = cert.toObject();
+            obj.certType = cert.certType || 'exam';
+            return obj;
+        });
+
         res.json({
-            data: certificates,
+            data,
             pagination: {
                 total,
                 totalPages: Math.ceil(total / parseInt(limit)),

@@ -2,6 +2,7 @@ const PDFDocument = require('pdfkit');
 const Certificate = require('../models/Certificate');
 const ExamAttempt = require('../models/ExamAttempt');
 const Exam = require('../models/Exam');
+const CourseAttendance = require('../models/CourseAttendance');
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +12,7 @@ const path = require('path');
  * and the member-exams router.
  *
  * Returns one of:
- *   { ok: true, data: { certificateNumber, issuedAt, expiresAt, exam, user } }
+ *   { ok: true, data: { certificateNumber, issuedAt, expiresAt, certType, exam, course, user } }
  *   { ok: false, statusCode, code, message }
  *
  * @param {string} certificateNumber
@@ -21,7 +22,10 @@ async function verifyCertificate(certificateNumber) {
     const certificate = await Certificate.findOne({
         certificateNumber,
         isRevoked: { $ne: true }
-    }).populate('exam', 'title').populate('user', 'username fullName');
+    })
+        .populate('exam', 'title')
+        .populate('course', 'courseName')
+        .populate('user', 'username fullName');
 
     if (!certificate) {
         return { ok: false, statusCode: 404, code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在或已被撤銷' };
@@ -35,9 +39,11 @@ async function verifyCertificate(certificateNumber) {
         ok: true,
         data: {
             certificateNumber: certificate.certificateNumber,
+            certType: certificate.certType,
             issuedAt: certificate.issuedAt,
             expiresAt: certificate.expiresAt,
             exam: certificate.exam,
+            course: certificate.course,
             user: {
                 username: certificate.user.username,
                 fullName: certificate.user.fullName
@@ -70,8 +76,9 @@ async function generateCertificatePDF(certificateId, res) {
 
     const certificate = await Certificate.findById(certificateId)
         .populate('exam')
+        .populate('course')
         .populate('user');
-    
+
     if (!certificate) {
         throw new Error('CERTIFICATE_NOT_FOUND');
     }
@@ -80,11 +87,14 @@ async function generateCertificatePDF(certificateId, res) {
         throw new Error('CERTIFICATE_REVOKED');
     }
 
-    const exam = certificate.exam;
     const user = certificate.user;
+    const isCourse = certificate.certType === 'course';
 
-    // Get attempt for additional details
-    const attempt = await ExamAttempt.findById(certificate.attempt);
+    // Get attempt for additional details (exam type only)
+    let attempt = null;
+    if (!isCourse && certificate.attempt) {
+        attempt = await ExamAttempt.findById(certificate.attempt);
+    }
 
     // Create PDF document
     const doc = new PDFDocument({
@@ -105,8 +115,8 @@ async function generateCertificatePDF(certificateId, res) {
     doc.registerFont('Bold', BOLD_FONT_PATH || FONT_PATH);
     doc.font('Regular');
 
-    // Certificate template
-    const template = exam.certificateTemplate || {};
+    // Certificate template (only exam type has template)
+    const template = (!isCourse && certificate.exam && certificate.exam.certificateTemplate) ? certificate.exam.certificateTemplate : {};
 
     // Draw border
     if (template.customDesign?.borderColor) {
@@ -123,7 +133,7 @@ async function generateCertificatePDF(certificateId, res) {
 
     // Logo (if specified)
     if (template.customDesign?.logoPath && fs.existsSync(path.join(__dirname, '..', template.customDesign.logoPath))) {
-        doc.image(path.join(__dirname, '..', template.customDesign.logoPath), 
+        doc.image(path.join(__dirname, '..', template.customDesign.logoPath),
                   doc.page.width / 2 - 50, 60, { width: 100 });
     }
 
@@ -131,7 +141,7 @@ async function generateCertificatePDF(certificateId, res) {
     doc.font('Bold')
        .fontSize(36)
        .fillColor('#1a365d')
-       .text(template.title || '證書', { align: 'center' });
+       .text(template.title || (isCourse ? '課程結業證書' : '證書'), { align: 'center' });
 
     doc.moveDown(0.5);
 
@@ -158,15 +168,25 @@ async function generateCertificatePDF(certificateId, res) {
 
     doc.moveDown(0.5);
 
-    doc.font('Regular')
-       .fontSize(16)
-       .text(`已完成「${exam.title}」考試並通過認證`, { align: 'center' });
+    // Achievement text - differs by certType
+    if (isCourse) {
+        const courseName = certificate.course ? certificate.course.courseName : '本課程';
+        doc.font('Regular')
+           .fontSize(16)
+           .text(`已完成「${courseName}」課程訓練`, { align: 'center' });
+        // No score line for course certificates
+    } else {
+        const examTitle = certificate.exam ? certificate.exam.title : '考試';
+        doc.font('Regular')
+           .fontSize(16)
+           .text(`已完成「${examTitle}」考試並通過認證`, { align: 'center' });
 
-    // Score (if available)
-    if (attempt && attempt.score !== null) {
-        doc.moveDown(0.5);
-        doc.fontSize(14)
-           .text(`成績：${attempt.score} 分`, { align: 'center' });
+        // Score (if available, exam type only)
+        if (attempt && attempt.score !== null) {
+            doc.moveDown(0.5);
+            doc.fontSize(14)
+               .text(`成績：${attempt.score} 分`, { align: 'center' });
+        }
     }
 
     doc.moveDown(2);
@@ -233,8 +253,8 @@ async function regenerateCertificate(attemptId) {
         throw new Error('ATTEMPT_NOT_ELIGIBLE');
     }
 
-    // Check if already exists
-    let certificate = await Certificate.findOne({ attempt: attemptId });
+    // Check if already exists (non-revoked)
+    let certificate = await Certificate.findOne({ attempt: attemptId, isRevoked: false });
     if (certificate) {
         return certificate;
     }
@@ -245,14 +265,24 @@ async function regenerateCertificate(attemptId) {
     const year = new Date().getFullYear();
     const certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
 
+    // Calculate expiresAt using certValidityYears fallback logic
     let expiresAt = null;
-    if (attempt.exam.certificateTemplate?.validityPeriod > 0) {
+    const tmpl = attempt.exam.certificateTemplate || {};
+    if (tmpl.certValidityYears !== undefined && tmpl.certValidityYears !== null) {
+        if (tmpl.certValidityYears === 0) {
+            expiresAt = null; // 永久有效
+        } else {
+            expiresAt = new Date();
+            expiresAt.setFullYear(expiresAt.getFullYear() + tmpl.certValidityYears);
+        }
+    } else if (tmpl.validityPeriod > 0) {
         expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + attempt.exam.certificateTemplate.validityPeriod);
+        expiresAt.setMonth(expiresAt.getMonth() + tmpl.validityPeriod);
     }
 
     certificate = new Certificate({
         certificateNumber: certNumber,
+        certType: 'exam',
         exam: attempt.exam._id,
         user: attempt.user,
         attempt: attempt._id,
@@ -264,8 +294,58 @@ async function regenerateCertificate(attemptId) {
     return certificate;
 }
 
+/**
+ * Issue a course attendance certificate (admin function)
+ * @param {string} attendanceId - CourseAttendance ID
+ * @param {number} [certValidityYears] - validity in years; 0 = permanent; undefined = permanent
+ * @returns {Promise<{ attendance, certificate }>}
+ */
+async function issueCourseAttendanceCertificate(attendanceId, certValidityYears) {
+    const attendance = await CourseAttendance.findById(attendanceId).populate('user');
+    if (!attendance) {
+        throw new Error('ATTENDANCE_NOT_FOUND');
+    }
+
+    if (attendance.certificateIssued) {
+        throw new Error('CERTIFICATE_ALREADY_ISSUED');
+    }
+
+    const Counter = require('../models/Counter');
+    const seq = await Counter.getNextSequence('certificate_course_number');
+    const year = new Date().getFullYear();
+    const certNumber = `ACTC-COURSE-${year}-${String(seq).padStart(6, '0')}`;
+
+    // Calculate expiresAt
+    let expiresAt = null;
+    if (certValidityYears !== undefined && certValidityYears !== null) {
+        if (certValidityYears > 0) {
+            expiresAt = new Date();
+            expiresAt.setFullYear(expiresAt.getFullYear() + certValidityYears);
+        }
+        // 0 = 永久有效，expiresAt = null
+    }
+
+    const certificate = new Certificate({
+        certificateNumber: certNumber,
+        certType: 'course',
+        course: attendance._id,
+        user: attendance.user._id,
+        expiresAt
+    });
+
+    await certificate.save();
+
+    // Update attendance record
+    attendance.certificateIssued = true;
+    attendance.certificate = certificate._id;
+    await attendance.save();
+
+    return { attendance, certificate };
+}
+
 module.exports = {
     verifyCertificate,
     generateCertificatePDF,
-    regenerateCertificate
+    regenerateCertificate,
+    issueCourseAttendanceCertificate
 };

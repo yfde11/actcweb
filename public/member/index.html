@@ -491,15 +491,45 @@
                                 <p x-show="!loadingCertificates && certificates.length === 0" class="text-sm text-gray-500">尚無證書。</p>
                                 <div x-show="!loadingCertificates && certificates.length > 0" class="space-y-3">
                                     <template x-for="cert in certificates" :key="cert._id">
-                                        <div class="border rounded p-4 flex justify-between items-center">
-                                            <div>
-                                                <p class="font-medium" x-text="cert.exam?.title || '考試'"></p>
-                                                <p class="text-xs text-gray-500">證書編號：<span x-text="cert.certificateNumber"></span></p>
-                                                <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString()"></span></p>
+                                        <div class="border rounded p-4"
+                                             :class="cert.isRevoked ? 'border-red-200 bg-red-50' : (cert.expiresAt && new Date(cert.expiresAt) < new Date() ? 'border-gray-200 bg-gray-50 opacity-70' : 'border-gray-200')">
+                                            <div class="flex justify-between items-start gap-3">
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <!-- certType badge -->
+                                                        <span :class="cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                                              class="px-1.5 py-0.5 text-xs rounded font-medium">
+                                                            <span x-text="cert.certType === 'course' ? '課程型' : '考試型'"></span>
+                                                        </span>
+                                                        <!-- status badge -->
+                                                        <span x-show="cert.isRevoked"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800 font-medium">已撤銷</span>
+                                                        <span x-show="!cert.isRevoked && cert.expiresAt && new Date(cert.expiresAt) < new Date()"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-gray-200 text-gray-600 font-medium">已過期</span>
+                                                        <span x-show="!cert.isRevoked && !(cert.expiresAt && new Date(cert.expiresAt) < new Date())"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-green-100 text-green-800 font-medium">有效</span>
+                                                    </div>
+                                                    <p class="font-medium text-sm"
+                                                       x-text="cert.certType === 'course' ? (cert.course?.courseName || '課程') : (cert.exam?.title || '考試')"></p>
+                                                    <p class="text-xs text-gray-500 mt-0.5">證書編號：<span x-text="cert.certificateNumber"></span></p>
+                                                    <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString('zh-TW')"></span></p>
+                                                    <p x-show="cert.expiresAt" class="text-xs text-gray-500">到期日：<span x-text="cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString('zh-TW') : ''"></span></p>
+                                                    <p x-show="cert.isRevoked && cert.revokeReason" class="text-xs text-red-600 mt-0.5">撤銷原因：<span x-text="cert.revokeReason"></span></p>
+                                                </div>
+                                                <div class="flex flex-col gap-2 shrink-0">
+                                                    <!-- 下載按鈕（未撤銷才顯示） -->
+                                                    <button x-show="!cert.isRevoked"
+                                                            @click="downloadCertificate(cert.certificateNumber)"
+                                                            class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                                                        下載
+                                                    </button>
+                                                    <!-- 複製驗證連結 -->
+                                                    <button @click="copyCertLink(cert.certificateNumber)"
+                                                            class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                                                        複製驗證連結
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <button @click="downloadCertificate(cert.certificateNumber)" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                                                下載
-                                            </button>
                                         </div>
                                     </template>
                                 </div>
@@ -2464,6 +2494,24 @@
                     } catch (e) {
                         console.error('Download certificate error:', e);
                         alert('下載失敗');
+                    }
+                },
+
+                async copyCertLink(certificateNumber) {
+                    const siteUrl = window.location.origin;
+                    const link = `${siteUrl}/verify-certificate/${certificateNumber}`;
+                    try {
+                        await navigator.clipboard.writeText(link);
+                        alert('驗證連結已複製！');
+                    } catch (e) {
+                        // Fallback for browsers that don't support clipboard API
+                        const ta = document.createElement('textarea');
+                        ta.value = link;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        alert('驗證連結已複製！');
                     }
                 },
 
