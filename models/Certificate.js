@@ -5,13 +5,18 @@ const certificateSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        match: [/^ACTC-(EXAM|COURSE)-\d{4}-\d{6}$/, 'Certificate number must match format ACTC-EXAM-YYYY-XXXXXX or ACTC-COURSE-YYYY-XXXXXX']
+        match: [/^[A-Z][A-Z0-9\-]+-\d{4}-\d{6}$/, 'Certificate number must start with a letter, followed by uppercase letters/digits/hyphens, then -YYYY-XXXXXX']
     },
     certType: {
         type: String,
         enum: ['exam', 'course'],
         required: true,
         default: 'exam'
+    },
+    certTypeRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CertificateType',
+        default: null
     },
     exam: {
         type: mongoose.Schema.Types.ObjectId,

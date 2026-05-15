@@ -94,9 +94,9 @@
                         <template x-for="cert in certs" :key="cert._id">
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3 whitespace-nowrap">
-                                    <span :class="cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                    <span :class="cert.certTypeRef?.name ? 'bg-amber-100 text-amber-800' : (cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800')"
                                           class="px-2 py-0.5 text-xs rounded-full font-medium"
-                                          x-text="cert.certType === 'course' ? '課程型' : '考試型'"></span>
+                                          x-text="cert.certTypeRef?.name || (cert.certType === 'course' ? '課程型' : '考試型')"></span>
                                 </td>
                                 <td class="px-4 py-3 text-sm font-mono text-gray-900" x-text="cert.certificateNumber"></td>
                                 <td class="px-4 py-3">
@@ -161,6 +161,16 @@
                         <input type="text" x-model="issueForm.courseName"
                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="課程名稱">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">證書類型</label>
+                        <select x-model="issueForm.certTypeId"
+                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">預設（依課程型）</option>
+                            <template x-for="ct in certTypes" :key="ct._id">
+                                <option :value="ct._id" x-text="ct.name"></option>
+                            </template>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">課程代碼</label>
@@ -249,6 +259,16 @@
                         <input type="number" x-model="bulkForm.certValidityYears" min="0" max="99"
                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="0 或留空 = 永久">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">全局證書類型</label>
+                        <select x-model="bulkForm.certTypeId"
+                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">預設（依課程型）</option>
+                            <template x-for="ct in certTypes" :key="ct._id">
+                                <option :value="ct._id" x-text="ct.name"></option>
+                            </template>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">CSV 檔案 <span class="text-red-500">*</span></label>
@@ -364,15 +384,18 @@
             // Toast
             toast: { visible: false, message: '', type: 'success' },
 
+            // Cert types
+            certTypes: [],
+
             // Issue modal
             showIssueModal: false,
-            issueForm: { courseName: '', courseCode: '', recipientName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', instructorName: '', notes: '' },
+            issueForm: { courseName: '', courseCode: '', recipientName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' },
             issueError: '',
             issueLoading: false,
 
             // Bulk modal
             showBulkModal: false,
-            bulkForm: { certValidityYears: '' },
+            bulkForm: { certValidityYears: '', certTypeId: '' },
             bulkFile: null,
             bulkError: '',
             bulkResult: null,
@@ -395,7 +418,7 @@
             async init() {
                 const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
                 if (!token) { window.location.href = '/admin'; return; }
-                await this.loadCerts();
+                await Promise.all([this.loadCerts(), this.loadCertTypes()]);
             },
 
             getAuthHeaders() {
@@ -450,13 +473,23 @@
                 await this.loadCerts();
             },
 
+            async loadCertTypes() {
+                try {
+                    const res = await fetch('/api/admin/certificate-types?activeOnly=1', {
+                        headers: this.getAuthHeaders()
+                    });
+                    const json = await res.json();
+                    if (res.ok) this.certTypes = json.data || [];
+                } catch (e) { /* non-critical */ }
+            },
+
             showToast(message, type = 'success') {
                 this.toast = { visible: true, message, type };
                 setTimeout(() => { this.toast.visible = false; }, 3000);
             },
 
             resetIssueForm() {
-                this.issueForm = { courseName: '', courseCode: '', recipientName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', instructorName: '', notes: '' };
+                this.issueForm = { courseName: '', courseCode: '', recipientName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' };
                 this.issueError = '';
             },
 
@@ -478,7 +511,8 @@
                         completionHours: f.completionHours !== '' ? Number(f.completionHours) : undefined,
                         certValidityYears: f.certValidityYears !== '' ? Number(f.certValidityYears) : undefined,
                         instructorName: f.instructorName.trim() || undefined,
-                        notes: f.notes.trim() || undefined
+                        notes: f.notes.trim() || undefined,
+                        certTypeId: f.certTypeId || undefined
                     };
                     const res = await fetch('/api/admin/certificates/course-attendances', {
                         method: 'POST',
@@ -508,6 +542,9 @@
                     fd.append('file', this.bulkFile);
                     if (this.bulkForm.certValidityYears !== '') {
                         fd.append('certValidityYears', this.bulkForm.certValidityYears);
+                    }
+                    if (this.bulkForm.certTypeId) {
+                        fd.append('certTypeId', this.bulkForm.certTypeId);
                     }
                     const res = await fetch('/api/admin/certificates/course-attendances/bulk', {
                         method: 'POST',

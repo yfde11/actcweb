@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>證書類型管理 | ACTC 後台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { 'actc-orange': '#f97316' } } }
+        };
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="certTypeAdmin()" x-init="init()">
+
+<!-- Header -->
+<div class="bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <a href="/admin" class="text-gray-500 hover:text-gray-700 text-sm">← 返回後台</a>
+        <span class="text-gray-300">|</span>
+        <h1 class="text-lg font-semibold text-gray-900">證書類型管理</h1>
+    </div>
+    <button @click="openCreate()"
+            class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+        <i class="fas fa-plus mr-1"></i> 新增類型
+    </button>
+</div>
+
+<!-- Toast -->
+<div x-show="toast.visible" x-transition
+     :class="toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'"
+     class="fixed top-4 right-4 z-50 text-white px-5 py-3 rounded-lg shadow-lg text-sm">
+    <span x-text="toast.message"></span>
+</div>
+
+<!-- Main Content -->
+<div class="max-w-5xl mx-auto px-6 py-6">
+
+    <!-- Loading -->
+    <div x-show="loading" class="text-center py-8 text-gray-500 text-sm">載入中…</div>
+
+    <!-- Empty -->
+    <div x-show="!loading && types.length === 0"
+         class="bg-white rounded-lg shadow p-8 text-center text-gray-500 text-sm">
+        尚無證書類型，請點擊上方「新增類型」建立。
+    </div>
+
+    <!-- Table -->
+    <div x-show="!loading && types.length > 0"
+         class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">名稱</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">前綴</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">中文標題</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">英文標題</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                <template x-for="t in types" :key="t._id">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900" x-text="t.name"></td>
+                        <td class="px-4 py-3 text-sm font-mono text-gray-700" x-text="t.prefix || '—'"></td>
+                        <td class="px-4 py-3 text-sm text-gray-700" x-text="t.titleZh"></td>
+                        <td class="px-4 py-3 text-sm text-gray-500" x-text="t.titleEn || '—'"></td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span x-show="t.isActive"
+                                  class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">啟用</span>
+                            <span x-show="!t.isActive"
+                                  class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 font-medium">已停用</span>
+                        </td>
+                        <td class="px-4 py-3 text-right whitespace-nowrap text-sm">
+                            <button @click="openEdit(t)"
+                                    class="text-blue-600 hover:text-blue-900 mr-3">編輯</button>
+                            <button x-show="t.isActive"
+                                    @click="confirmDelete(t)"
+                                    class="text-red-600 hover:text-red-900">停用</button>
+                            <button x-show="!t.isActive"
+                                    @click="confirmActivate(t)"
+                                    class="text-green-600 hover:text-green-900">啟用</button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div x-show="showModal" x-cloak
+     class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+     @click.self="showModal = false" @keydown.escape.window="showModal = false">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md" @click.stop>
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-bold" x-text="editingItem ? '編輯證書類型' : '新增證書類型'"></h3>
+            <button @click="showModal = false" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">名稱 <span class="text-red-500">*</span></label>
+                <input type="text" x-model="form.name"
+                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="例：CISSP 認證">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">前綴（Prefix） <span class="text-red-500">*</span></label>
+                <input type="text" x-model="form.prefix"
+                       class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="例：ACTC-CISSP（大寫英文+連字號）"
+                       :disabled="editingItem && !prefixEditMode">
+                <p class="text-xs text-gray-400 mt-1">大寫英文、數字與連字號，例 ACTC-CISSP。將用於證書編號前綴。</p>
+                <!-- 編輯模式下前綴修改警告 -->
+                <div x-show="editingItem" class="mt-2">
+                    <div class="bg-orange-50 border border-orange-200 rounded p-3 text-xs text-orange-800 space-y-2">
+                        <p><strong>⚠ 修改前綴注意事項：</strong></p>
+                        <p>修改前綴不會更改已發出的證書編號，僅影響此後新發出的證書。</p>
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" x-model="form.confirmPrefixChange" class="mt-0.5 rounded border-orange-300 text-orange-600 focus:ring-orange-500" />
+                            <span>我了解修改前綴不會更改已發出的證書編號</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">中文標題 <span class="text-red-500">*</span></label>
+                <input type="text" x-model="form.titleZh"
+                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="例：CISSP 國際資訊安全認證證書">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">英文標題</label>
+                <input type="text" x-model="form.titleEn"
+                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="選填，例：CISSP Certificate">
+                <p class="text-xs text-gray-400 mt-1">留空則 PDF 不顯示英文副標題</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">PDF 內文（選填）</label>
+                <textarea x-model="form.bodyText" rows="3" maxlength="500"
+                          class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="例：本證書證明 {{name}} 已通過 {{examTitle}}，發證日期 {{date}}，編號 {{certNumber}}。"></textarea>
+                <p class="text-xs text-gray-400 mt-1">可用模板變數：<code class="bg-gray-100 px-1 rounded">{{name}}</code> <code class="bg-gray-100 px-1 rounded">{{examTitle}}</code> <code class="bg-gray-100 px-1 rounded">{{courseName}}</code> <code class="bg-gray-100 px-1 rounded">{{date}}</code> <code class="bg-gray-100 px-1 rounded">{{certNumber}}</code></p>
+            </div>
+            <div x-show="formError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="formError"></div>
+        </div>
+        <div class="p-6 border-t flex justify-end gap-3">
+            <button @click="showModal = false"
+                    class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
+            <button @click="submitForm()"
+                    :disabled="formLoading || (editingItem && form.prefix !== editingItem.prefix && !form.confirmPrefixChange)"
+                    class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
+                <span x-show="formLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                <span x-text="editingItem ? '儲存' : '新增'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+<script>
+function certTypeAdmin() {
+    return {
+        types: [],
+        loading: false,
+
+        showModal: false,
+        editingItem: null,
+        form: { name: '', prefix: '', titleZh: '', titleEn: '', bodyText: '', confirmPrefixChange: false },
+        prefixEditMode: false,
+        formError: '',
+        formLoading: false,
+
+        toast: { visible: false, message: '', type: 'success' },
+
+        async init() {
+            const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+            if (!token) { window.location.href = '/admin'; return; }
+            await this.loadTypes();
+        },
+
+        getAuthHeaders() {
+            const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { visible: true, message, type };
+            setTimeout(() => { this.toast.visible = false; }, 3000);
+        },
+
+        async loadTypes() {
+            this.loading = true;
+            try {
+                const res = await fetch('/api/admin/certificate-types', {
+                    headers: this.getAuthHeaders()
+                });
+                const json = await res.json();
+                if (res.status === 401) { window.location.href = '/admin'; return; }
+                if (!res.ok) throw new Error(json.error?.message || '載入失敗');
+                this.types = json.data || [];
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        openCreate() {
+            this.editingItem = null;
+            this.form = { name: '', prefix: '', titleZh: '', titleEn: '', bodyText: '', confirmPrefixChange: false };
+            this.prefixEditMode = false;
+            this.formError = '';
+            this.showModal = true;
+        },
+
+        openEdit(item) {
+            this.editingItem = item;
+            this.form = {
+                name: item.name,
+                prefix: item.prefix || '',
+                titleZh: item.titleZh,
+                titleEn: item.titleEn || '',
+                bodyText: item.bodyText || '',
+                confirmPrefixChange: false
+            };
+            this.prefixEditMode = false;
+            this.formError = '';
+            this.showModal = true;
+        },
+
+        async submitForm() {
+            this.formError = '';
+            if (!this.form.name.trim() || !this.form.titleZh.trim()) {
+                this.formError = '名稱與中文標題為必填';
+                return;
+            }
+            if (!this.form.prefix.trim() && !this.editingItem) {
+                this.formError = '前綴為必填';
+                return;
+            }
+            this.formLoading = true;
+            try {
+                const body = {
+                    name: this.form.name.trim(),
+                    prefix: this.form.prefix.trim(),
+                    titleZh: this.form.titleZh.trim(),
+                    titleEn: this.form.titleEn.trim() || undefined,
+                    bodyText: this.form.bodyText.trim() || undefined
+                };
+                if (this.editingItem) {
+                    body.confirmPrefixChange = this.form.confirmPrefixChange === true;
+                }
+                const url = this.editingItem
+                    ? `/api/admin/certificate-types/${this.editingItem._id}`
+                    : '/api/admin/certificate-types';
+                const method = this.editingItem ? 'PATCH' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: this.getAuthHeaders(),
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error?.message || '操作失敗');
+                this.showToast(this.editingItem ? '已更新' : '已新增');
+                this.showModal = false;
+                await this.loadTypes();
+            } catch (e) {
+                this.formError = e.message;
+            } finally {
+                this.formLoading = false;
+            }
+        },
+
+        async confirmDelete(item) {
+            if (!confirm(`確定要停用「${item.name}」嗎？已發出的證書不受影響。`)) return;
+            try {
+                const res = await fetch(`/api/admin/certificate-types/${item._id}`, {
+                    method: 'DELETE',
+                    headers: this.getAuthHeaders()
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error?.message || '停用失敗');
+                this.showToast('已停用');
+                await this.loadTypes();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        async confirmActivate(item) {
+            try {
+                const res = await fetch(`/api/admin/certificate-types/${item._id}`, {
+                    method: 'PATCH',
+                    headers: this.getAuthHeaders(),
+                    body: JSON.stringify({ isActive: true })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error?.message || '啟用失敗');
+                this.showToast('已啟用');
+                await this.loadTypes();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        }
+    };
+}
+</script>
+</body>
+</html>

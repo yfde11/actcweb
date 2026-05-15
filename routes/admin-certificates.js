@@ -5,6 +5,7 @@ const csv = require('csv-parser');
 const stream = require('stream');
 const validator = require('validator');
 const Certificate = require('../models/Certificate');
+const CertificateType = require('../models/CertificateType');
 const CourseAttendance = require('../models/CourseAttendance');
 const User = require('../models/User');
 const { adminAuth } = require('../middleware/adminAuth');
@@ -81,6 +82,7 @@ router.get('/', adminAuth, async (req, res) => {
             .populate('user', 'username email fullName')
             .populate('exam', 'title')
             .populate('course', 'courseName')
+            .populate('certTypeRef', 'name titleZh')
             .populate('attempt', 'score passed attemptNumber')
             .populate('revokedBy', 'username fullName');
 
@@ -212,11 +214,11 @@ router.patch('/:id/expiry', adminAuth, async (req, res) => {
 });
 
 // POST /api/admin/certificates/course-attendances - 手動單筆發課程型證書
-// Body: { courseName, courseCode?, recipientName, recipientEmail?, userId?, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears? }
+// Body: { courseName, courseCode?, recipientName, recipientEmail?, userId?, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears?, certTypeId? }
 // userId 選填：填入時嘗試關聯本會會員帳號，否則視為外部人士
 router.post('/course-attendances', adminAuth, async (req, res) => {
     try {
-        const { courseName, courseCode, recipientName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears } = req.body;
+        const { courseName, courseCode, recipientName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears, certTypeId } = req.body;
 
         if (!courseName || !recipientName || !attendanceDate) {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名及出席日期為必填');
@@ -264,9 +266,23 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
         await attendance.save();
 
         const years = certValidityYears !== undefined ? Number(certValidityYears) : undefined;
+
+        let resolvedCertTypeId = null;
+        if (certTypeId) {
+            if (!mongoose.Types.ObjectId.isValid(certTypeId)) {
+                return errorResponse(res, 400, 'INVALID_CERT_TYPE_ID', '無效的證書類型 ID');
+            }
+            const ct = await CertificateType.findOne({ _id: certTypeId, isActive: true });
+            if (!ct) {
+                return errorResponse(res, 404, 'CERT_TYPE_NOT_FOUND', '找不到指定的證書類型');
+            }
+            resolvedCertTypeId = certTypeId;
+        }
+
         const { attendance: updatedAttendance, certificate } = await issueCourseAttendanceCertificate(
             attendance._id.toString(),
-            years
+            years,
+            resolvedCertTypeId
         );
 
         res.status(201).json({ data: { attendance: updatedAttendance, certificate } });
@@ -287,7 +303,7 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
 });
 
 // POST /api/admin/certificates/course-attendances/bulk - CSV 批次發課程型證書（上限 500 筆）
-// Multipart: file (CSV), certValidityYears (optional)
+// Multipart: file (CSV), certValidityYears (optional), certTypeId (optional)
 router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
@@ -297,6 +313,19 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
         const certValidityYears = (req.body.certValidityYears !== undefined && req.body.certValidityYears !== '')
             ? Number(req.body.certValidityYears)
             : undefined;
+
+        let resolvedCertTypeId = null;
+        const certTypeIdBody = req.body.certTypeId;
+        if (certTypeIdBody) {
+            if (!mongoose.Types.ObjectId.isValid(certTypeIdBody)) {
+                return errorResponse(res, 400, 'INVALID_CERT_TYPE_ID', '無效的證書類型 ID');
+            }
+            const ct = await CertificateType.findOne({ _id: certTypeIdBody, isActive: true });
+            if (!ct) {
+                return errorResponse(res, 404, 'CERT_TYPE_NOT_FOUND', '找不到指定的證書類型');
+            }
+            resolvedCertTypeId = certTypeIdBody;
+        }
 
         // Parse CSV
         const rows = await new Promise((resolve, reject) => {
@@ -379,7 +408,8 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
 
                 const { attendance: updatedAttendance, certificate } = await issueCourseAttendanceCertificate(
                     attendance._id.toString(),
-                    certValidityYears
+                    certValidityYears,
+                    resolvedCertTypeId
                 );
 
                 results.success++;

@@ -181,10 +181,20 @@ async function generateCertificate(attemptId) {
         return null;
     }
 
-    // Generate certificate number
-    const seq = await Counter.getNextSequence('certificate_number');
+    // Populate exam.certTypeRef for prefix/counter resolution
+    await attempt.populate('exam.certTypeRef');
+
+    // Generate certificate number — use certTypeRef if available, fallback to ACTC-EXAM-
     const year = new Date().getFullYear();
-    const certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
+    let certNumber;
+    if (attempt.exam.certTypeRef) {
+        const ct = attempt.exam.certTypeRef;
+        const seq = await Counter.getNextSequence(ct.counterKey || 'certificate_number');
+        certNumber = `${ct.prefix}-${year}-${String(seq).padStart(6, '0')}`;
+    } else {
+        const seq = await Counter.getNextSequence('certificate_number');
+        certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
+    }
 
     // Calculate expiry
     let expiresAt = null;
@@ -195,6 +205,8 @@ async function generateCertificate(attemptId) {
 
     const certificate = new Certificate({
         certificateNumber: certNumber,
+        certType: 'exam',
+        certTypeRef: attempt.exam.certTypeRef?._id || null,
         exam: attempt.exam._id,
         user: attempt.user,
         attempt: attempt._id,

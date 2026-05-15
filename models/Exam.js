@@ -206,6 +206,11 @@ const examSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    certTypeRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CertificateType',
+        default: null
     }
 }, {
     timestamps: true
