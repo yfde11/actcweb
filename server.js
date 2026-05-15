@@ -8,10 +8,12 @@ if (!process.env.JWT_SECRET) {
     process.env.JWT_SECRET = 'actc_dev_only_jwt_secret_change_in_env';
 }
 
+const http = require('http');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
@@ -25,6 +27,12 @@ const memberNewsRoutes = require('./routes/member-news');
 const memberEventsRoutes = require('./routes/member-events');
 const workingGroupsRoutes = require('./routes/working-groups');
 const adminWorkingGroupsRoutes = require('./routes/admin-working-groups');
+const examRoutes = require('./routes/exams');
+const memberExamRoutes = require('./routes/member-exams');
+const questionBankRoutes = require('./routes/question-bank');
+const cronRoutes = require('./routes/cron');
+const adminCertRoutes = require('./routes/admin-certificates');
+const adminExamAccessRoutes = require('./routes/admin-exam-access');
 const { ensureMongo } = require('./middleware/mongoReady');
 const { bootstrapDatabase } = require('./lib/bootstrapDb');
 
@@ -37,14 +45,50 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-// 中間件（關閉 CSP：前台使用 Tailwind CDN 與內嵌 script）
+// Security middleware
 app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            // 'unsafe-inline' + 'unsafe-eval' required for Alpine.js CDN build (eval()s x-data expressions)
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+        },
+    },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-app.use(cors());
+const _corsOrigins = (() => {
+    const origins = [];
+    if (process.env.SITE_URL) {
+        origins.push(process.env.SITE_URL.replace(/\/$/, ''));
+    }
+    if (process.env.NODE_ENV !== 'production') {
+        origins.push(
+            'http://localhost:5001',
+            'http://localhost:3000',
+            'http://127.0.0.1:5001',
+            'http://127.0.0.1:3000'
+        );
+    }
+    return origins;
+})();
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (_corsOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // API 一律需資料庫已連線（避免登入與後台操作回不明 500）
 app.use('/api', ensureMongo);
@@ -65,6 +109,38 @@ app.use('/api/member/news', memberNewsRoutes);
 app.use('/api/member/events', memberEventsRoutes);
 app.use('/api/working-groups', workingGroupsRoutes);
 app.use('/api/admin/working-groups', adminWorkingGroupsRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/member/exams', memberExamRoutes);
+app.use('/api/question-bank', questionBankRoutes);
+app.use('/api/cron', cronRoutes);
+app.use('/api/admin/certificates', adminCertRoutes);
+app.use('/api/admin/exam-access', adminExamAccessRoutes);
+
+
+// Certificate verification (public)
+const { verifyCertificate } = require('./services/examCertificates');
+app.get('/api/certificates/verify/:certificateNumber', async (req, res) => {
+    try {
+        const result = await verifyCertificate(req.params.certificateNumber);
+        if (!result.ok) {
+            return res.status(result.statusCode).json({ error: { code: result.code, message: result.message } });
+        }
+        res.json({ data: result.data });
+    } catch (error) {
+        console.error('Verify certificate error:', error);
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: '伺服器錯誤' } });
+    }
+});
+
+// 證書驗證頁面（直接訪問，無證書號碼）
+app.get('/verify-certificate', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'pages', 'verify-certificate.html'));
+});
+
+// 證書驗證重定向：PDF QR code 連結至此，重定向至專屬驗證頁面
+app.get('/verify-certificate/:certificateNumber', (req, res) => {
+    res.redirect(`/pages/verify-certificate.html?verify=${encodeURIComponent(req.params.certificateNumber)}`);
+});
 
 // 會員專區（靜態 SPA）
 app.get('/member', (req, res) => {
@@ -72,6 +148,11 @@ app.get('/member', (req, res) => {
 });
 app.get('/member/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'member', 'index.html'));
+});
+
+// 獨立考試視窗
+app.get('/exam', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'exam.html'));
 });
 
 // 首頁路由
@@ -109,6 +190,13 @@ app.get('/admin/corporate-members', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'pages', 'admin-corporate-members.html'));
 });
 
+app.get('/admin/certificates', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'certificates.html'));
+});
+app.get('/admin/exam-access', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'exam-access.html'));
+});
+
 // 其他頁面路由
 app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'about.html'));
@@ -126,7 +214,10 @@ app.get('/secretariat', (req, res) => {
 
 // 404 處理
 app.use('*', (req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ message: 'Route not found' });
+    }
+    res.redirect('/');
 });
 
 // 錯誤處理中間件
@@ -179,6 +270,33 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/actc_websit
     } catch (err) {
         console.error('❌ Database bootstrap:', err.message);
     }
+
+    // Wire cron job: auto-submit expired exam attempts every 5 minutes
+    function callCronEndpoint() {
+        const options = {
+            hostname: '127.0.0.1',
+            port: PORT,
+            path: '/api/cron/expired-attempts',
+            method: 'POST',
+            headers: {
+                'X-Cron-Secret': process.env.CRON_SECRET || 'your-cron-secret-here',
+                'Content-Type': 'application/json'
+            }
+        };
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode !== 200) {
+                    console.warn(`⚠️  Cron expired-attempts: HTTP ${res.statusCode}`);
+                }
+            });
+        });
+        req.on('error', (err) => console.error('Cron expired-attempts error:', err.message));
+        req.end();
+    }
+
+    setInterval(callCronEndpoint, 5 * 60 * 1000);
 
     app.listen(PORT, HOST, () => {
         console.log(`🚀 Server listening on http://${HOST}:${PORT} (容器內埠；Docker 時由 Caddy 對外提供 80/443)`);

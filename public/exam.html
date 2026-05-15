@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACTC 線上考試</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { 'actc-orange': '#E85D04' } } }
+        };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen" x-data="examApp()" x-init="init()">
+
+    <!-- 載入中 -->
+    <div x-show="appState === 'loading'" class="flex items-center justify-center min-h-screen">
+        <div class="text-center space-y-3">
+            <div class="w-10 h-10 border-4 border-actc-orange border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-gray-600">載入考試中…</p>
+        </div>
+    </div>
+
+    <!-- 錯誤 -->
+    <div x-show="appState === 'error'" class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-xl shadow p-8 max-w-md w-full text-center space-y-4">
+            <p class="text-4xl">⚠️</p>
+            <h2 class="text-xl font-bold text-gray-900">無法載入考試</h2>
+            <p class="text-gray-600" x-text="errorMessage"></p>
+            <button @click="window.close()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300">
+                關閉視窗
+            </button>
+        </div>
+    </div>
+
+    <!-- 考試進行中 -->
+    <div x-show="appState === 'exam'" class="min-h-screen flex flex-col">
+
+        <!-- 頂部欄 -->
+        <header class="bg-white border-b shadow-sm sticky top-0 z-30">
+            <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="font-semibold text-gray-900 truncate" x-text="attempt.examTitle || 'ACTC 線上考試'"></p>
+                    <p class="text-xs text-gray-500" x-text="attempt.attemptNumber ? '考試編號：' + attempt.attemptNumber : ''"></p>
+                </div>
+                <div class="flex items-center gap-4 shrink-0">
+                    <span x-show="lastSaved" class="text-xs text-gray-400" x-text="'上次儲存：' + lastSavedText"></span>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">剩餘時間</p>
+                        <p class="text-lg font-mono font-bold" :class="showTimeWarning ? 'text-red-600' : 'text-gray-900'" x-text="formatTimeRemaining()"></p>
+                    </div>
+                    <div x-show="showTimeWarning" class="px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
+                        ⚠️ 不足5分鐘
+                    </div>
+                    <button @click="confirmSubmit()" :disabled="submitting"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+                        <span x-text="submitting ? '提交中…' : '提交考卷'"></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主體 -->
+        <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+            <div class="flex gap-4 items-start">
+
+                <!-- 題目列表 -->
+                <div class="flex-1 space-y-6">
+                    <template x-for="(question, idx) in attempt.questions" :key="question.questionId">
+                        <div class="bg-white p-5 rounded-xl border shadow-sm scroll-mt-20" :id="'question-' + idx">
+                            <p class="font-medium text-gray-900 mb-3 leading-snug">
+                                <span class="text-gray-400 mr-1" x-text="(idx + 1) + '.'"></span>
+                                <span x-text="question.content"></span>
+                                <span class="text-xs text-gray-400 ml-2">
+                                    (<span x-text="question.points"></span> 分, <span x-text="question.difficulty"></span>)
+                                </span>
+                            </p>
+
+                            <!-- 選擇題 -->
+                            <div x-show="question.type === 'multiple_choice'" class="space-y-2">
+                                <template x-for="(opt, optIdx) in question.options">
+                                    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                        <input type="radio" :name="'q-' + question.questionId" :value="optIdx"
+                                               x-model="answers[question.questionId]"
+                                               @change="onAnswerChange()"
+                                               class="text-actc-orange accent-orange-500">
+                                        <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
+                                    </label>
+                                </template>
+                            </div>
+
+                            <!-- 是非題 -->
+                            <div x-show="question.type === 'true_false'" class="space-y-2">
+                                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <input type="radio" :name="'q-' + question.questionId" :value="true"
+                                           x-model="answers[question.questionId]"
+                                           @change="onAnswerChange()"
+                                           class="accent-orange-500">
+                                    <span>正確 (True)</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <input type="radio" :name="'q-' + question.questionId" :value="false"
+                                           x-model="answers[question.questionId]"
+                                           @change="onAnswerChange()"
+                                           class="accent-orange-500">
+                                    <span>錯誤 (False)</span>
+                                </label>
+                            </div>
+
+                            <!-- 填空題 -->
+                            <div x-show="question.type === 'fill_in_blank'" class="mt-2">
+                                <input type="text" x-model="answers[question.questionId]"
+                                       @input="onAnswerChange()"
+                                       placeholder="請輸入答案"
+                                       class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- 底部提交 -->
+                    <div class="bg-white rounded-xl border p-5 text-center space-y-3">
+                        <p class="text-sm text-gray-600">
+                            已作答 <span class="font-bold text-green-600" x-text="answeredCount"></span> /
+                            <span x-text="attempt.questions?.length || 0"></span> 題
+                        </p>
+                        <button @click="confirmSubmit()" :disabled="submitting"
+                                class="px-6 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+                            <span x-text="submitting ? '提交中…' : '提交考卷'"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 題目導覽面板 -->
+                <div class="hidden md:block w-44 shrink-0 sticky top-20 bg-white border rounded-xl shadow-sm p-4">
+                    <p class="text-sm font-semibold text-gray-700 mb-3">題目導覽</p>
+                    <div class="grid grid-cols-5 gap-1">
+                        <template x-for="(q, idx) in attempt.questions" :key="q.questionId || idx">
+                            <button
+                                @click="goToQuestion(idx)"
+                                :class="[
+                                    'w-8 h-8 rounded text-xs font-medium transition-colors',
+                                    currentQuestionIndex === idx ? 'ring-2 ring-actc-orange' : '',
+                                    isAnswered(q.questionId) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                                ]"
+                                :aria-label="'跳至第 ' + (idx + 1) + ' 題'"
+                                x-text="idx + 1">
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3">
+                        已作答 <span class="font-medium text-green-600" x-text="answeredCount"></span> /
+                        <span x-text="attempt.questions?.length || 0"></span>
+                    </p>
+                    <div class="mt-2 space-y-1 text-xs text-gray-400">
+                        <div class="flex items-center gap-1.5">
+                            <span class="inline-block w-3 h-3 rounded bg-green-500"></span> 已作答
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="inline-block w-3 h-3 rounded bg-gray-200 ring-2 ring-orange-500"></span> 目前題目
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="inline-block w-3 h-3 rounded bg-gray-200"></span> 未作答
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 提交確認 Modal -->
+    <div x-show="showSubmitConfirm" x-cloak
+         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-gray-900">確認提交考卷</h3>
+            <div class="text-sm text-gray-700 space-y-2">
+                <p x-show="unansweredCount > 0" class="text-amber-700 font-medium">
+                    尚有 <span x-text="unansweredCount"></span> 題未作答
+                </p>
+                <p>提交後將無法修改答案，未作答題目將計為錯誤。</p>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button @click="showSubmitConfirm = false"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                    繼續作答
+                </button>
+                <button @click="showSubmitConfirm = false; submitExam()" :disabled="submitting"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50">
+                    確認提交
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 考試結果 -->
+    <div x-show="appState === 'result'" class="min-h-screen bg-gray-50 flex flex-col">
+        <header class="bg-white border-b shadow-sm">
+            <div class="max-w-3xl mx-auto px-4 py-3">
+                <p class="font-semibold text-gray-900">ACTC 線上考試 — 考試結果</p>
+            </div>
+        </header>
+
+        <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-8 space-y-6">
+
+            <!-- 分數卡片 -->
+            <div class="bg-white rounded-2xl shadow-md border p-8 text-center"
+                 :class="examResult && examResult.passed ? 'border-green-200' : 'border-red-200'">
+
+                <div class="flex items-center justify-center gap-2 mb-4">
+                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-base font-bold"
+                          :class="examResult && examResult.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                        <span x-text="examResult && examResult.passed ? '✓' : '✗'"></span>
+                        <span x-text="examResult && examResult.passed ? '通過' : '未通過'"></span>
+                    </span>
+                </div>
+
+                <div class="text-7xl font-extrabold leading-none mb-1"
+                     :class="examResult && examResult.passed ? 'text-green-600' : 'text-red-500'">
+                    <span x-text="examResult ? Math.round(examResult.score) : 0"></span>
+                    <span class="text-3xl font-semibold ml-1">分</span>
+                </div>
+
+                <p class="text-sm text-gray-500 mt-1">
+                    及格分數：<span x-text="examResult && examResult.passingScore != null ? examResult.passingScore + ' 分' : '—'"></span>
+                </p>
+
+                <div x-show="examResult && examResult.gradingDetails"
+                     class="mt-5 flex justify-center gap-8 text-sm">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xl font-bold text-green-600"
+                              x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.correctCount : 0"></span>
+                        <span class="text-gray-500">答對</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xl font-bold text-red-500"
+                              x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.incorrectCount : 0"></span>
+                        <span class="text-gray-500">答錯</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xl font-bold text-gray-400"
+                              x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.unansweredCount : 0"></span>
+                        <span class="text-gray-500">未作答</span>
+                    </div>
+                </div>
+
+                <div x-show="examResult && examResult.certificateIssued"
+                     class="mt-5 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700 font-medium">
+                    <span>證書已核發</span>
+                    <span class="text-blue-400">·</span>
+                    <span x-text="examResult && examResult.certificateNumber ? '編號 ' + examResult.certificateNumber : ''"></span>
+                </div>
+
+                <div x-show="examResult && examResult.cheatingDetected"
+                     class="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
+                    系統偵測到異常操作，本次成績已標記為零分。如有疑問，請聯絡管理員。
+                </div>
+            </div>
+
+            <!-- 答題回顧 -->
+            <div x-show="examResult && examResult.questionSnapshot && examResult.questionSnapshot.length > 0"
+                 class="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+                <div class="px-5 py-3 bg-gray-50 border-b flex items-center justify-between">
+                    <h4 class="font-semibold text-gray-700">答題回顧</h4>
+                    <span class="text-xs text-gray-400"
+                          x-text="examResult && examResult.questionSnapshot ? examResult.questionSnapshot.length + ' 題' : ''"></span>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    <template x-for="(snap, qi) in (examResult && examResult.questionSnapshot ? examResult.questionSnapshot : [])" :key="snap.questionId || qi">
+                        <div x-data="{ open: false }" class="px-5 py-4">
+                            <button @click="open = !open" class="w-full text-left flex items-start gap-3 group">
+                                <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                      :class="(() => {
+                                          if (!examResult || !examResult.answers) return 'bg-gray-200 text-gray-500';
+                                          const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                          if (!ans) return 'bg-gray-200 text-gray-500';
+                                          return ans.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white';
+                                      })()">
+                                    <span x-text="(() => {
+                                        if (!examResult || !examResult.answers) return '?';
+                                        const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                        if (!ans) return '?';
+                                        return ans.isCorrect ? '✓' : '✗';
+                                    })()"></span>
+                                </span>
+                                <span class="flex-1 text-sm font-medium text-gray-800 group-hover:text-gray-900 leading-snug">
+                                    <span class="text-gray-400 mr-1" x-text="(qi + 1) + '.'"></span>
+                                    <span x-text="snap.content"></span>
+                                </span>
+                                <span class="flex-shrink-0 text-gray-400 text-xs mt-0.5 transition-transform"
+                                      :class="open ? 'rotate-180' : ''"
+                                      style="display:inline-block">▼</span>
+                            </button>
+                            <div x-show="open" class="mt-3 ml-8 space-y-2">
+                                <div class="rounded-lg px-3 py-2 text-sm border-l-4"
+                                     :class="(() => {
+                                         if (!examResult || !examResult.answers) return 'bg-gray-50 border-gray-300';
+                                         const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                         if (!ans) return 'bg-gray-50 border-gray-300 text-gray-500';
+                                         return ans.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500';
+                                     })()">
+                                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">我的作答</span>
+                                    <p class="mt-0.5 text-gray-800"
+                                       x-text="(() => {
+                                           if (!examResult || !examResult.answers) return '（未作答）';
+                                           const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                           if (!ans || ans.answer === null || ans.answer === undefined) return '（未作答）';
+                                           if (snap.type === 'true_false') return String(ans.answer) === 'true' || ans.answer === true ? '正確 (True)' : '錯誤 (False)';
+                                           if (snap.type === 'multiple_choice') return String.fromCharCode(65 + Number(ans.answer)) + ' 選項';
+                                           return String(ans.answer);
+                                       })()">
+                                    </p>
+                                </div>
+                                <div class="rounded-lg px-3 py-2 text-sm bg-blue-50 border-l-4 border-blue-400">
+                                    <span class="text-xs font-semibold text-blue-600 uppercase tracking-wide">正確答案</span>
+                                    <p class="mt-0.5 text-blue-900"
+                                       x-text="(() => {
+                                           if (snap.type === 'true_false') return snap.correctAnswer === true || snap.correctAnswer === 'true' ? '正確 (True)' : '錯誤 (False)';
+                                           if (snap.type === 'multiple_choice') return String.fromCharCode(65 + Number(snap.correctAnswer)) + ' 選項';
+                                           return snap.correctAnswer !== undefined && snap.correctAnswer !== null ? String(snap.correctAnswer) : '—';
+                                       })()">
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- CTA 按鈕 -->
+            <div class="flex flex-wrap gap-3 justify-center pb-8">
+                <button @click="window.close()"
+                        class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                    關閉視窗
+                </button>
+                <button x-show="examResult && examResult.certificateIssued"
+                        @click="downloadCertificate(examResult.certificateNumber)"
+                        class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                    <span>⬇</span>
+                    <span>下載證書</span>
+                </button>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function examApp() {
+            return {
+                appState: 'loading', // loading | error | exam | result
+                errorMessage: '',
+                examId: null,
+                attemptId: null,
+                attempt: null,
+                examResult: null,
+                answers: {},
+                currentQuestionIndex: 0,
+                showSubmitConfirm: false,
+                unansweredCount: 0,
+                submitting: false,
+                timeRemainingInterval: null,
+                showTimeWarning: false,
+                visibilityChangeCount: 0,
+                suspectedCheating: false,
+                lastSaved: null,
+                lastSavedText: '',
+                autoSaveInterval: null,
+                autoSaveDebounceTimer: null,
+                _beforeUnloadHandler: null,
+                _visibilityChangeHandler: null,
+
+                async init() {
+                    const params = new URLSearchParams(location.search);
+                    this.examId = params.get('examId');
+                    this.attemptId = params.get('attemptId');
+
+                    if (!this.examId || !this.attemptId) {
+                        this.errorMessage = '缺少考試參數，請從會員頁面重新開始考試。';
+                        this.appState = 'error';
+                        return;
+                    }
+
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    if (!token) {
+                        this.errorMessage = '尚未登入，請先登入後再開始考試。';
+                        this.appState = 'error';
+                        return;
+                    }
+
+                    await this.loadAttempt();
+                },
+
+                authHeaders() {
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+                },
+
+                async loadAttempt() {
+                    try {
+                        const res = await fetch(`/api/member/exams/${this.examId}/resume?attemptId=${this.attemptId}`, {
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                            this.errorMessage = data.error?.message || '無法載入考試，請關閉視窗重試。';
+                            this.appState = 'error';
+                            return;
+                        }
+                        this.attempt = data.data;
+
+                        // Restore saved answers
+                        this.answers = {};
+                        if (data.data.answers) {
+                            data.data.answers.forEach(a => {
+                                this.answers[a.questionId] = a.answer;
+                            });
+                        }
+                        // Prefer localStorage if newer
+                        const localKey = `exam_progress_${this.attemptId}`;
+                        try {
+                            const local = JSON.parse(localStorage.getItem(localKey) || 'null');
+                            if (local && local.savedAt > new Date(this.attempt.lastSavedAt || 0).getTime()) {
+                                local.answers.forEach(a => {
+                                    this.answers[a.questionId] = a.selectedAnswer;
+                                });
+                            }
+                        } catch { /* ignore */ }
+
+                        this.appState = 'exam';
+                        this.startTimeRemainingTimer();
+                        this.startAutoSave();
+                        this.registerBeforeUnload();
+                    } catch (e) {
+                        console.error('Load attempt error:', e);
+                        this.errorMessage = '網路錯誤，請關閉視窗重試。';
+                        this.appState = 'error';
+                    }
+                },
+
+                registerBeforeUnload() {
+                    if (this._beforeUnloadHandler) {
+                        window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                    }
+                    this._beforeUnloadHandler = (e) => {
+                        if (this.appState === 'exam') {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    };
+                    window.addEventListener('beforeunload', this._beforeUnloadHandler);
+                },
+
+                startAutoSave() {
+                    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+                    this.autoSaveInterval = setInterval(() => this.autoSaveProgress(), 30000);
+                },
+
+                onAnswerChange() {
+                    clearTimeout(this.autoSaveDebounceTimer);
+                    this.autoSaveDebounceTimer = setTimeout(() => this.autoSaveProgress(), 2000);
+                },
+
+                async autoSaveProgress() {
+                    if (!this.attemptId || !this.examId) return;
+                    const answersArray = Object.keys(this.answers).map(qId => ({
+                        questionId: qId,
+                        selectedAnswer: this.answers[qId]
+                    }));
+                    try {
+                        await fetch(`/api/member/exams/${this.examId}/save-progress`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                attemptId: this.attemptId,
+                                answers: answersArray,
+                                visibilityChangeCount: this.visibilityChangeCount
+                            })
+                        });
+                    } catch { /* silent */ }
+                    try {
+                        localStorage.setItem(`exam_progress_${this.attemptId}`, JSON.stringify({ answers: answersArray, savedAt: Date.now() }));
+                    } catch { /* silent */ }
+                    this.lastSaved = new Date();
+                    const h = this.lastSaved.getHours().toString().padStart(2, '0');
+                    const m = this.lastSaved.getMinutes().toString().padStart(2, '0');
+                    this.lastSavedText = h + ':' + m;
+                },
+
+                startTimeRemainingTimer() {
+                    if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+
+                    this._visibilityChangeHandler = () => {
+                        if (document.hidden) {
+                            this.visibilityChangeCount++;
+                            if (this.visibilityChangeCount <= 3) {
+                                alert(`警告：偵測到視窗切換（第 ${this.visibilityChangeCount} 次）\n請勿切換視窗。`);
+                            } else if (this.visibilityChangeCount > 10) {
+                                this.suspectedCheating = true;
+                            }
+                        }
+                    };
+                    document.addEventListener('visibilitychange', this._visibilityChangeHandler);
+
+                    this.timeRemainingInterval = setInterval(() => {
+                        if (!this.attempt?.expiresAt) return;
+                        const remaining = Math.max(0, Math.floor((new Date(this.attempt.expiresAt) - new Date()) / 1000));
+                        if (remaining <= 300 && remaining > 0) this.showTimeWarning = true;
+                        if (remaining <= 0) {
+                            clearInterval(this.timeRemainingInterval);
+                            document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+                            alert('考試時間到！即將自動提交。');
+                            this.submitExam();
+                        }
+                    }, 1000);
+                },
+
+                formatTimeRemaining() {
+                    if (!this.attempt?.expiresAt) return '無限制';
+                    const remaining = Math.max(0, Math.floor((new Date(this.attempt.expiresAt) - new Date()) / 1000));
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                },
+
+                get answeredCount() {
+                    if (!this.attempt?.questions) return 0;
+                    return this.attempt.questions.filter(q => this.isAnswered(q.questionId)).length;
+                },
+
+                get unansweredCountComputed() {
+                    return (this.attempt?.questions?.length || 0) - this.answeredCount;
+                },
+
+                isAnswered(questionId) {
+                    const v = this.answers[questionId];
+                    return v !== undefined && v !== null && v !== '';
+                },
+
+                goToQuestion(idx) {
+                    this.currentQuestionIndex = idx;
+                    const el = document.getElementById('question-' + idx);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                },
+
+                confirmSubmit() {
+                    const unanswered = (this.attempt?.questions?.length || 0) - this.answeredCount;
+                    if (unanswered === 0) {
+                        this.submitExam();
+                    } else {
+                        this.unansweredCount = unanswered;
+                        this.showSubmitConfirm = true;
+                    }
+                },
+
+                cleanupTimers() {
+                    if (this.timeRemainingInterval) { clearInterval(this.timeRemainingInterval); this.timeRemainingInterval = null; }
+                    if (this.autoSaveInterval) { clearInterval(this.autoSaveInterval); this.autoSaveInterval = null; }
+                    if (this.autoSaveDebounceTimer) { clearTimeout(this.autoSaveDebounceTimer); this.autoSaveDebounceTimer = null; }
+                    if (this._visibilityChangeHandler) {
+                        document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+                        this._visibilityChangeHandler = null;
+                    }
+                    if (this._beforeUnloadHandler) {
+                        window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                        this._beforeUnloadHandler = null;
+                    }
+                },
+
+                async submitExam() {
+                    this.submitting = true;
+                    try {
+                        const answersArray = Object.keys(this.answers).map(qId => {
+                            const qIndex = this.attempt.questions.findIndex(q => q.questionId === qId);
+                            return {
+                                questionId: qId,
+                                questionNumber: qIndex + 1,
+                                answer: this.answers[qId]
+                            };
+                        });
+                        const res = await fetch(`/api/member/exams/${this.examId}/submit`, {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                attemptId: this.attemptId,
+                                answers: answersArray,
+                                timeSpent: this.attempt.timeLimit ?
+                                    Math.floor((new Date() - new Date(this.attempt.startedAt)) / 1000) : 0,
+                                visibilityChangeCount: this.visibilityChangeCount || 0,
+                                suspectedCheating: this.suspectedCheating || false
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.cleanupTimers();
+                            this.examResult = data.data;
+                            this.appState = 'result';
+
+                            // Notify parent window
+                            if (window.opener && !window.opener.closed) {
+                                window.opener.postMessage({
+                                    type: 'EXAM_COMPLETED',
+                                    examId: this.examId,
+                                    attemptId: this.attemptId,
+                                    passed: data.data.passed,
+                                    score: data.data.score
+                                }, location.origin);
+                            }
+
+                            // Clean up saved progress
+                            try { localStorage.removeItem(`exam_progress_${this.attemptId}`); } catch { /* ignore */ }
+                        } else {
+                            alert(data.error?.message || '提交失敗，請稍後再試');
+                        }
+                    } catch (e) {
+                        console.error('Submit exam error:', e);
+                        alert('網路錯誤，請稍後再試');
+                    } finally {
+                        this.submitting = false;
+                    }
+                },
+
+                async downloadCertificate(certificateNumber) {
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    try {
+                        const res = await fetch(`/api/member/exams/certificate/${certificateNumber}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!res.ok) { alert('下載失敗'); return; }
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `certificate-${certificateNumber}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+                    } catch (e) {
+                        alert('下載失敗');
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

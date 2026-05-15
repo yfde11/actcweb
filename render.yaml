@@ -1,0 +1,50 @@
+# Render 部署設定
+# 部署方式：Connect your repo → Render 會自動偵測此檔
+# 文件：https://render.com/docs/infrastructure-as-code
+
+services:
+  - type: web
+    name: actc-web
+    env: node
+    region: oregon  # 離亞洲較近的免費區域
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: DOMAIN
+        value: your-domain.com
+      - key: PORT
+        value: 5001
+      - key: MONGO_SERVER_SELECTION_TIMEOUT_MS
+        value: "30000"
+      - key: SITE_URL
+        sync: false  # 部署後由 Render 提供網址
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_FILE_SIZE
+        value: "5242880"
+      - key: MAX_FILES
+        value: "5"
+      # SMTP 設定（可選，用於寄信功能）
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: DIGEST_FROM_EMAIL
+        sync: false
+      - key: NOTIFY_FALLBACK_TO
+        sync: false

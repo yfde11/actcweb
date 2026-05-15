@@ -10,7 +10,7 @@ caddy-certs/
 # Environment variables
 .env
 .env.docker
-# rclone 上傳開關（可含 RCLONE_REMOTE 等，不含帳密；仍勿提交避免誤佈署）
+.env.production
 .env.rclone
 .env.local
 .env.development.local
@@ -136,3 +136,7 @@ HTTPS_SETUP.md
 DOMAIN_SETUP.md
 VPS_SYNC_README.md
 DEPLOYMENT*.md
+
+# Font files (download separately)
+fonts/*
+!fonts/README.md

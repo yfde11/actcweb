@@ -317,6 +317,17 @@ router.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        // Set httpOnly cookie in addition to returning token in body
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieName = user.role === 'admin' ? 'adminToken' : 'memberToken';
+        res.cookie(cookieName, token, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours, match JWT expiry
+            path: '/'
+        });
+
         res.json({
             message: '登入成功',
             token,
@@ -476,6 +487,13 @@ router.get('/verify', verifiedAuth, async (req, res) => {
             message: 'Internal server error'
         });
     }
+});
+
+// 登出（清除 httpOnly cookie）
+router.post('/logout', (req, res) => {
+    res.clearCookie('memberToken', { path: '/' });
+    res.clearCookie('adminToken', { path: '/' });
+    res.json({ message: 'Logged out' });
 });
 
 module.exports = router;

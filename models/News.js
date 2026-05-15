@@ -67,8 +67,7 @@ const newsSchema = new mongoose.Schema({
     },
     analyticsId: {
         type: String,
-        trim: true,
-        sparse: true
+        trim: true
     },
     // 保留舊欄位以向後兼容
     date: {

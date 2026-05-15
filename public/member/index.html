@@ -23,11 +23,11 @@
                 </a>
                 <div class="hidden md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-2">
                     <a href="/#home" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">首頁</a>
-                    <a href="/about.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
+                    <a href="/about" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">關於協會</a>
                     <a href="/#news" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">最新消息</a>
                     <a href="/#events" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">活動課程</a>
                     <a href="/#corporate-members" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">企業會員</a>
-                    <a href="/workgroups.html" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">工作小組</a>
+                    <a href="/workgroups" class="nav-link text-gray-600 hover:text-actc-orange transition-colors focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded">工作小組</a>
                     <div id="desktopMemberNav" class="relative flex items-center gap-2 md:ml-auto">
                         <span id="desktopMemberHint" class="text-xs text-gray-500 max-w-[10rem] leading-tight text-right"></span>
                         <button type="button" id="desktopMemberMenuBtn" class="flex items-center justify-center rounded-full p-1 text-actc-orange hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2" aria-expanded="false" aria-haspopup="true" aria-controls="desktopMemberDropdown" title="會員">
@@ -60,11 +60,11 @@
             <div id="mobileMenu" class="hidden md:hidden pb-4" role="navigation" aria-label="手機主選單">
                 <div class="space-y-2">
                     <a href="/#home" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">首頁</a>
-                    <a href="/about.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
+                    <a href="/about" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">關於協會</a>
                     <a href="/#news" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">最新消息</a>
                     <a href="/#events" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">活動課程</a>
                     <a href="/#corporate-members" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">企業會員</a>
-                    <a href="/workgroups.html" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
+                    <a href="/workgroups" class="block text-gray-600 hover:text-actc-orange transition-colors py-2">工作小組</a>
                     <div class="border-t border-gray-100 pt-2">
                         <button type="button" id="mobileMemberToggle" class="flex w-full items-center justify-between py-2 text-left text-gray-700 hover:text-actc-orange focus:outline-none focus:ring-2 focus:ring-actc-sand focus:ring-offset-2 rounded" aria-expanded="false" aria-controls="mobileMemberSub">
                             <span class="flex items-center gap-2 font-medium">
@@ -93,6 +93,35 @@
         </div>
     </nav>
 
+    <!-- 會員分頁導覽（登入後顯示） -->
+    <div x-show="token" x-cloak class="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4">
+            <nav class="flex gap-0 -mb-px overflow-x-auto" aria-label="會員專區導覽">
+                <button @click="activeTab='overview'"
+                        :class="activeTab==='overview' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-house mr-1.5"></i>總覽
+                </button>
+                <button @click="activeTab='account'"
+                        :class="activeTab==='account' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-user-gear mr-1.5"></i>帳號設定
+                </button>
+                <button @click="activeTab='events'"
+                        :class="activeTab==='events' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-calendar-days mr-1.5"></i>我的活動
+                    <span x-show="activeEventRegs.length > 0" class="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-actc-orange text-white text-xs" x-text="activeEventRegs.length"></span>
+                </button>
+                <button @click="activeTab='exams'"
+                        :class="activeTab==='exams' ? 'border-b-2 border-actc-orange text-actc-orange' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none">
+                    <i class="fa-solid fa-graduation-cap mr-1.5"></i>考試與證書
+                </button>
+            </nav>
+        </div>
+    </div>
+
     <main class="max-w-5xl mx-auto px-4 py-8">
         <div x-show="verifyMsg" class="mb-4 p-4 rounded bg-blue-50 text-blue-800" x-text="verifyMsg"></div>
 
@@ -111,21 +140,8 @@
                 </form>
             </div>
             <div class="grid md:grid-cols-2 gap-8">
-            <div id="register" class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">註冊</h2>
-                <form class="space-y-3" @submit.prevent="register" novalidate>
-                    <input x-model="reg.username" autocomplete="username" placeholder="使用者名稱（至少3字）" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名（選填）" class="w-full border rounded px-3 py-2" />
-                    <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
-                    <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
-                        <span x-text="registerSending ? '送出中…' : '註冊'"></span>
-                    </button>
-                </form>
-            </div>
-            <div id="login" class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">登入</h2>
+            <div id="login" class="bg-white p-6 rounded-lg shadow border-l-4 border-actc-orange">
+                <h2 class="text-xl font-bold mb-4">登入會員</h2>
                 <form class="space-y-3" @submit.prevent="login" novalidate>
                     <input x-model="loginForm.username" autocomplete="username" placeholder="使用者名稱或 Email" class="w-full border rounded px-3 py-2" />
                     <input x-model="loginForm.password" type="password" autocomplete="current-password" placeholder="密碼" class="w-full border rounded px-3 py-2" />
@@ -149,134 +165,980 @@
                     <button type="submit" class="px-3 py-2 bg-gray-200 rounded text-sm">重寄</button>
                 </form>
             </div>
+            <div id="register" class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-1">建立帳號</h2>
+                <p class="text-sm text-gray-500 mb-4">尚未有帳號？在此免費註冊。</p>
+                <form class="space-y-3" @submit.prevent="register" novalidate>
+                    <input x-model="reg.username" autocomplete="username" placeholder="使用者名稱（至少3字）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名（選填）" class="w-full border rounded px-3 py-2" />
+                    <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
+                    <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-text="registerSending ? '送出中…' : '註冊'"></span>
+                    </button>
+                </form>
+            </div>
             </div>
         </div>
 
         <!-- 已登入 -->
         <div id="account" x-show="token" class="space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-2">帳號狀態</h2>
-                <p class="text-sm text-gray-600">信箱驗證：<span class="font-medium" x-text="me.emailVerified ? '已完成' : '未完成（部分功能受限）'"></span></p>
-                <p class="text-sm text-gray-600">會員審核：<span class="font-medium" x-text="statusLabel(me.membershipStatus)"></span></p>
-                <p class="text-xs text-gray-500 mt-3 leading-relaxed border-t border-gray-100 pt-3">
-                    管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-700">不會</strong>自動變成「已核准」會員。
-                    最新消息與活動內容由管理員於管理後台維護。
-                </p>
-                <a href="/admin" x-show="token && me.role === 'admin'" class="inline-flex items-center mt-3 px-3 py-2 rounded bg-gray-900 text-white text-sm hover:bg-black">
-                    前往管理後台
-                </a>
-                <button type="button" @click="loadMe()" class="mt-3 text-sm text-actc-orange hover:underline">重新整理狀態</button>
-                <span class="text-xs text-gray-400 ml-2">（管理員已核准後若畫面未更新，請按此或重新登入）</span>
-                <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
-                    <button @click="applyMembership" class="mt-3 px-4 py-2 bg-orange-600 text-white rounded text-sm">申請成為會員</button>
-                </template>
+
+            <!-- 總覽 tab -->
+            <div x-show="activeTab === 'overview'" class="space-y-6">
+                <!-- 歡迎 banner -->
+                <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-xl p-5 flex items-center gap-4">
+                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-actc-orange/10 flex items-center justify-center">
+                        <i class="fa-solid fa-user-circle text-actc-orange text-3xl"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-lg font-bold text-gray-900">歡迎回來，<span x-text="me.profile?.fullName || me.username || me.email || '會員'"></span>！</h2>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="me.emailVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
+                                <i :class="me.emailVerified ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" class="text-xs"></i>
+                                <span x-text="me.emailVerified ? '信箱已驗證' : '信箱未驗證'"></span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="me.membershipStatus === 'approved' ? 'bg-blue-100 text-blue-700' : me.membershipStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'">
+                                <span x-text="statusLabel(me.membershipStatus)"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <a href="/admin" x-show="me.role === 'admin'" class="flex-shrink-0 px-3 py-1.5 rounded bg-gray-900 text-white text-xs hover:bg-black">管理後台</a>
+                </div>
+
+                <!-- 快速行動卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 帳號狀態 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-gray-700">
+                            <i class="fa-solid fa-shield-halved text-actc-orange"></i>
+                            <h3 class="font-semibold text-sm">帳號狀態</h3>
+                        </div>
+                        <div class="space-y-1.5 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">信箱驗證</span>
+                                <span :class="me.emailVerified ? 'text-green-600' : 'text-amber-600'" x-text="me.emailVerified ? '已完成 ✓' : '未完成'"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">會員資格</span>
+                                <span class="font-medium text-gray-800" x-text="statusLabel(me.membershipStatus)"></span>
+                            </div>
+                        </div>
+                        <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
+                            <button @click="applyMembership" class="w-full mt-1 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">申請成為會員</button>
+                        </template>
+                        <button type="button" @click="activeTab='account'" class="w-full text-xs text-actc-orange hover:underline text-left">前往帳號設定 →</button>
+                    </div>
+
+                    <!-- 我的活動 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-gray-700">
+                            <i class="fa-solid fa-calendar-days text-actc-orange"></i>
+                            <h3 class="font-semibold text-sm">我的活動</h3>
+                        </div>
+                        <div x-show="eventRegsLoading" class="space-y-2 animate-pulse">
+                            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                        <div x-show="!eventRegsLoading" class="text-sm">
+                            <template x-if="activeEventRegs.length === 0">
+                                <p class="text-gray-400 text-xs">尚無進行中的活動報名。<br><a href="/#events" class="text-actc-orange hover:underline">瀏覽活動</a></p>
+                            </template>
+                            <template x-if="activeEventRegs.length > 0">
+                                <div>
+                                    <p class="text-2xl font-bold text-gray-900" x-text="activeEventRegs.length"></p>
+                                    <p class="text-gray-500 text-xs mt-0.5">筆進行中報名</p>
+                                    <p class="text-xs text-gray-700 mt-2 truncate" x-text="activeEventRegs[0]?.event?.title || ''"></p>
+                                </div>
+                            </template>
+                        </div>
+                        <button type="button" @click="activeTab='events'" class="w-full text-xs text-actc-orange hover:underline text-left">查看全部活動 →</button>
+                    </div>
+
+                    <!-- 考試 -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-gray-700">
+                            <i class="fa-solid fa-graduation-cap text-actc-orange"></i>
+                            <h3 class="font-semibold text-sm">考試與證書</h3>
+                        </div>
+                        <div class="text-sm">
+                            <p class="text-gray-500 text-xs">前往考試專區查看可報考考試與您的證書紀錄。</p>
+                        </div>
+                        <button type="button" @click="activeTab='exams'" class="w-full text-xs text-actc-orange hover:underline text-left">前往考試專區 →</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">個人資料</h2>
-                <form class="space-y-3 max-w-md" @submit.prevent="saveProfile(false)">
-                    <div><label class="text-sm text-gray-600">Email</label><p class="font-mono text-sm" x-text="me.email || '-'"></p></div>
-                    <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="姓名" class="w-full border rounded px-3 py-2" />
-                    <input x-model="profile.phone" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="電話（選填）" class="w-full border rounded px-3 py-2" />
-                    <label class="flex items-center gap-2 text-sm">
-                        <input type="checkbox" x-model="profile.emailSubscribed" @change="saveProfile(true)" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
-                    </label>
-                    <p class="text-sm min-h-[1.25rem]" :class="profileSending ? 'text-gray-500' : (profileOk ? 'text-green-600' : 'text-red-600')" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
-                    <button type="submit" :disabled="profileSending" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed">
-                        <span x-text="profileSending ? '儲存中…' : '立即同步'"></span>
+            <!-- 帳號設定 tab -->
+            <div x-show="activeTab === 'account'" class="space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-actc-orange text-base"></i>帳號狀態
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-4">
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">信箱驗證</p>
+                            <p class="font-medium" :class="me.emailVerified ? 'text-green-700' : 'text-amber-600'" x-text="me.emailVerified ? '已完成 ✓' : '未完成（部分功能受限）'"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">會員審核</p>
+                            <p class="font-medium text-gray-800" x-text="statusLabel(me.membershipStatus)"></p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
+                        管理後台「使用者啟用」僅代表此帳號可登入，<strong class="font-medium text-gray-600">不會</strong>自動變成「已核准」會員。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <a href="/admin" x-show="me.role === 'admin'" class="inline-flex items-center px-3 py-1.5 rounded bg-gray-900 text-white text-xs hover:bg-black">前往管理後台</a>
+                        <template x-if="me.membershipStatus === 'none' || me.membershipStatus === 'rejected'">
+                            <button @click="applyMembership" class="px-3 py-1.5 bg-orange-600 text-white rounded text-xs hover:bg-orange-700">申請成為會員</button>
+                        </template>
+                        <button type="button" @click="loadMe()" class="px-3 py-1.5 border border-gray-200 text-gray-600 rounded text-xs hover:bg-gray-50">
+                            <i class="fa-solid fa-rotate-right mr-1"></i>重新整理狀態
+                        </button>
+                    </div>
+
+                    <div class="border-t border-gray-100 mt-5 pt-5">
+                        <h3 class="text-base font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-id-card text-actc-orange text-sm"></i>個人資料
+                        </h3>
+                        <form class="space-y-3 max-w-md" @submit.prevent="saveProfile(false)">
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">Email</label>
+                                <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-700" x-text="me.email || '-'"></p>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">姓名</label>
+                                <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="請輸入姓名" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 mb-1 block">電話（選填）</label>
+                                <input x-model="profile.phone" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="電話號碼" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
+                            </div>
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" x-model="profile.emailSubscribed" @change="saveProfile(true)" class="rounded" /> 接收協會通知郵件（僅限已驗證帳號之發送對象）
+                            </label>
+                            <p class="text-sm min-h-[1.25rem]" :class="profileSending ? 'text-gray-500' : (profileOk ? 'text-green-600' : 'text-red-600')" x-show="profileMsg" x-text="profileMsg" role="status" aria-live="polite"></p>
+                            <button type="submit" :disabled="profileSending" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed">
+                                <span x-text="profileSending ? '儲存中…' : '立即同步'"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 工作小組（已核准會員才顯示） -->
+                <div id="workgroups-panel" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 scroll-mt-24" x-show="me.membershipStatus === 'approved'">
+                    <h3 class="text-base font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-people-group text-actc-orange text-sm"></i>工作小組
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups" class="text-actc-orange underline">工作小組介紹</a>。</p>
+                    <div class="space-y-3 mb-4" x-show="wgCatalog.length">
+                        <template x-for="g in wgCatalog" :key="g._id">
+                            <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">
+                                <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" @change="saveWorkingGroups(true)" />
+                                <span>
+                                    <span class="font-medium text-gray-900" x-text="g.title"></span>
+                                    <span class="block text-sm text-gray-600 mt-0.5" x-text="g.description"></span>
+                                </span>
+                            </label>
+                        </template>
+                    </div>
+                    <p x-show="wgCatalog.length === 0" class="text-sm text-gray-500">目前無可加入的工作小組。</p>
+                    <p class="text-sm min-h-[1.25rem]" :class="wgPanelSaving ? 'text-gray-500' : (wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600')" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
+                    <button type="button" @click="saveWorkingGroups(false)" :disabled="wgPanelSaving" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
+                        <span x-text="wgPanelSaving ? '儲存中…' : '重試儲存'"></span>
                     </button>
-                </form>
+                </div>
             </div>
 
-            <div id="my-registrations" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token">
-                <h2 class="text-xl font-bold mb-2">我的活動中心</h2>
-                <p class="text-sm text-gray-600 mb-4">顯示您的活動報名、付款、出席與教材/問卷操作。MVP 付款為人工審核流程。</p>
-                <p x-show="eventRegsLoading" class="text-sm text-gray-500">載入中…</p>
-                <p x-show="!eventRegsLoading && eventRegs.length === 0" class="text-sm text-gray-500">尚無報名紀錄。</p>
-                <div x-show="!eventRegsLoading && activeEventRegs.length" class="overflow-x-auto border border-gray-200 rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">活動</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">時間</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">報名狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">付款狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">出席狀態</th>
-                                <th class="px-3 py-2 text-left font-medium text-gray-600">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <template x-for="row in activeEventRegs" :key="row.registrationId">
-                                <tr :id="'event-reg-row-' + row.event.id" :class="highlightedEventId === String(row.event.id) ? 'bg-yellow-50' : ''">
-                                    <td class="px-3 py-2">
-                                        <div class="font-medium text-gray-900" x-text="row.event.title"></div>
-                                        <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-gray-700" x-text="formatEventDate(row.event.date)"></td>
-                                    <td class="px-3 py-2">
-                                        <span x-text="registrationStatusLabel(row.status)"></span>
-                                        <span x-show="row.status === 'waitlisted' && row.waitlistPosition" class="text-amber-800" x-text="'（第 ' + row.waitlistPosition + ' 號）'"></span>
-                                    </td>
-                                    <td class="px-3 py-2" x-text="paymentStatusLabel(row.paymentStatus || 'none')"></td>
-                                    <td class="px-3 py-2" x-text="attendanceStatusLabel(row.attendanceStatus || 'not_checked_in')"></td>
-                                    <td class="px-3 py-2 whitespace-nowrap space-x-2">
-                                        <button type="button" @click="openEventDetailModal(row)" class="text-sm text-actc-orange hover:underline">查看活動</button>
+            <!-- 我的活動 tab -->
+            <div id="my-registrations" class="scroll-mt-24" x-show="activeTab === 'events'">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="text-lg font-bold mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-actc-orange text-base"></i>我的活動中心
+                    </h2>
+                    <p class="text-sm text-gray-500 mb-5">活動報名、付款、出席與教材/問卷操作。</p>
+
+                    <!-- Loading skeleton -->
+                    <div x-show="eventRegsLoading" class="space-y-3 animate-pulse">
+                        <div class="h-20 bg-gray-100 rounded-xl"></div>
+                        <div class="h-20 bg-gray-100 rounded-xl"></div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div x-show="!eventRegsLoading && eventRegs.length === 0" class="text-center py-10">
+                        <i class="fa-regular fa-calendar text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500 text-sm">尚無報名紀錄。</p>
+                        <a href="/#events" class="mt-3 inline-block text-sm text-actc-orange hover:underline">瀏覽活動</a>
+                    </div>
+
+                    <!-- Active registrations — card layout -->
+                    <div x-show="!eventRegsLoading && activeEventRegs.length > 0" class="space-y-3">
+                        <template x-for="row in activeEventRegs" :key="row.registrationId">
+                            <div :id="'event-reg-row-' + row.event.id"
+                                 class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+                                 :class="highlightedEventId === String(row.event.id) ? 'bg-yellow-50 border-yellow-300' : 'bg-white'">
+                                <div class="flex flex-col md:flex-row md:items-start md:gap-4">
+                                    <!-- 左：活動資訊 -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <p class="font-semibold text-gray-900 text-sm leading-snug" x-text="row.event.title"></p>
+                                            <p class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0" x-text="formatEventDate(row.event.date)"></p>
+                                        </div>
+                                        <p x-show="row.event.location" class="text-xs text-gray-400 mt-0.5 truncate" x-text="row.event.location"></p>
+                                        <!-- 狀態 pills -->
+                                        <div class="flex flex-wrap gap-1.5 mt-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                                報名：<span x-text="registrationStatusLabel(row.status)"></span>
+                                                <span x-show="row.status === 'waitlisted' && row.waitlistPosition" x-text="'（第 ' + row.waitlistPosition + ' 號）'"></span>
+                                            </span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700">
+                                                付款：<span x-text="paymentStatusLabel(row.paymentStatus || 'none')"></span>
+                                            </span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                                出席：<span x-text="attendanceStatusLabel(row.attendanceStatus || 'not_checked_in')"></span>
+                                            </span>
+                                        </div>
+                                        <p x-show="Number(row.amountDue || 0) > 0 && row.paymentStatus === 'payment_pending'" class="text-xs text-orange-700 mt-1.5 font-medium">⚠ 請先上傳後五碼與繳費憑證</p>
+                                    </div>
+                                    <!-- 右：操作 -->
+                                    <div class="flex flex-wrap gap-2 mt-3 md:mt-0 md:flex-col md:items-end md:flex-shrink-0">
+                                        <button type="button" @click="openEventDetailModal(row)" class="px-3 py-1.5 text-xs rounded-lg border border-actc-orange text-actc-orange hover:bg-orange-50 transition-colors">查看活動</button>
+                                        <button type="button"
+                                                x-show="row.actions?.canSubmitPayment"
+                                                @click="openPaymentModal(row)"
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-blue-500 text-blue-700 hover:bg-blue-50 transition-colors">上傳付款</button>
+                                        <button type="button"
+                                                x-show="row.actions?.canDownloadMaterials"
+                                                @click="openMaterialsModal(row)"
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-emerald-500 text-emerald-700 hover:bg-emerald-50 transition-colors">下載資料</button>
+                                        <button type="button"
+                                                x-show="row.actions?.canFillSurvey"
+                                                @click="openSurveyModal(row)"
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-purple-500 text-purple-700 hover:bg-purple-50 transition-colors">填寫問卷</button>
                                         <button type="button"
                                                 x-show="row.actions?.canCancel"
                                                 @click="cancelMyEventRegistration(row.event.id)"
                                                 :disabled="eventRegCancellingId === row.event.id"
-                                                class="text-sm text-red-600 hover:underline disabled:opacity-50">取消</button>
-                                        <button type="button"
-                                                x-show="row.actions?.canSubmitPayment"
-                                                @click="openPaymentModal(row)"
-                                                class="text-sm text-blue-700 hover:underline">上傳付款</button>
-                                        <button type="button"
-                                                x-show="row.actions?.canDownloadMaterials"
-                                                @click="openMaterialsModal(row)"
-                                                class="text-sm text-emerald-700 hover:underline">下載資料</button>
-                                        <button type="button"
-                                                x-show="row.actions?.canFillSurvey"
-                                                @click="openSurveyModal(row)"
-                                                class="text-sm text-purple-700 hover:underline">填寫問卷</button>
-                                        <span x-show="!row.actions?.canDownloadCertificate" class="text-xs text-gray-400">證書未開放</span>
-                                        <span x-show="Number(row.amountDue || 0) > 0 && row.paymentStatus === 'payment_pending'" class="block text-xs text-orange-700 mt-1">請先上傳後五碼與繳費憑證</span>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <p x-show="!eventRegsLoading && !activeEventRegs.length && cancelledEventRegs.length" class="text-sm text-gray-500">
-                    目前沒有進行中的報名紀錄。
-                </p>
-                <div x-show="!eventRegsLoading && cancelledEventRegs.length" class="mt-5">
-                    <h3 class="text-base font-semibold text-gray-800 mb-2">已取消</h3>
-                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">活動</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">時間</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">報名狀態</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <template x-for="row in cancelledEventRegs" :key="'cancelled-' + row.registrationId">
-                                    <tr>
-                                        <td class="px-3 py-2">
-                                            <div class="font-medium text-gray-900" x-text="row.event.title"></div>
-                                            <div class="text-xs text-gray-500 truncate max-w-xs" x-text="row.event.location || ''"></div>
-                                        </td>
-                                        <td class="px-3 py-2 whitespace-nowrap text-gray-700" x-text="formatEventDate(row.event.date)"></td>
-                                        <td class="px-3 py-2 text-gray-600" x-text="registrationStatusLabel(row.status)"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                                class="px-3 py-1.5 text-xs rounded-lg border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors">取消報名</button>
+                                        <span x-show="row.actions?.canDownloadCertificate === false" class="text-xs text-gray-400">證書未開放</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
+
+                    <p x-show="!eventRegsLoading && !activeEventRegs.length && cancelledEventRegs.length" class="text-sm text-gray-500 mt-2">目前沒有進行中的報名紀錄。</p>
+
+                    <!-- 已取消（可收合） -->
+                    <details x-show="!eventRegsLoading && cancelledEventRegs.length > 0" class="mt-5 group">
+                        <summary class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 select-none flex items-center gap-1.5">
+                            <i class="fa-solid fa-chevron-right text-xs transition-transform group-open:rotate-90"></i>
+                            已取消的報名（<span x-text="cancelledEventRegs.length"></span> 筆）
+                        </summary>
+                        <div class="mt-3 space-y-2">
+                            <template x-for="row in cancelledEventRegs" :key="'cancelled-' + row.registrationId">
+                                <div class="border border-gray-200 rounded-lg p-3 bg-gray-50 flex items-center justify-between gap-4">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium text-gray-700 truncate" x-text="row.event.title"></p>
+                                        <p class="text-xs text-gray-400 mt-0.5" x-text="formatEventDate(row.event.date)"></p>
+                                    </div>
+                                    <span class="text-xs text-gray-500 flex-shrink-0" x-text="registrationStatusLabel(row.status)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </details>
+
+                    <p class="text-sm text-red-600 mt-3 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
                 </div>
-                <p class="text-sm text-red-600 mt-2 min-h-[1.25rem]" x-show="eventRegsMsg" x-text="eventRegsMsg"></p>
             </div>
+
+            <!-- 考試與證書 tab -->
+            <div x-show="activeTab === 'exams'">
+            <!-- 考試專區 -->
+            <div id="exams" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 scroll-mt-24" x-data="examsTab()" x-init="init()">
+                    <div class="mb-5">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-actc-orange text-base"></i>考試與證書
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">參加考試、查看成績與下載證書</p>
+                    </div>
+                    <!-- 我的證書 — 頂部醒目入口 -->
+                    <div class="mb-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-green-800">我的證書</p>
+                            <p class="text-xs text-green-600 mt-0.5">查看及下載您的考試合格證書</p>
+                        </div>
+                        <button @click="showCertificates = true; loadCertificates()" class="flex-shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-certificate"></i>查看證書
+                        </button>
+                    </div>
+
+                    <!-- 證書列表 Modal -->
+                    <div x-show="showCertificates" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">我的證書</h3>
+                                <button @click="showCertificates = false" class="text-gray-500 hover:text-gray-800">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <p x-show="loadingCertificates" class="text-sm text-gray-500">載入中…</p>
+                                <p x-show="!loadingCertificates && certificates.length === 0" class="text-sm text-gray-500">尚無證書。</p>
+                                <div x-show="!loadingCertificates && certificates.length > 0" class="space-y-3">
+                                    <template x-for="cert in certificates" :key="cert._id">
+                                        <div class="border rounded p-4"
+                                             :class="cert.isRevoked ? 'border-red-200 bg-red-50' : (cert.expiresAt && new Date(cert.expiresAt) < new Date() ? 'border-gray-200 bg-gray-50 opacity-70' : 'border-gray-200')">
+                                            <div class="flex justify-between items-start gap-3">
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <!-- certType badge -->
+                                                        <span :class="cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                                              class="px-1.5 py-0.5 text-xs rounded font-medium">
+                                                            <span x-text="cert.certType === 'course' ? '課程型' : '考試型'"></span>
+                                                        </span>
+                                                        <!-- status badge -->
+                                                        <span x-show="cert.isRevoked"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800 font-medium">已撤銷</span>
+                                                        <span x-show="!cert.isRevoked && cert.expiresAt && new Date(cert.expiresAt) < new Date()"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-gray-200 text-gray-600 font-medium">已過期</span>
+                                                        <span x-show="!cert.isRevoked && !(cert.expiresAt && new Date(cert.expiresAt) < new Date())"
+                                                              class="px-1.5 py-0.5 text-xs rounded bg-green-100 text-green-800 font-medium">有效</span>
+                                                    </div>
+                                                    <p class="font-medium text-sm"
+                                                       x-text="cert.certType === 'course' ? (cert.course?.courseName || '課程') : (cert.exam?.title || '考試')"></p>
+                                                    <p class="text-xs text-gray-500 mt-0.5">證書編號：<span x-text="cert.certificateNumber"></span></p>
+                                                    <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString('zh-TW')"></span></p>
+                                                    <p x-show="cert.expiresAt" class="text-xs text-gray-500">到期日：<span x-text="cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString('zh-TW') : ''"></span></p>
+                                                    <p x-show="cert.isRevoked && cert.revokeReason" class="text-xs text-red-600 mt-0.5">撤銷原因：<span x-text="cert.revokeReason"></span></p>
+                                                </div>
+                                                <div class="flex flex-col gap-2 shrink-0">
+                                                    <!-- 下載按鈕（未撤銷才顯示） -->
+                                                    <button x-show="!cert.isRevoked"
+                                                            @click="downloadCertificate(cert.certificateNumber)"
+                                                            class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                                                        下載
+                                                    </button>
+                                                    <!-- 複製驗證連結 -->
+                                                    <button @click="copyCertLink(cert.certificateNumber)"
+                                                            class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                                                        複製驗證連結
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 考試規則確認 Modal -->
+                    <div x-show="showRulesModal" x-cloak
+                         @keydown.escape.window="showRulesModal = false"
+                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         @click.self="showRulesModal = false">
+                        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden" @click.stop>
+                            <!-- 標題列 -->
+                            <div class="px-6 py-4 border-b flex justify-between items-center shrink-0">
+                                <h3 class="text-lg font-semibold text-gray-900">考試規則確認</h3>
+                                <button type="button" @click="showRulesModal = false" class="text-gray-500 hover:text-gray-800" aria-label="關閉">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            <div class="p-6 overflow-y-auto flex-1 space-y-5 text-sm text-gray-800">
+                                <!-- 考試資訊 -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <span class="inline-block w-1 h-4 bg-blue-500 rounded"></span>考試資訊
+                                    </h4>
+                                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">考試名稱</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.title || '—'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">題目數量</span>
+                                            <span class="font-medium text-gray-900" x-text="(rulesExam?.questionsPerAttempt || rulesExam?.questionCount || '—') + ' 題'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">考試時間</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.timeLimit > 0 ? rulesExam.timeLimit + ' 分鐘' : '無時間限制'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">及格分數</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.passingScore != null ? rulesExam.passingScore + '%' : '—'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">最多嘗試次數</span>
+                                            <span class="font-medium text-gray-900" x-text="rulesExam?.maxAttempts > 0 ? rulesExam.maxAttempts + ' 次' : '無限制'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 考試規則 -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <span class="inline-block w-1 h-4 bg-orange-400 rounded"></span>考試規則
+                                    </h4>
+                                    <ul class="space-y-2 text-gray-700">
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            考試開始後，計時即開始，離開頁面不會暫停計時
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            請勿切換分頁或視窗，系統將記錄切換次數
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            若發生網路中斷，系統將自動儲存您的答題進度
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="shrink-0 mt-0.5 text-orange-400 font-bold">&#8226;</span>
+                                            請確保網路連線穩定，並使用桌面瀏覽器作答
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- 申訴說明 -->
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                        <span class="inline-block w-1 h-4 bg-amber-500 rounded"></span>申訴說明
+                                    </h4>
+                                    <p class="text-amber-700 leading-relaxed">
+                                        若您認為系統誤判作弊行為，請於考試結束後 7 天內寄信至
+                                        <a :href="'mailto:' + (rulesExam?.contactEmail || 'contact@actcweb.org')"
+                                           class="font-medium underline hover:text-amber-900"
+                                           x-text="rulesExam?.contactEmail || 'contact@actcweb.org'"></a>
+                                        申訴，並於信件中說明情況。
+                                    </p>
+                                </div>
+
+                                <!-- 確認 checkbox -->
+                                <label class="flex items-start gap-3 cursor-pointer select-none">
+                                    <input type="checkbox" x-model="rulesConfirmed"
+                                           class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                                    <span class="text-gray-700 font-medium">我已閱讀並同意以上規則</span>
+                                </label>
+                            </div>
+
+                            <!-- 按鈕列 -->
+                            <div class="px-6 py-4 border-t flex justify-end gap-3 shrink-0 bg-gray-50">
+                                <button type="button" @click="showRulesModal = false"
+                                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition-colors">
+                                    取消
+                                </button>
+                                <button type="button"
+                                        @click="showRulesModal = false; startExam(rulesExam._id)"
+                                        :disabled="!rulesConfirmed || startingExam === rulesExam?._id"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <span x-text="startingExam === rulesExam?._id ? '開始中…' : '確認開始考試'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 可報考列表 -->
+                    <div x-show="!currentAttempt">
+                        <h3 class="text-lg font-semibold mb-3">可報考考試</h3>
+                        <p x-show="startExamError" class="text-sm text-red-600 mb-3 p-3 bg-red-50 rounded border border-red-200" x-text="startExamError" role="alert"></p>
+                        <p x-show="loading" class="text-sm text-gray-500">載入中…</p>
+                        <p x-show="!loading && availableExams.length === 0" class="text-sm text-gray-500">目前沒有可報考的考試。</p>
+                        <div x-show="!loading && availableExams.length > 0" class="space-y-4">
+                            <template x-for="exam in availableExams" :key="exam._id">
+                                <div class="border rounded-lg p-4 hover:bg-gray-50"
+                                     :class="exam.requiresPurchase && !exam.userAccess?.hasAccess ? 'bg-gray-50 border-gray-200' : ''">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <h4 class="font-semibold text-gray-900" x-text="exam.title"></h4>
+                                                <!-- 付費標籤 -->
+                                                <span x-show="exam.requiresPurchase && !exam.userAccess?.hasAccess"
+                                                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                                    🔒 需購買
+                                                </span>
+                                                <span x-show="exam.requiresPurchase && exam.userAccess?.hasAccess"
+                                                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                    ✓ 已授權
+                                                </span>
+                                            </div>
+                                            <p class="text-sm text-gray-600 mt-1" x-text="exam.shortDescription || exam.description?.substring(0, 100) + '...'"></p>
+                                            <div class="flex gap-4 mt-2 text-xs text-gray-500 flex-wrap">
+                                                <span x-show="exam.timeLimit > 0">限時: <span x-text="exam.timeLimit"></span> 分鐘</span>
+                                                <span>通過分數: <span x-text="exam.passingScore"></span>%</span>
+                                                <span>題數: <span x-text="exam.questionsPerAttempt || exam.questionCount"></span></span>
+                                                <!-- 授權到期日 -->
+                                                <span x-show="exam.requiresPurchase && exam.userAccess?.hasAccess && exam.userAccess?.expiresAt"
+                                                      class="text-blue-600">
+                                                    授權至 <span x-text="new Date(exam.userAccess.expiresAt).toLocaleDateString('zh-TW')"></span>
+                                                </span>
+                                            </div>
+                                            <!-- 付費牆提示 -->
+                                            <div x-show="exam.requiresPurchase && !exam.userAccess?.hasAccess" class="mt-2 p-2 bg-amber-50 rounded text-xs text-amber-800">
+                                                <span x-show="exam.price > 0">定價：<span class="font-semibold" x-text="exam.currency + ' ' + exam.price.toLocaleString()"></span>｜</span>
+                                                <span x-show="exam.userAccess?.reason === 'ACCESS_EXPIRED'">您的授權已到期。</span>
+                                                <span x-show="exam.userAccess?.reason !== 'ACCESS_EXPIRED'">請聯絡協會取得考試授權。</span>
+                                            </div>
+                                            <!-- 用戶嘗試資訊 -->
+                                            <div x-show="exam.userAttempts && exam.userAttempts.length > 0" class="mt-2">
+                                                <template x-for="attempt in exam.userAttempts" :key="attempt._id">
+                                                    <div class="text-xs inline-block mr-2 px-2 py-1 rounded"
+                                                         :class="attempt.status === 'graded' ? (attempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') :
+                                                                  attempt.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                                                  attempt.status === 'auto_submitted_cheating' ? 'bg-red-100 text-red-800' :
+                                                                  'bg-gray-100 text-gray-800'">
+                                                        <span x-text="attempt.status === 'graded' ? (attempt.passed ? '已通過' : '未通過') :
+                                                                       attempt.status === 'in_progress' ? '進行中' :
+                                                                       attempt.status === 'submitted' ? '已提交' :
+                                                                       attempt.status === 'auto_submitted_cheating' ? '作弊判定' :
+                                                                       attempt.status"></span>
+                                                        <span x-show="attempt.score !== null" class="ml-1">(<span x-text="Math.round(attempt.score)"></span>分)</span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4 flex flex-col gap-2">
+                                            <!-- 付費牆：未授權時顯示鎖定 -->
+                                            <div x-show="exam.requiresPurchase && !exam.userAccess?.hasAccess"
+                                                 class="px-4 py-2 bg-gray-200 text-gray-500 rounded text-sm text-center cursor-not-allowed">
+                                                🔒 未授權
+                                            </div>
+                                            <!-- 已授權或免費：正常操作按鈕 -->
+                                            <template x-if="!exam.requiresPurchase || exam.userAccess?.hasAccess">
+                                                <div class="flex flex-col gap-2">
+                                                    <button x-show="exam.canStart.allowed && !exam.userAttempts?.some(a => a.status === 'in_progress')"
+                                                            @click="openRulesModal(exam)"
+                                                            :disabled="startingExam === exam._id"
+                                                            class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+                                                        <span x-text="startingExam === exam._id ? '開始中…' : '開始考試'"></span>
+                                                    </button>
+                                                    <button x-show="exam.userAttempts?.some(a => a.status === 'in_progress')"
+                                                            @click="resumeExam(exam._id, exam.userAttempts.find(a => a.status === 'in_progress')._id)"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                                        繼續考試
+                                                    </button>
+                                                    <button x-show="exam.userAttempts?.filter(a => a.status === 'graded' || a.status === 'auto_submitted_cheating').length > 0"
+                                                            @click="toggleHistory(exam._id)"
+                                                            class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50">
+                                                        <span x-text="historyExamId === exam._id ? '收起歷史' : '查看歷史'"></span>
+                                                    </button>
+                                                    <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'MAX_ATTEMPTS_REACHED'"
+                                                          class="text-xs text-red-600">已達最大次數</span>
+                                                    <span x-show="!exam.canStart.allowed && exam.canStart.reason === 'COOLDOWN_ACTIVE'"
+                                                          class="text-xs text-amber-600">冷卻中，可於 <span x-text="new Date(exam.canStart.nextAttemptAt).toLocaleDateString()"></span> 重考</span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <!-- 考試歷史面板 -->
+                                    <div x-show="historyExamId === exam._id" class="mt-4 pt-4 border-t border-gray-200">
+                                        <h5 class="text-sm font-semibold text-gray-700 mb-3">過去作答紀錄</h5>
+                                        <div class="space-y-2">
+                                            <template x-for="(attempt, idx) in exam.userAttempts.filter(a => a.status === 'graded' || a.status === 'auto_submitted_cheating')" :key="attempt._id">
+                                                <div class="flex items-center justify-between bg-gray-50 rounded px-3 py-2 text-sm">
+                                                    <div class="flex items-center gap-3">
+                                                        <span class="text-gray-600 font-medium" x-text="'第 ' + attempt.attemptNumber + ' 次'"></span>
+                                                        <span class="font-semibold" x-text="Math.round(attempt.score) + '%'"></span>
+                                                        <span class="inline-block px-2 py-0.5 rounded text-xs font-medium"
+                                                              :class="attempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                                              x-text="attempt.passed ? '已通過' : '未通過'"></span>
+                                                        <span class="text-gray-500 text-xs" x-text="attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'/') : '—'"></span>
+                                                    </div>
+                                                    <button @click="loadAttemptDetail(exam._id, attempt._id)"
+                                                            :disabled="historyLoading"
+                                                            class="px-3 py-1 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-100 disabled:opacity-50">
+                                                        查看詳情
+                                                    </button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <p x-show="historyLoading" class="text-xs text-gray-500 mt-2">載入中…</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- 作答詳情 Modal -->
+                    <div x-show="historyAttemptDetail" x-cloak
+                         @keydown.escape.window="closeAttemptDetail()"
+                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         @click.self="closeAttemptDetail()">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden" @click.stop>
+                            <div class="px-5 py-3 border-b flex justify-between items-center shrink-0">
+                                <h3 class="text-lg font-semibold">作答詳情</h3>
+                                <button type="button" @click="closeAttemptDetail()" class="text-gray-500 hover:text-gray-800" aria-label="關閉">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <template x-if="historyAttemptDetail">
+                                <div class="p-5 overflow-y-auto flex-1 space-y-4 text-sm text-gray-800">
+                                    <!-- 摘要 -->
+                                    <div class="flex flex-wrap gap-4 p-3 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <p class="text-xs text-gray-500">得分</p>
+                                            <p class="font-semibold text-lg" x-text="Math.round(historyAttemptDetail.score) + '%'"></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">結果</p>
+                                            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium mt-0.5"
+                                                  :class="historyAttemptDetail.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                                  x-text="historyAttemptDetail.passed ? '已通過' : '未通過'"></span>
+                                        </div>
+                                        <div x-show="historyAttemptDetail.timeSpent">
+                                            <p class="text-xs text-gray-500">作答時間</p>
+                                            <p class="font-medium" x-text="formatTimeSpent(historyAttemptDetail.timeSpent)"></p>
+                                        </div>
+                                        <div x-show="historyAttemptDetail.passingScore != null">
+                                            <p class="text-xs text-gray-500">通過分數</p>
+                                            <p class="font-medium" x-text="historyAttemptDetail.passingScore + '%'"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 題目作答明細 -->
+                                    <div x-show="historyAttemptDetail.questionSnapshot && historyAttemptDetail.questionSnapshot.length > 0">
+                                        <h4 class="font-semibold text-gray-700 mb-3">題目作答明細</h4>
+                                        <div class="space-y-3">
+                                            <template x-for="(q, idx) in historyAttemptDetail.questionSnapshot" :key="q.questionId">
+                                                <div class="border rounded-lg p-3"
+                                                     :class="(() => { const ans = (historyAttemptDetail.answers || []).find(a => String(a.questionId) === String(q.questionId)); return ans ? (ans.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50') : 'border-gray-200'; })()">
+                                                    <div class="flex items-start gap-2">
+                                                        <span class="shrink-0 mt-0.5 text-base" x-text="(() => { const ans = (historyAttemptDetail.answers || []).find(a => String(a.questionId) === String(q.questionId)); return ans ? (ans.isCorrect ? '✓' : '✗') : '—'; })()"></span>
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="font-medium text-gray-900">
+                                                                <span x-text="(idx + 1) + '. '"></span><span x-text="q.content && q.content.length > 120 ? q.content.substring(0, 120) + '…' : q.content"></span>
+                                                            </p>
+                                                            <div class="mt-1 text-xs space-y-0.5">
+                                                                <p class="text-gray-600">
+                                                                    <span class="font-medium">您的答案：</span>
+                                                                    <span x-text="(() => { const ans = (historyAttemptDetail.answers || []).find(a => String(a.questionId) === String(q.questionId)); if (!ans || ans.answer === undefined || ans.answer === null || ans.answer === '') return '（未作答）'; if (q.type === 'true_false') return ans.answer === true || ans.answer === 'true' ? '正確 (True)' : '錯誤 (False)'; if (q.type === 'multiple_choice' && Array.isArray(q.options || [])) { const i = Number(ans.answer); const opt = (q.options || [])[i]; return opt ? (String.fromCharCode(65 + i) + '. ' + opt.text) : String(ans.answer); } return String(ans.answer); })()"></span>
+                                                                </p>
+                                                                <p x-show="historyAttemptDetail.showCorrectAnswers !== 'never'" class="text-gray-600">
+                                                                    <span class="font-medium">正確答案：</span>
+                                                                    <span x-text="(() => { if (q.type === 'true_false') return q.correctAnswer === true || q.correctAnswer === 'true' ? '正確 (True)' : '錯誤 (False)'; if (q.type === 'multiple_choice') { const i = Number(q.correctAnswer); const opt = (q.options || [])[i]; return opt ? (String.fromCharCode(65 + i) + '. ' + opt.text) : String(q.correctAnswer); } return q.correctAnswer !== undefined && q.correctAnswer !== null ? String(q.correctAnswer) : '—'; })()"></span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <!-- 無題目明細時的提示 -->
+                                    <p x-show="!historyAttemptDetail.questionSnapshot || historyAttemptDetail.questionSnapshot.length === 0"
+                                       class="text-gray-500 text-sm">此次考試不提供題目作答明細。</p>
+                                </div>
+                            </template>
+                            <div class="px-5 py-3 border-t bg-gray-50 flex justify-end shrink-0">
+                                <button type="button" @click="closeAttemptDetail()" class="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-100 text-sm">關閉</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 考試進行中 -->
+                    <div x-show="currentAttempt" class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">考試進行中</h3>
+                            <button @click="currentAttempt = null; loadAvailableExams()" class="text-sm text-gray-500 hover:underline">返回列表</button>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-4">
+                                    <div>
+                                        <p class="font-medium" x-text="currentAttempt.attemptNumber ? '考試編號：' + currentAttempt.attemptNumber : ''"></p>
+                                        <p class="text-sm text-gray-600">剩餘時間: <span x-text="formatTimeRemaining()" :class="showTimeWarning ? 'text-red-600 font-bold' : ''"></span></p>
+                                        <span x-show="lastSaved" x-text="'上次儲存：' + lastSavedText" class="text-xs text-gray-400"></span>
+                                    </div>
+                                    <div x-show="showTimeWarning" class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">
+                                        ⚠️ 剩餘時間不足5分鐘！
+                                    </div>
+                                <button @click="confirmSubmit()" :disabled="submitting"
+                                        class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
+                                    <span x-text="submitting ? '提交中…' : '提交考卷'"></span>
+                                </button>
+                            </div>
+                            <!-- 考試主體：題目列表 + 題目導覽面板 -->
+                            <div class="flex gap-4 items-start">
+                                <!-- 題目列表 -->
+                                <div class="flex-1 space-y-6">
+                                    <template x-for="(question, idx) in currentAttempt.questions" :key="question.questionId">
+                                        <div class="bg-white p-4 rounded border scroll-mt-4" :id="'question-' + idx">
+                                            <p class="font-medium text-gray-900 mb-3">
+                                                <span x-text="idx + 1"></span>. <span x-text="question.content"></span>
+                                                <span class="text-xs text-gray-500 ml-2">(<span x-text="question.points"></span> 分, <span x-text="question.difficulty"></span>)</span>
+                                            </p>
+                                            <!-- MC -->
+                                            <div x-show="question.type === 'multiple_choice'" class="space-y-2">
+                                                <template x-for="(opt, optIdx) in question.options">
+                                                    <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                        <input type="radio" :name="'q-' + question.questionId" :value="optIdx" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
+                                                        <span x-text="String.fromCharCode(65 + optIdx) + '. ' + opt.text"></span>
+                                                    </label>
+                                                </template>
+                                            </div>
+                                            <!-- T/F -->
+                                            <div x-show="question.type === 'true_false'" class="space-y-2">
+                                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="true" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
+                                                    <span>正確 (True)</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                                    <input type="radio" :name="'q-' + question.questionId" :value="false" x-model="answers[question.questionId]" @change="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" class="text-blue-600">
+                                                    <span>錯誤 (False)</span>
+                                                </label>
+                                            </div>
+                                            <!-- Fill in blank -->
+                                            <div x-show="question.type === 'fill_in_blank'" class="mt-2">
+                                                <input type="text" x-model="answers[question.questionId]" @input="clearTimeout(autoSaveDebounceTimer); autoSaveDebounceTimer = setTimeout(() => autoSaveProgress(), 2000)" placeholder="請輸入答案" class="w-full border rounded px-3 py-2">
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                                <!-- 題目導覽面板 -->
+                                <div class="hidden md:block w-40 shrink-0 sticky top-4 bg-white border rounded-lg p-3">
+                                    <p class="text-sm font-medium text-gray-600 mb-2">題目導覽</p>
+                                    <div class="grid grid-cols-5 gap-1">
+                                        <template x-for="(q, idx) in currentAttempt.questions" :key="q.questionId || idx">
+                                            <button
+                                                @click="goToQuestion(idx)"
+                                                :class="[
+                                                    'w-8 h-8 rounded text-xs font-medium transition-colors',
+                                                    currentQuestionIndex === idx ? 'ring-2 ring-orange-500' : '',
+                                                    isAnswered(q.questionId) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                                                ]"
+                                                :aria-label="'跳至第 ' + (idx + 1) + ' 題'"
+                                                x-text="idx + 1">
+                                            </button>
+                                        </template>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-3">
+                                        已作答 <span class="font-medium text-green-600" x-text="answeredCount"></span> / <span x-text="currentAttempt?.questions?.length || 0"></span>
+                                    </p>
+                                    <div class="mt-2 space-y-1 text-xs text-gray-400">
+                                        <div class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-green-500"></span> 已作答</div>
+                                        <div class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-gray-200 ring-2 ring-orange-500"></span> 目前題目</div>
+                                        <div class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-gray-200"></span> 未作答</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 提交確認 Modal -->
+                    <div x-show="showSubmitConfirm" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display:none;">
+                        <div class="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 space-y-4">
+                            <h3 class="text-lg font-semibold text-gray-900">確認提交考卷</h3>
+                            <div class="text-sm text-gray-700 space-y-2">
+                                <p x-show="unansweredCount > 0" class="text-amber-700 font-medium">
+                                    尚有 <span x-text="unansweredCount"></span> 題未作答
+                                </p>
+                                <p>提交後將無法修改答案，未作答題目將計為錯誤。</p>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-2">
+                                <button @click="showSubmitConfirm = false"
+                                        class="px-4 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">
+                                    繼續作答
+                                </button>
+                                <button @click="showSubmitConfirm = false; submitExam()" :disabled="submitting"
+                                        class="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
+                                    確認提交
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 考試結果 -->
+                    <div x-show="examResult" class="mt-6 space-y-6">
+
+                        <!-- 分數卡片 -->
+                        <div class="bg-white rounded-2xl shadow-md border p-6 text-center"
+                             :class="examResult && examResult.passed ? 'border-green-200' : 'border-red-200'">
+
+                            <!-- 通過 / 未通過 大標 -->
+                            <div class="flex items-center justify-center gap-2 mb-3">
+                                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-base font-bold"
+                                      :class="examResult && examResult.passed
+                                          ? 'bg-green-100 text-green-700'
+                                          : 'bg-red-100 text-red-700'">
+                                    <span x-text="examResult && examResult.passed ? '✓' : '✗'"></span>
+                                    <span x-text="examResult && examResult.passed ? '通過' : '未通過'"></span>
+                                </span>
+                            </div>
+
+                            <!-- 分數大字 -->
+                            <div class="text-7xl font-extrabold leading-none mb-1"
+                                 :class="examResult && examResult.passed ? 'text-green-600' : 'text-red-500'">
+                                <span x-text="examResult ? Math.round(examResult.score) : 0"></span>
+                                <span class="text-3xl font-semibold ml-1">分</span>
+                            </div>
+
+                            <!-- 及格分數 -->
+                            <p class="text-sm text-gray-500 mt-1">
+                                及格分數：<span x-text="examResult && examResult.passingScore != null ? examResult.passingScore + ' 分' : '—'"></span>
+                            </p>
+
+                            <!-- 作答統計 -->
+                            <div x-show="examResult && examResult.gradingDetails"
+                                 class="mt-4 flex justify-center gap-6 text-sm">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-lg font-bold text-green-600"
+                                          x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.correctCount : 0"></span>
+                                    <span class="text-gray-500">答對</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-lg font-bold text-red-500"
+                                          x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.incorrectCount : 0"></span>
+                                    <span class="text-gray-500">答錯</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-lg font-bold text-gray-400"
+                                          x-text="examResult && examResult.gradingDetails ? examResult.gradingDetails.unansweredCount : 0"></span>
+                                    <span class="text-gray-500">未作答</span>
+                                </div>
+                            </div>
+
+                            <!-- 證書核發提示 -->
+                            <div x-show="examResult && examResult.certificateIssued"
+                                 class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700 font-medium">
+                                <span>證書已核發</span>
+                                <span class="text-blue-400">·</span>
+                                <span x-text="examResult && examResult.certificateNumber ? '編號 ' + examResult.certificateNumber : ''"></span>
+                            </div>
+
+                            <!-- 舞弊偵測警告 -->
+                            <div x-show="examResult && examResult.cheatingDetected"
+                                 class="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
+                                系統偵測到異常操作，本次成績已標記為零分。如有疑問，請聯絡管理員。
+                            </div>
+                        </div>
+
+                        <!-- 答題回顧（僅當 API 回傳 questionSnapshot 時顯示） -->
+                        <div x-show="examResult && examResult.questionSnapshot && examResult.questionSnapshot.length > 0"
+                             class="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+                            <div class="px-5 py-3 bg-gray-50 border-b flex items-center justify-between">
+                                <h4 class="font-semibold text-gray-700">答題回顧</h4>
+                                <span class="text-xs text-gray-400"
+                                      x-text="examResult && examResult.questionSnapshot ? examResult.questionSnapshot.length + ' 題' : ''"></span>
+                            </div>
+                            <div class="divide-y divide-gray-100">
+                                <template x-for="(snap, qi) in (examResult && examResult.questionSnapshot ? examResult.questionSnapshot : [])" :key="snap.questionId || qi">
+                                    <div x-data="{ open: false }" class="px-5 py-4">
+
+                                        <!-- 題目標頭（可展開） -->
+                                        <button @click="open = !open"
+                                                class="w-full text-left flex items-start gap-3 group">
+
+                                            <!-- 正確/錯誤圖示 -->
+                                            <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                  :class="(() => {
+                                                      if (!examResult || !examResult.answers) return 'bg-gray-200 text-gray-500';
+                                                      const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                      if (!ans) return 'bg-gray-200 text-gray-500';
+                                                      return ans.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white';
+                                                  })()">
+                                                <span x-text="(() => {
+                                                    if (!examResult || !examResult.answers) return '?';
+                                                    const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                    if (!ans) return '?';
+                                                    return ans.isCorrect ? '✓' : '✗';
+                                                })()"></span>
+                                            </span>
+
+                                            <!-- 題目文字 -->
+                                            <span class="flex-1 text-sm font-medium text-gray-800 group-hover:text-gray-900 leading-snug">
+                                                <span class="text-gray-400 mr-1" x-text="(qi + 1) + '.'"></span>
+                                                <span x-text="snap.content"></span>
+                                            </span>
+
+                                            <!-- 展開箭頭 -->
+                                            <span class="flex-shrink-0 text-gray-400 text-xs mt-0.5 transition-transform"
+                                                  :class="open ? 'rotate-180' : ''"
+                                                  style="display:inline-block">▼</span>
+                                        </button>
+
+                                        <!-- 展開內容 -->
+                                        <div x-show="open" class="mt-3 ml-8 space-y-2">
+
+                                            <!-- 我的作答 -->
+                                            <div class="rounded-lg px-3 py-2 text-sm border-l-4"
+                                                 :class="(() => {
+                                                     if (!examResult || !examResult.answers) return 'bg-gray-50 border-gray-300';
+                                                     const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                     if (!ans) return 'bg-gray-50 border-gray-300 text-gray-500';
+                                                     return ans.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500';
+                                                 })()">
+                                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">我的作答</span>
+                                                <p class="mt-0.5 text-gray-800"
+                                                   x-text="(() => {
+                                                       if (!examResult || !examResult.answers) return '（未作答）';
+                                                       const ans = examResult.answers.find(a => String(a.questionId) === String(snap.questionId));
+                                                       if (!ans || ans.answer === null || ans.answer === undefined) return '（未作答）';
+                                                       if (snap.type === 'true_false') return String(ans.answer) === 'true' || ans.answer === true ? '正確 (True)' : '錯誤 (False)';
+                                                       if (snap.type === 'multiple_choice') {
+                                                           const idx = Number(ans.answer);
+                                                           return String.fromCharCode(65 + idx) + ' 選項';
+                                                       }
+                                                       return String(ans.answer);
+                                                   })()">
+                                                </p>
+                                            </div>
+
+                                            <!-- 正確答案 -->
+                                            <div class="rounded-lg px-3 py-2 text-sm bg-blue-50 border-l-4 border-blue-400">
+                                                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wide">正確答案</span>
+                                                <p class="mt-0.5 text-blue-900"
+                                                   x-text="(() => {
+                                                       if (snap.type === 'true_false') return snap.correctAnswer === true || snap.correctAnswer === 'true' ? '正確 (True)' : '錯誤 (False)';
+                                                       if (snap.type === 'multiple_choice') {
+                                                           const idx = Number(snap.correctAnswer);
+                                                           return String.fromCharCode(65 + idx) + ' 選項';
+                                                       }
+                                                       return snap.correctAnswer !== undefined && snap.correctAnswer !== null ? String(snap.correctAnswer) : '—';
+                                                   })()">
+                                                </p>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- CTA 按鈕區 -->
+                        <div class="flex flex-wrap gap-3 justify-center">
+
+                            <!-- 返回考試列表 -->
+                            <button @click="examResult = null; loadAvailableExams()"
+                                    class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                返回考試列表
+                            </button>
+
+                            <!-- 重新報考（未通過且有 examId） -->
+                            <button x-show="examResult && !examResult.passed && examResult._examId"
+                                    @click="(() => { const eid = examResult._examId; examResult = null; startExam(eid); })()"
+                                    class="px-5 py-2.5 bg-actc-orange text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                                重新報考
+                            </button>
+
+                            <!-- 下載證書（通過且已核發） -->
+                            <button x-show="examResult && examResult.certificateIssued"
+                                    @click="downloadCertificate(examResult.certificateNumber)"
+                                    class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                                <span>⬇</span>
+                                <span>下載證書</span>
+                            </button>
+
+                        </div>
+                    </div>
+            </div>
+            </div><!-- /考試與證書 tab -->
 
             <div x-show="showPaymentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                 <div class="bg-white rounded-lg shadow max-w-lg w-full p-6 space-y-3">
@@ -447,27 +1309,6 @@
                 </div>
             </div>
 
-            <div id="workgroups-panel" class="bg-white p-6 rounded-lg shadow scroll-mt-24" x-show="token && me.membershipStatus === 'approved'">
-                <h2 class="text-xl font-bold mb-2">工作小組</h2>
-                <p class="text-sm text-gray-600 mb-4">勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見<a href="/workgroups.html" class="text-actc-orange underline">工作小組介紹</a>。</p>
-                <div class="space-y-3 mb-4" x-show="wgCatalog.length">
-                    <template x-for="g in wgCatalog" :key="g._id">
-                        <label class="flex items-start gap-3 cursor-pointer border rounded-lg p-3 hover:bg-gray-50">
-                            <input type="checkbox" class="mt-1 rounded border-gray-300" :value="g._id" x-model="wgSelectedIds" @change="saveWorkingGroups(true)" />
-                            <span>
-                                <span class="font-medium text-gray-900" x-text="g.title"></span>
-                                <span class="block text-sm text-gray-600 mt-0.5" x-text="g.description"></span>
-                            </span>
-                        </label>
-                    </template>
-                </div>
-                <p x-show="token && me.membershipStatus === 'approved' && wgCatalog.length === 0" class="text-sm text-gray-500">目前無可加入的工作小組。</p>
-                <p class="text-sm min-h-[1.25rem]" :class="wgPanelSaving ? 'text-gray-500' : (wgPanelMsg && wgPanelMsg.includes('已') ? 'text-green-600' : 'text-red-600')" x-show="wgPanelMsg" x-text="wgPanelMsg" role="status"></p>
-                <button type="button" @click="saveWorkingGroups(false)" :disabled="wgPanelSaving" class="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
-                    <span x-text="wgPanelSaving ? '儲存中…' : '重試儲存'"></span>
-                </button>
-            </div>
-
         </div>
     </main>
 
@@ -475,6 +1316,7 @@
         function memberApp() {
             return {
                 token: localStorage.getItem('memberToken') || '',
+                activeTab: 'overview',
                 me: {},
                 profile: { fullName: '', phone: '', emailSubscribed: true },
                 reg: { username: '', email: '', password: '', fullName: '' },
@@ -550,8 +1392,20 @@
                     if (p.get('verify') === 'invalid') this.verifyMsg = '驗證連結無效或已過期。';
                     this.resetTokenFromUrl = p.get('resetToken') || '';
                     if (this.token) await this.loadMe();
+                    const h = (window.location.hash || '').toLowerCase();
+                    if (h === '#account') this.activeTab = 'account';
+                    else if (h === '#my-registrations') this.activeTab = 'events';
+                    else if (h === '#exams') this.activeTab = 'exams';
+                    else if (h === '#workgroups-panel') this.activeTab = 'account';
                     this.scrollToHashTarget();
-                    window.addEventListener('hashchange', () => this.scrollToHashTarget());
+                    window.addEventListener('hashchange', () => {
+                        const hash = (window.location.hash || '').toLowerCase();
+                        if (hash === '#account') this.activeTab = 'account';
+                        else if (hash === '#my-registrations') this.activeTab = 'events';
+                        else if (hash === '#exams') this.activeTab = 'exams';
+                        else if (hash === '#workgroups-panel') this.activeTab = 'account';
+                        this.scrollToHashTarget();
+                    });
                     window.addEventListener('actc-member-logout', () => {
                         this.logout();
                     });
@@ -664,7 +1518,7 @@
                         none: '無',
                         payment_pending: '待付款',
                         payment_submitted: '待審核',
-                        paid: '未付款',
+                        paid: '已付款',
                         payment_rejected: '付款退回',
                         refunded: '已退款'
                     };
@@ -687,11 +1541,13 @@
                     try {
                         let r = await fetch('/api/member/events/my-registrations', {
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             cache: 'no-store'
                         });
                         if (!r.ok) {
                             r = await fetch('/api/profile/me/event-registrations', {
                                 headers: this.authHeaders(),
+                                credentials: 'include',
                                 cache: 'no-store'
                             });
                         }
@@ -736,12 +1592,14 @@
                     try {
                         let r = await fetch(`/api/member/events/${eventId}/cancel`, {
                             method: 'POST',
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         if (!r.ok) {
                             r = await fetch(`/api/profile/me/event-registrations/${eventId}`, {
                                 method: 'DELETE',
-                                headers: this.authHeaders()
+                                headers: this.authHeaders(),
+                                credentials: 'include',
                             });
                         }
                         const text = await r.text();
@@ -817,7 +1675,8 @@
                     this.showMaterialsModal = true;
                     try {
                         const r = await fetch(`/api/member/events/${row.event.id}/materials`, {
-                            headers: this.authHeaders()
+                            headers: this.authHeaders(),
+                            credentials: 'include',
                         });
                         const d = await r.json().catch(() => ({}));
                         this.currentMaterials = r.ok ? (d.materials || []) : [];
@@ -889,6 +1748,7 @@
                         const r = await fetch(`/api/member/events/${this.selectedRegistration.event.id}/survey`, {
                             method: 'POST',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify(this.surveyForm)
                         });
                         const d = await r.json().catch(() => ({}));
@@ -941,6 +1801,7 @@
                     try {
                         const r = await fetch('/api/profile/me', {
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             cache: 'no-store'
                         });
                         if (!r.ok) throw new Error();
@@ -952,8 +1813,14 @@
                         this.profileLastSavedPayload = JSON.stringify(this.profile);
                         await this.loadWorkingGroupsForMember();
                         await this.loadEventRegistrations();
-                    } catch {
-                        this.logout();
+                    } catch (e) {
+                        console.error('loadMe failed:', e);
+                        // Don't auto logout - just clear token and show login form
+                        if (this.token) {
+                            localStorage.removeItem('memberToken');
+                            this.token = '';
+                        }
+                        this.me = {};
                     }
                 },
 
@@ -992,6 +1859,7 @@
                         const r = await fetch('/api/profile/me/working-groups', {
                             method: 'PUT',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify({ groupIds: this.wgSelectedIds })
                         });
                         const text = await r.text();
@@ -1018,6 +1886,8 @@
                 },
 
                 logout() {
+                    // Clear server-side httpOnly cookie
+                    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
                     localStorage.removeItem('memberToken');
                     this.token = '';
                     this.me = {};
@@ -1242,6 +2112,7 @@
                     const r = await fetch('/api/membership/apply', {
                         method: 'POST',
                         headers: this.authHeaders(),
+                        credentials: 'include',
                         body: JSON.stringify({})
                     });
                     const d = await r.json();
@@ -1265,6 +2136,7 @@
                         const r = await fetch('/api/profile/me', {
                             method: 'PATCH',
                             headers: this.authHeaders(),
+                            credentials: 'include',
                             body: JSON.stringify(payload)
                         });
                         const text = await r.text();
@@ -1300,6 +2172,424 @@
                     }
                 },
 
+            };
+        }
+
+        function examsTab() {
+            return {
+                availableExams: [],
+                currentAttempt: null,
+                examResult: null,
+                certificates: [],
+                showCertificates: false,
+                loading: false,
+                loadingCertificates: false,
+                startingExam: null,
+                startExamError: '',
+                submitting: false,
+                answers: {},
+                currentQuestionIndex: 0,
+                showSubmitConfirm: false,
+                unansweredCount: 0,
+                timeRemainingInterval: null,
+                showTimeWarning: false,
+                visibilityChangeCount: 0,
+                suspectedCheating: false,
+                currentAttemptExamId: null,
+                lastSaved: null,
+                lastSavedText: '',
+                autoSaveInterval: null,
+                autoSaveDebounceTimer: null,
+                historyExamId: null,
+                historyAttemptDetail: null,
+                historyLoading: false,
+                showRulesModal: false,
+                rulesConfirmed: false,
+                rulesExam: null,
+                _examWindow: null,
+                _examWindowPollInterval: null,
+                _examWindowExamId: null,
+                _examWindowAttemptId: null,
+                _examCompletedNormally: false,
+
+                async init() {
+                    await this.loadAvailableExams();
+                    window.addEventListener('message', (event) => {
+                        if (event.origin !== location.origin) return;
+                        if (event.data?.type === 'EXAM_COMPLETED') {
+                            this._examCompletedNormally = true;
+                            this._stopExamWindowPoll();
+                            this.loadAvailableExams();
+                        }
+                    });
+                },
+
+                _openExamWindow(examId, attemptId) {
+                    // If the previous exam window is still open, focus it instead of opening a new one.
+                    // Opening a new exam while one is in progress would navigate away from the old attempt
+                    // without triggering the close-poll, leaving it stuck in_progress.
+                    if (this._examWindow && !this._examWindow.closed) {
+                        this._examWindow.focus();
+                        return;
+                    }
+                    this._examWindowExamId = examId;
+                    this._examWindowAttemptId = attemptId;
+                    this._examCompletedNormally = false;
+                    const url = `/exam?examId=${encodeURIComponent(examId)}&attemptId=${encodeURIComponent(attemptId)}`;
+                    this._examWindow = window.open(url, 'actc-exam', 'width=1280,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
+                    if (!this._examWindow) {
+                        alert('無法開啟考試視窗，請允許此網站開啟彈出式視窗後重試。');
+                        return;
+                    }
+                    this._startExamWindowPoll(examId, attemptId);
+                },
+
+                _startExamWindowPoll(examId, attemptId) {
+                    this._stopExamWindowPoll();
+                    this._examWindowPollInterval = setInterval(async () => {
+                        if (!this._examWindow || this._examWindow.closed) {
+                            this._stopExamWindowPoll();
+                            if (!this._examCompletedNormally) {
+                                // Window closed without submitting — abandon the attempt
+                                try {
+                                    await fetch(`/api/member/exams/${examId}/abandon`, {
+                                        method: 'POST',
+                                        headers: this.authHeaders(),
+                                        credentials: 'include',
+                                        body: JSON.stringify({ attemptId })
+                                    });
+                                } catch { /* ignore */ }
+                            }
+                            this.loadAvailableExams();
+                        }
+                    }, 3000);
+                },
+
+                _stopExamWindowPoll() {
+                    if (this._examWindowPollInterval) {
+                        clearInterval(this._examWindowPollInterval);
+                        this._examWindowPollInterval = null;
+                    }
+                },
+
+                authHeaders() {
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+                },
+
+                openRulesModal(exam) {
+                    this.rulesExam = exam;
+                    this.rulesConfirmed = false;
+                    this.showRulesModal = true;
+                },
+
+                async loadAvailableExams() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/member/exams', {
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.availableExams = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load exams error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async startExam(examId) {
+                    this.startingExam = examId;
+                    this.startExamError = '';
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/start`, {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this._openExamWindow(examId, data.data.attemptId);
+                        } else {
+                            this.startExamError = data.error?.message || '開始考試失敗';
+                        }
+                    } catch (e) {
+                        console.error('Start exam error:', e);
+                        this.startExamError = '網路錯誤，請稍後再試';
+                    } finally {
+                        this.startingExam = null;
+                    }
+                },
+
+                resumeExam(examId, attemptId) {
+                    this._openExamWindow(examId, attemptId);
+                },
+
+                registerBeforeUnload() {
+                    if (this._beforeUnloadHandler) {
+                        window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                    }
+                    window.addEventListener('beforeunload', this._beforeUnloadHandler = (e) => {
+                        if (this.currentAttempt && this.currentAttempt.status === 'in_progress') {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    });
+                },
+
+                startAutoSave() {
+                    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+                    this.autoSaveInterval = setInterval(() => this.autoSaveProgress(), 30000);
+                },
+
+                async autoSaveProgress() {
+                    if (!this.currentAttempt?.attemptId || !this.currentAttemptExamId) return;
+                    const answersArray = Object.keys(this.answers).map(qId => ({
+                        questionId: qId,
+                        selectedAnswer: this.answers[qId]
+                    }));
+                    const attemptId = this.currentAttempt.attemptId;
+                    try {
+                        await fetch(`/api/member/exams/${this.currentAttemptExamId}/save-progress`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                            body: JSON.stringify({ attemptId, answers: answersArray })
+                        });
+                    } catch (e) {
+                        // silent fallback
+                    }
+                    try {
+                        localStorage.setItem(`exam_progress_${attemptId}`, JSON.stringify({ answers: answersArray, savedAt: Date.now() }));
+                    } catch (e) {
+                        // silent fallback
+                    }
+                    this.lastSaved = new Date();
+                    const h = this.lastSaved.getHours().toString().padStart(2, '0');
+                    const m = this.lastSaved.getMinutes().toString().padStart(2, '0');
+                    this.lastSavedText = h + ':' + m;
+                },
+
+                startTimeRemainingTimer() {
+                    if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                    
+                    this._visibilityChangeHandler = () => {
+                        if (document.hidden) {
+                            this.visibilityChangeCount++;
+                            if (this.visibilityChangeCount <= 3) {
+                                alert(`警告：偵測到視窗切換（第 ${this.visibilityChangeCount} 次）\n請勿切換視窗。`);
+                            } else if (this.visibilityChangeCount > 10) {
+                                this.suspectedCheating = true;
+                            }
+                        }
+                    };
+                    document.addEventListener('visibilitychange', this._visibilityChangeHandler);
+                    
+                    this.timeRemainingInterval = setInterval(() => {
+                        if (!this.currentAttempt?.expiresAt) return;
+                        const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                        
+                        // Show warning when <5 minutes
+                        if (remaining <= 300 && remaining > 0) {
+                            this.showTimeWarning = true;
+                        }
+                        
+                        if (remaining <= 0) {
+                            clearInterval(this.timeRemainingInterval);
+                            document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+                            alert('考試時間到！即將自動提交。');
+                            this.submitExam();
+                        }
+                    }, 1000);
+                },
+
+                formatTimeRemaining() {
+                    if (!this.currentAttempt?.expiresAt) return '無限制';
+                    const remaining = Math.max(0, Math.floor((new Date(this.currentAttempt.expiresAt) - new Date()) / 1000));
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                },
+
+                get answeredCount() {
+                    if (!this.currentAttempt?.questions) return 0;
+                    return this.currentAttempt.questions.filter(q => this.isAnswered(q.questionId)).length;
+                },
+
+                isAnswered(questionId) {
+                    const v = this.answers[questionId];
+                    return v !== undefined && v !== null && v !== '';
+                },
+
+                goToQuestion(idx) {
+                    this.currentQuestionIndex = idx;
+                    const el = document.getElementById('question-' + idx);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                },
+
+                confirmSubmit() {
+                    const total = this.currentAttempt?.questions?.length || 0;
+                    const unanswered = total - this.answeredCount;
+                    if (unanswered === 0) {
+                        this.submitExam();
+                    } else {
+                        this.unansweredCount = unanswered;
+                        this.showSubmitConfirm = true;
+                    }
+                },
+
+                async submitExam() {
+                    this.submitting = true;
+                    try {
+                        const answersArray = Object.keys(this.answers).map(qId => ({
+                            questionId: qId,
+                            answer: this.answers[qId]
+                        }));
+                        const res = await fetch(`/api/member/exams/${this.currentAttempt.attemptId}/submit`, {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                attemptId: this.currentAttempt.attemptId,
+                                answers: answersArray,
+                                timeSpent: this.currentAttempt.timeLimit ? 
+                                    Math.floor((new Date() - new Date(this.currentAttempt.startedAt)) / 1000) : 0,
+                                visibilityChangeCount: this.visibilityChangeCount || 0,
+                                suspectedCheating: this.suspectedCheating || false
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            const examId = this.currentAttemptExamId;
+                            this.currentAttempt = null;
+                            if (this.timeRemainingInterval) clearInterval(this.timeRemainingInterval);
+                            this.examResult = { ...data.data, _examId: examId };
+                        } else {
+                            alert(data.error?.message || '提交失敗');
+                        }
+                    } catch (e) {
+                        console.error('Submit exam error:', e);
+                        alert('網路錯誤');
+                    } finally {
+                        this.submitting = false;
+                        if (this.autoSaveInterval) { clearInterval(this.autoSaveInterval); this.autoSaveInterval = null; }
+                        if (this.autoSaveDebounceTimer) { clearTimeout(this.autoSaveDebounceTimer); this.autoSaveDebounceTimer = null; }
+                        if (this._visibilityChangeHandler) {
+                            document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+                        }
+                        if (this._beforeUnloadHandler) {
+                            window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+                            this._beforeUnloadHandler = null;
+                        }
+                    }
+                },
+
+                async loadCertificates() {
+                    this.loadingCertificates = true;
+                    try {
+                        const res = await fetch('/api/member/exams/certificates', {
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.certificates = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load certificates error:', e);
+                    } finally {
+                        this.loadingCertificates = false;
+                    }
+                },
+
+                async downloadCertificate(certificateNumber) {
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    try {
+                        const res = await fetch(`/api/member/exams/certificate/${certificateNumber}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `certificate-${certificateNumber}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        } else {
+                            alert('下載失敗');
+                        }
+                    } catch (e) {
+                        console.error('Download certificate error:', e);
+                        alert('下載失敗');
+                    }
+                },
+
+                async copyCertLink(certificateNumber) {
+                    const siteUrl = window.location.origin;
+                    const link = `${siteUrl}/verify-certificate/${certificateNumber}`;
+                    try {
+                        await navigator.clipboard.writeText(link);
+                        alert('驗證連結已複製！');
+                    } catch (e) {
+                        // Fallback for browsers that don't support clipboard API
+                        const ta = document.createElement('textarea');
+                        ta.value = link;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        alert('驗證連結已複製！');
+                    }
+                },
+
+                toggleHistory(examId) {
+                    if (this.historyExamId === examId) {
+                        this.historyExamId = null;
+                    } else {
+                        this.historyExamId = examId;
+                        this.historyAttemptDetail = null;
+                    }
+                },
+
+                async loadAttemptDetail(examId, attemptId) {
+                    this.historyLoading = true;
+                    this.historyAttemptDetail = null;
+                    try {
+                        const res = await fetch(`/api/member/exams/${examId}/result?attemptId=${attemptId}`, {
+                            headers: this.authHeaders(),
+                            credentials: 'include',
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok) {
+                            this.historyAttemptDetail = data.data || null;
+                        } else {
+                            alert(data.error?.message || '無法載入作答詳情');
+                        }
+                    } catch (e) {
+                        console.error('Load attempt detail error:', e);
+                        alert('網路錯誤，請稍後再試');
+                    } finally {
+                        this.historyLoading = false;
+                    }
+                },
+
+                closeAttemptDetail() {
+                    this.historyAttemptDetail = null;
+                },
+
+                formatTimeSpent(seconds) {
+                    if (!seconds && seconds !== 0) return '—';
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    if (mins === 0) return `${secs} 秒`;
+                    return `${mins} 分 ${secs} 秒`;
+                }
             };
         }
     </script>

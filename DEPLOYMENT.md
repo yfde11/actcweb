@@ -301,3 +301,62 @@ If you encounter issues during deployment:
 4. Check file permissions and ownership
 
 For additional help, refer to the project documentation or contact the development team.
+
+## Cron Jobs
+
+### 自動提交逾時考試（expired-attempts）
+
+系統在 `server.js` 中透過 `setInterval` 每 **5 分鐘**自動呼叫一次內部端點，將逾時但仍處於 `in_progress` 狀態的考試作答紀錄自動評分並關閉。**單一伺服器實例部署時不需外部 cron**。
+
+#### 端點
+
+```
+POST /api/cron/expired-attempts
+```
+
+#### 驗證機制
+
+所有 cron 端點皆需同時通過以下兩道驗證，缺一不可：
+
+1. **`X-Cron-Secret` 標頭**：值必須與環境變數 `CRON_SECRET` 完全相符。
+2. **IP 允許清單**：請求來源 IP 必須在 `CRON_ALLOWED_IPS` 所列的範圍內（預設僅允許 `127.0.0.1`）。
+
+#### 相關環境變數
+
+| 變數名稱 | 必填 | 說明 | 範例值 |
+|---|---|---|---|
+| `CRON_SECRET` | 是（cron 啟用時） | 驗證 cron 請求的共用密鑰 | `my-secret-32chars` |
+| `CRON_ALLOWED_IPS` | 否 | 逗號分隔的允許 IP 清單，預設 `127.0.0.1` | `127.0.0.1,10.0.0.5` |
+
+#### 多實例部署（外部 cron）
+
+在多個 Node.js 實例（例如 PM2 cluster mode 或 Kubernetes 多副本）的環境下，每個實例各自的 `setInterval` 都會觸發，造成重複處理。建議改用外部 cron 只對單一實例呼叫：
+
+1. 關閉所有實例的內部定時器（在 `server.js` 中以環境變數 `DISABLE_INTERNAL_CRON=true` 做條件判斷）。
+2. 在系統 crontab 或排程服務中，每 5 分鐘呼叫一次：
+
+```bash
+# crontab 範例（每 5 分鐘執行）
+*/5 * * * * curl -s -X POST https://your-site.example.com/api/cron/expired-attempts \
+  -H "X-Cron-Secret: ${CRON_SECRET}" \
+  -H "Content-Type: application/json"
+```
+
+#### 回應格式
+
+```json
+{
+  "message": "Expired attempts processed",
+  "total": 3,
+  "processed": 3,
+  "errors": 0
+}
+```
+
+- `total`：找到的逾時作答筆數。
+- `processed`：成功處理（含自動評分）的筆數。
+- `errors`：處理失敗的筆數（詳細錯誤見伺服器日誌）。
+
+#### 已知限制
+
+- 若考試文件已從資料庫刪除（`exam` 參照為 null），該作答紀錄會被標記為 `expired` 但**不執行評分**，並在日誌中記錄警告。這是預期行為，不影響其他筆資料的處理。
