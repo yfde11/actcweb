@@ -83,7 +83,7 @@ router.post('/', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags, requiresPurchase, price, currency
+            tags, requiresPurchase, price, currency, certTypeRef
         } = req.body;
 
         const examData = {
@@ -91,7 +91,7 @@ router.post('/', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags, requiresPurchase, price, currency,
+            tags, requiresPurchase, price, currency, certTypeRef,
             createdBy: req.user.userId
         };
 
@@ -159,7 +159,7 @@ router.put('/:id', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags, requiresPurchase, price, currency,
+            tags, requiresPurchase, price, currency, certTypeRef,
             status: requestedStatus
         } = req.body;
 
@@ -168,7 +168,7 @@ router.put('/:id', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             startDate, endDate, shuffleQuestions, shuffleOptions, showCorrectAnswers,
             certificateEnabled, certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            tags, requiresPurchase, price, currency
+            tags, requiresPurchase, price, currency, certTypeRef
         };
 
         // Remove undefined keys so existing values are not overwritten with undefined
@@ -1210,7 +1210,7 @@ router.post('/:id/clone', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             shuffleQuestions, shuffleOptions, showCorrectAnswers, certificateEnabled,
             certificateTemplate, allowedMembers, allowedMemberIds, questionRefs, source: examSource,
-            tags
+            tags, certTypeRef
         } = source;
 
         const cloneData = {
@@ -1219,7 +1219,7 @@ router.post('/:id/clone', adminAuth, async (req, res) => {
             maxAttempts, cooldownPeriod, questionsPerAttempt, difficultyRatio, domainRatio,
             shuffleQuestions, shuffleOptions, showCorrectAnswers, certificateEnabled,
             certificateTemplate, allowedMembers, allowedMemberIds, questionRefs,
-            source: examSource,
+            certTypeRef, source: examSource,
             tags,
             // Reset scheduling so admin must explicitly set new dates
             startDate: undefined,

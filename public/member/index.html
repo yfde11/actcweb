@@ -499,7 +499,7 @@
                                                         <!-- certType badge -->
                                                         <span :class="cert.certType === 'course' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
                                                               class="px-1.5 py-0.5 text-xs rounded font-medium">
-                                                            <span x-text="cert.certType === 'course' ? '課程型' : '考試型'"></span>
+                                                            <span x-text="cert.certTypeRef?.titleZh || (cert.certType === 'course' ? '課程結業證書' : '資安能力認證證書')"></span>
                                                         </span>
                                                         <!-- status badge -->
                                                         <span x-show="cert.isRevoked"

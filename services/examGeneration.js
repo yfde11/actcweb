@@ -34,6 +34,7 @@ async function generateExamFromBank(params) {
         startDate,
         endDate,
         tags,
+        certTypeRef,
         createdBy
     } = params;
 
@@ -128,6 +129,7 @@ async function generateExamFromBank(params) {
     if (startDate !== undefined) examData.startDate = startDate;
     if (endDate !== undefined) examData.endDate = endDate;
     if (tags !== undefined) examData.tags = tags;
+    if (certTypeRef !== undefined) examData.certTypeRef = certTypeRef;
 
     const exam = new Exam(examData);
 
@@ -164,6 +166,7 @@ async function generateExamManual(params) {
         passingScore = 70,
         examType = 'quiz',
         certificateTemplate,
+        certTypeRef,
         createdBy
     } = params;
 
@@ -195,6 +198,7 @@ async function generateExamManual(params) {
         examType,
         certificateEnabled: examType === 'certification',
         certificateTemplate,
+        certTypeRef: certTypeRef || undefined,
         source: 'question_bank',
         domainRatio: new Map(Object.entries(domainDistribution).map(([k, v]) => 
             [k, (v / questionIds.length) * 100]
