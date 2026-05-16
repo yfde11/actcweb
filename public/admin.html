@@ -212,6 +212,10 @@
                        class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
                         <span>證書管理</span>
                     </a>
+                    <a href="/admin/certificate-types"
+                       class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span>證書類型管理</span>
+                    </a>
                     <a href="/admin/exam-access"
                        class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
                         <span>考試授權管理</span>
@@ -1341,11 +1345,24 @@
                                             <input type="checkbox" x-model="formData.certificateEnabled" class="rounded" />
                                             <span class="text-sm text-gray-700">啟用證書</span>
                                         </label>
-                                        <div x-show="formData.certificateEnabled">
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">證書有效年限（年）</label>
-                                            <input type="number" x-model.number="formData.certValidityYears" min="0" max="99"
-                                                   class="w-32 border rounded px-3 py-2 text-sm" placeholder="3" />
-                                            <p class="text-xs text-gray-500 mt-1">0 表示永久有效；預設 3 年。此設定僅影響本考試未來新發出的證書。</p>
+                                        <div x-show="formData.certificateEnabled" class="space-y-3">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">證書類型 <span class="text-red-500">*</span></label>
+                                                <select x-model="formData.certTypeRef"
+                                                        class="w-full border rounded px-3 py-2 text-sm">
+                                                    <option value="">-- 請選擇證書類型 --</option>
+                                                    <template x-for="ct in certTypeOptions" :key="ct._id">
+                                                        <option :value="ct._id" x-text="ct.name + ' (' + ct.prefix + ')'"></option>
+                                                    </template>
+                                                </select>
+                                                <p x-show="certTypeOptions.length === 0" class="text-xs text-orange-600 mt-1">尚無可用的證書類型，請先至<a href="/admin/certificate-types" class="underline">證書類型管理</a>建立。</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">證書有效年限（年）</label>
+                                                <input type="number" x-model.number="formData.certValidityYears" min="0" max="99"
+                                                       class="w-32 border rounded px-3 py-2 text-sm" placeholder="3" />
+                                                <p class="text-xs text-gray-500 mt-1">0 表示永久有效；預設 3 年。此設定僅影響本考試未來新發出的證書。</p>
+                                            </div>
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-1">標籤（逗號分隔，選填）</label>
@@ -2665,6 +2682,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     cooldownPeriod: 15,
                     questionsPerAttempt: '',
                     certificateEnabled: false,
+                    certTypeRef: '',
                     certValidityYears: 3,
                     status: 'draft',
                     shuffleQuestions: false,
@@ -2679,6 +2697,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     price: 0,
                     currency: 'TWD'
                 },
+                certTypeOptions: [],
                 bankStats: null,
                 domainList: [
                     {id:'1', name:'安全與風險管理'},
@@ -2754,7 +2773,25 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                     } catch (e) { /* silent */ }
                 },
                 async init() {
-                    await this.loadExams();
+                    await Promise.all([
+                        this.loadExams(),
+                        this.loadCertTypeOptions()
+                    ]);
+                },
+
+                async loadCertTypeOptions() {
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        const res = await fetch('/api/admin/certificate-types?activeOnly=1', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const json = await res.json();
+                            this.certTypeOptions = json.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Load cert type options error:', e);
+                    }
                 },
                 async loadExams() {
                     try {
@@ -2782,9 +2819,10 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         maxAttempts: 1,
                         cooldownPeriod: 15,
                         questionsPerAttempt: '',
-                        certificateEnabled: false,
-                        certValidityYears: 3,
-                        status: 'draft',
+                    certificateEnabled: false,
+                    certTypeRef: '',
+                    certValidityYears: 3,
+                    status: 'draft',
                         shuffleQuestions: false,
                         shuffleOptions: false,
                         showCorrectAnswers: 'after_submit',
@@ -2814,8 +2852,9 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         maxAttempts: exam.maxAttempts || 1,
                         cooldownPeriod: exam.cooldownPeriod || 15,
                         questionsPerAttempt: exam.questionsPerAttempt || '',
-                        certificateEnabled: exam.certificateEnabled || false,
-                        certValidityYears: exam.certificateTemplate?.certValidityYears !== undefined ? exam.certificateTemplate.certValidityYears : 3,
+                    certificateEnabled: exam.certificateEnabled || false,
+                    certTypeRef: exam.certTypeRef || '',
+                    certValidityYears: exam.certificateTemplate?.certValidityYears !== undefined ? exam.certificateTemplate.certValidityYears : 3,
                         status: exam.status,
                         shuffleQuestions: exam.shuffleQuestions || false,
                         shuffleOptions: exam.shuffleOptions || false,
@@ -2866,6 +2905,7 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                                     shuffleOptions: this.formData.shuffleOptions,
                                     showCorrectAnswers: this.formData.showCorrectAnswers,
                                     certificateEnabled: this.formData.certificateEnabled,
+                                    certTypeRef: this.formData.certTypeRef || null,
                                     maxAttempts: this.formData.maxAttempts,
                                     cooldownPeriod: this.formData.cooldownPeriod,
                                     startDate: this.formData.startDate ? new Date(this.formData.startDate).toISOString() : null,
@@ -2887,9 +2927,10 @@ multiple_choice,1,What is CIA?,Confidentiality,Integrity,Availability,All of abo
                         const method = this.editingExam ? 'PUT' : 'POST';
 
                         // Build payload — convert dates and tags to backend-expected formats
-                        const { certValidityYears, ...restFormData } = this.formData;
+                        const { certValidityYears, certTypeRef, ...restFormData } = this.formData;
                         const payload = {
                             ...restFormData,
+                            certTypeRef: certTypeRef || null,
                             startDate: this.formData.startDate ? new Date(this.formData.startDate).toISOString() : null,
                             endDate: this.formData.endDate ? new Date(this.formData.endDate).toISOString() : null,
                             tags: this.formData.tags

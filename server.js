@@ -32,6 +32,7 @@ const memberExamRoutes = require('./routes/member-exams');
 const questionBankRoutes = require('./routes/question-bank');
 const cronRoutes = require('./routes/cron');
 const adminCertRoutes = require('./routes/admin-certificates');
+const adminCertTypeRoutes = require('./routes/admin-certificate-types');
 const adminExamAccessRoutes = require('./routes/admin-exam-access');
 const { ensureMongo } = require('./middleware/mongoReady');
 const { bootstrapDatabase } = require('./lib/bootstrapDb');
@@ -114,6 +115,7 @@ app.use('/api/member/exams', memberExamRoutes);
 app.use('/api/question-bank', questionBankRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/admin/certificates', adminCertRoutes);
+app.use('/api/admin/certificate-types', adminCertTypeRoutes);
 app.use('/api/admin/exam-access', adminExamAccessRoutes);
 
 
@@ -192,6 +194,9 @@ app.get('/admin/corporate-members', (req, res) => {
 
 app.get('/admin/certificates', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'certificates.html'));
+});
+app.get('/admin/certificate-types', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'certificate-types.html'));
 });
 app.get('/admin/exam-access', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'exam-access.html'));

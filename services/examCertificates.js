@@ -1,5 +1,6 @@
 const PDFDocument = require('pdfkit');
 const Certificate = require('../models/Certificate');
+const CertificateType = require('../models/CertificateType');
 const ExamAttempt = require('../models/ExamAttempt');
 const Exam = require('../models/Exam');
 const CourseAttendance = require('../models/CourseAttendance');
@@ -26,7 +27,8 @@ async function verifyCertificate(certificateNumber) {
     })
         .populate('exam', 'title')
         .populate('course', 'courseName')
-        .populate('user', 'username fullName');
+        .populate('user', 'username fullName')
+        .populate('certTypeRef', 'name titleZh');
 
     if (!certificate) {
         return { ok: false, statusCode: 404, code: 'CERTIFICATE_NOT_FOUND', message: '證書不存在或已被撤銷' };
@@ -41,6 +43,7 @@ async function verifyCertificate(certificateNumber) {
         data: {
             certificateNumber: certificate.certificateNumber,
             certType: certificate.certType,
+            certTypeName: certificate.certTypeRef?.titleZh || null,
             issuedAt: certificate.issuedAt,
             expiresAt: certificate.expiresAt,
             exam: certificate.exam,
@@ -79,7 +82,8 @@ async function generateCertificatePDF(certificateId, res) {
     const certificate = await Certificate.findById(certificateId)
         .populate('exam')
         .populate('course')
-        .populate('user');
+        .populate('user')
+        .populate('certTypeRef');
 
     if (!certificate) {
         throw new Error('CERTIFICATE_NOT_FOUND');
@@ -98,11 +102,16 @@ async function generateCertificatePDF(certificateId, res) {
         attempt = await ExamAttempt.findById(certificate.attempt);
     }
 
-    // Create PDF document
+    // Recipient name: prefer certificate.recipientName, fallback to user fields
+    const recipientDisplayName = certificate.recipientName
+        || (user && (user.fullName || user.username))
+        || '—';
+
+    // Create PDF document — A4 landscape: 841.89 × 595.28 pt
     const doc = new PDFDocument({
         size: 'A4',
         layout: 'landscape',
-        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+        margins: { top: 0, bottom: 0, left: 0, right: 0 }
     });
 
     // Set response headers
@@ -115,125 +124,140 @@ async function generateCertificatePDF(certificateId, res) {
     // Register fonts
     doc.registerFont('Regular', FONT_PATH);
     doc.registerFont('Bold', BOLD_FONT_PATH || FONT_PATH);
-    doc.font('Regular');
 
-    // Certificate template (only exam type has template)
-    const template = (!isCourse && certificate.exam && certificate.exam.certificateTemplate) ? certificate.exam.certificateTemplate : {};
+    const W = doc.page.width;   // 841.89
+    const H = doc.page.height;  // 595.28
+    const NAVY = '#003366';
+    const GOLD  = '#D4AF37';
+    const GRAY  = '#999999';
+    const cx = W / 2;           // horizontal center
 
-    // Draw border
-    if (template.customDesign?.borderColor) {
-        doc.rect(30, 30, doc.page.width - 60, doc.page.height - 60)
-           .strokeColor(template.customDesign.borderColor)
-           .lineWidth(3)
-           .stroke();
+    // ── Borders ──────────────────────────────────────────────────────────────
+    // Outer gold border
+    doc.rect(12, 12, W - 24, H - 24)
+       .strokeColor(GOLD).lineWidth(3).stroke();
+
+    // Inner navy border
+    doc.rect(22, 22, W - 44, H - 44)
+       .strokeColor(NAVY).lineWidth(2).stroke();
+
+    // ── Logo ─────────────────────────────────────────────────────────────────
+    const logoPath = path.join(__dirname, '../public/assets/images/actc-logo.png');
+    const logoFallback = path.join(__dirname, '../public/assets/images/actc-logo.jpg');
+    const logoSrc = fs.existsSync(logoPath) ? logoPath : (fs.existsSync(logoFallback) ? logoFallback : null);
+
+    const LOGO_H = 58;
+    const LOGO_TOP = 52;
+    if (logoSrc) {
+        doc.image(logoSrc, cx - 40, LOGO_TOP, { height: LOGO_H, fit: [80, LOGO_H] });
+    }
+
+    // ── Title ─────────────────────────────────────────────────────────────────
+    const marginX  = 60;
+    const contentW = W - marginX * 2;   // 721.89
+
+    const titleTop = LOGO_TOP + LOGO_H + 18;   // 128
+    const titleZh = certificate.certTypeRef?.titleZh
+        || (isCourse ? '課程結業證書' : '資安能力認證證書');
+    const titleEn = certificate.certTypeRef?.titleEn
+        || (isCourse ? 'Course Completion Certificate' : 'Cybersecurity Competency Certificate');
+
+    doc.font('Bold').fontSize(30).fillColor(NAVY)
+       .text(titleZh, marginX, titleTop, { width: contentW, align: 'center' });
+
+    const subtitleTop = titleTop + 42;          // 170
+    let dividerY;
+    if (titleEn) {
+        doc.font('Regular').fontSize(12).fillColor(NAVY)
+           .text(titleEn, marginX, subtitleTop, { width: contentW, align: 'center' });
+        dividerY = subtitleTop + 30;            // 200
     } else {
-        doc.rect(30, 30, doc.page.width - 60, doc.page.height - 60)
-           .strokeColor('#1a365d')
-           .lineWidth(2)
-           .stroke();
+        dividerY = subtitleTop + 6;             // tighter spacing when no subtitle
     }
+    doc.moveTo(W * 0.25, dividerY).lineTo(W * 0.75, dividerY)
+       .strokeColor(GOLD).lineWidth(1).stroke();
 
-    // Logo (if specified)
-    if (template.customDesign?.logoPath && fs.existsSync(path.join(__dirname, '..', template.customDesign.logoPath))) {
-        doc.image(path.join(__dirname, '..', template.customDesign.logoPath),
-                  doc.page.width / 2 - 50, 60, { width: 100 });
-    }
+    // ── Certificate number ────────────────────────────────────────────────────
+    const certNumY = dividerY + 22;             // 222
+    doc.font('Regular').fontSize(11).fillColor(NAVY)
+       .text(`證書編號：${certificate.certificateNumber}`,
+             marginX, certNumY, { width: contentW, align: 'center' });
 
-    // Title
-    doc.font('Bold')
-       .fontSize(36)
-       .fillColor('#1a365d')
-       .text(template.title || (isCourse ? '課程結業證書' : '證書'), { align: 'center' });
+    // ── Recipient name ────────────────────────────────────────────────────────
+    const nameY = certNumY + 28;                // 250
+    doc.font('Bold').fontSize(28).fillColor(NAVY)
+       .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
-    doc.moveDown(0.5);
+    // ── Achievement text ──────────────────────────────────────────────────────
+    const achieveY = nameY + 46;                // 296
 
-    // Issuer
-    doc.font('Regular')
-       .fontSize(16)
-       .fillColor('#4a5568')
-       .text(`發證機構：${template.issuer || 'ACTC'}`, { align: 'center' });
-
-    doc.moveDown(1.5);
-
-    // Certificate Number
-    doc.fontSize(12)
-       .fillColor('#718096')
-       .text(`證書編號：${certificate.certificateNumber}`, { align: 'center' });
-
-    doc.moveDown(1);
-
-    // Recipient name: prefer certificate.recipientName, fallback to user fields
-    const recipientDisplayName = certificate.recipientName
-        || (user && (user.fullName || user.username))
-        || '—';
-
-    doc.font('Bold')
-       .fontSize(24)
-       .fillColor('#2d3748')
-       .text(recipientDisplayName, { align: 'center' });
-
-    doc.moveDown(0.5);
-
-    // Achievement text - differs by certType
-    if (isCourse) {
-        const courseName = certificate.course ? certificate.course.courseName : '本課程';
-        doc.font('Regular')
-           .fontSize(16)
-           .text(`已完成「${courseName}」課程訓練`, { align: 'center' });
-        // No score line for course certificates
-    } else {
-        const examTitle = certificate.exam ? certificate.exam.title : '考試';
-        doc.font('Regular')
-           .fontSize(16)
-           .text(`已完成「${examTitle}」考試並通過認證`, { align: 'center' });
-
-        // Score (if available, exam type only)
-        if (attempt && attempt.score !== null) {
-            doc.moveDown(0.5);
-            doc.fontSize(14)
-               .text(`成績：${attempt.score} 分`, { align: 'center' });
-        }
-    }
-
-    doc.moveDown(2);
-
-    // Issue date
-    const issuedDate = certificate.issuedAt.toLocaleDateString('zh-TW', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+    // Resolve bodyText from certTypeRef with template variable substitution
+    const examTitle = certificate.exam ? certificate.exam.title : '考試';
+    const courseName = certificate.course ? certificate.course.courseName : '本課程';
+    const issuedDateStrForBody = certificate.issuedAt.toLocaleDateString('zh-TW', {
+        year: 'numeric', month: 'long', day: 'numeric'
     });
-    doc.fontSize(14)
-       .text(`發證日期：${issuedDate}`, { align: 'center' });
 
-    // Expiry date (if any)
-    if (certificate.expiresAt) {
-        const expiryDate = certificate.expiresAt.toLocaleDateString('zh-TW', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        doc.moveDown(0.5);
-        doc.text(`有效期限：${expiryDate}`, { align: 'center' });
+    let bodyText = certificate.certTypeRef?.bodyText;
+    if (bodyText) {
+        bodyText = bodyText
+            .replace(/\{\{name\}\}/g, recipientDisplayName)
+            .replace(/\{\{examTitle\}\}/g, examTitle)
+            .replace(/\{\{courseName\}\}/g, courseName)
+            .replace(/\{\{date\}\}/g, issuedDateStrForBody)
+            .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
+
+        doc.font('Regular').fontSize(14).fillColor(NAVY)
+           .text(bodyText, marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
+    } else if (isCourse) {
+        doc.font('Regular').fontSize(14).fillColor(NAVY)
+           .text(`本證書證明持證者已完成「${courseName}」課程訓練，符合協會所定各項訓練要求。`,
+                 marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
     } else {
-        doc.moveDown(0.5);
-        doc.text('有效期限：永久', { align: 'center' });
+        doc.font('Regular').fontSize(14).fillColor(NAVY)
+           .text(`本證書證明持證者已通過「${examTitle}」考試，具備相關資訊安全知識與實務能力，符合協會所定認證標準。`,
+                 marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
     }
 
-    // Footer text
-    if (template.customDesign?.footerText) {
-        doc.moveDown(2);
-        doc.fontSize(10)
-           .fillColor('#a0aec0')
-           .text(template.customDesign.footerText, { align: 'center' });
+    // ── Validity line ─────────────────────────────────────────────────────────
+    const validityY = achieveY + 52;            // ~348
+    const issuedDateStr = certificate.issuedAt.toLocaleDateString('zh-TW', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+    if (certificate.expiresAt) {
+        const expiryDateStr = certificate.expiresAt.toLocaleDateString('zh-TW', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        doc.font('Regular').fontSize(12).fillColor(NAVY)
+           .text(`發證日期：${issuedDateStr}　　有效期限：${expiryDateStr}`,
+                 marginX, validityY, { width: contentW, align: 'center' });
+    } else {
+        doc.font('Regular').fontSize(12).fillColor(NAVY)
+           .text(`發證日期：${issuedDateStr}　　有效期限：永久`,
+                 marginX, validityY, { width: contentW, align: 'center' });
     }
 
-    // Verification URL
+    // ── Signature section (理事長) ────────────────────────────────────────────
+    const SIG_Y  = H - 138;                     // 457
+    const sigW   = 160;
+    const sigX   = W * 0.5 - sigW / 2;          // 置中
+
+    doc.moveTo(sigX, SIG_Y).lineTo(sigX + sigW, SIG_Y)
+       .strokeColor(NAVY).lineWidth(0.75).stroke();
+
+    doc.font('Regular').fontSize(10).fillColor(NAVY)
+       .text('理事長', sigX, SIG_Y + 7, { width: sigW, align: 'center' });
+
+    // ── Footer ────────────────────────────────────────────────────────────────
+    const footerY = H - 52;
+    doc.font('Regular').fontSize(8).fillColor(GRAY)
+       .text(`© ${new Date().getFullYear()} 國際資訊安全人才培育與推廣協會保留所有權利`,
+             marginX, footerY, { width: contentW, align: 'center' });
+
     const siteUrl = (process.env.SITE_URL || 'https://actc.org.tw').replace(/\/$/, '');
-    doc.moveDown(0.5);
-    doc.fontSize(10)
-       .text(`驗證網址：${siteUrl}/verify-certificate/${certificate.certificateNumber}`,
-             { align: 'center' });
+    doc.fontSize(7).fillColor(GRAY)
+       .text(`驗證：${siteUrl}/verify-certificate/${certificate.certificateNumber}`,
+             marginX, footerY + 13, { width: contentW, align: 'center' });
 
     // Finalize PDF
     doc.end();
@@ -250,7 +274,9 @@ async function generateCertificatePDF(certificateId, res) {
  * @returns {Promise<Object>} New or existing certificate
  */
 async function regenerateCertificate(attemptId) {
-    const attempt = await ExamAttempt.findById(attemptId).populate('exam').populate('user', 'fullName username');
+    const attempt = await ExamAttempt.findById(attemptId)
+        .populate('exam')
+        .populate('user', 'fullName username');
     if (!attempt) {
         throw new Error('ATTEMPT_NOT_FOUND');
     }
@@ -265,11 +291,19 @@ async function regenerateCertificate(attemptId) {
         return certificate;
     }
 
-    // Generate new certificate
+    // Populate exam.certTypeRef for prefix/counter resolution
+    await attempt.populate('exam.certTypeRef');
 
-    const seq = await Counter.getNextSequence('certificate_number');
     const year = new Date().getFullYear();
-    const certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
+    let certNumber;
+    if (attempt.exam.certTypeRef) {
+        const ct = attempt.exam.certTypeRef;
+        const seq = await Counter.getNextSequence(ct.counterKey || 'certificate_number');
+        certNumber = `${ct.prefix}-${year}-${String(seq).padStart(6, '0')}`;
+    } else {
+        const seq = await Counter.getNextSequence('certificate_number');
+        certNumber = `ACTC-EXAM-${year}-${String(seq).padStart(6, '0')}`;
+    }
 
     // Calculate expiresAt using certValidityYears fallback logic
     let expiresAt = null;
@@ -289,6 +323,7 @@ async function regenerateCertificate(attemptId) {
     certificate = new Certificate({
         certificateNumber: certNumber,
         certType: 'exam',
+        certTypeRef: attempt.exam.certTypeRef?._id || null,
         exam: attempt.exam._id,
         user: attempt.user._id || attempt.user,
         recipientName: attempt.user.fullName || attempt.user.username || null,
@@ -307,7 +342,7 @@ async function regenerateCertificate(attemptId) {
  * @param {number} [certValidityYears] - validity in years; 0 = permanent; undefined = permanent
  * @returns {Promise<{ attendance, certificate }>}
  */
-async function issueCourseAttendanceCertificate(attendanceId, certValidityYears) {
+async function issueCourseAttendanceCertificate(attendanceId, certValidityYears, certTypeId = null) {
     const attendance = await CourseAttendance.findById(attendanceId).populate('user');
     if (!attendance) {
         throw new Error('ATTENDANCE_NOT_FOUND');
@@ -317,10 +352,24 @@ async function issueCourseAttendanceCertificate(attendanceId, certValidityYears)
         throw new Error('CERTIFICATE_ALREADY_ISSUED');
     }
 
-
-    const seq = await Counter.getNextSequence('certificate_course_number');
     const year = new Date().getFullYear();
-    const certNumber = `ACTC-COURSE-${year}-${String(seq).padStart(6, '0')}`;
+    let certNumber;
+    let certTypeRef = certTypeId || null;
+
+    if (certTypeId) {
+        const ct = await CertificateType.findById(certTypeId);
+        if (ct) {
+            const seq = await Counter.getNextSequence(ct.counterKey || 'certificate_course_number');
+            certNumber = `${ct.prefix}-${year}-${String(seq).padStart(6, '0')}`;
+            certTypeRef = ct._id;
+        } else {
+            const seq = await Counter.getNextSequence('certificate_course_number');
+            certNumber = `ACTC-COURSE-${year}-${String(seq).padStart(6, '0')}`;
+        }
+    } else {
+        const seq = await Counter.getNextSequence('certificate_course_number');
+        certNumber = `ACTC-COURSE-${year}-${String(seq).padStart(6, '0')}`;
+    }
 
     // Calculate expiresAt
     let expiresAt = null;
@@ -335,6 +384,7 @@ async function issueCourseAttendanceCertificate(attendanceId, certValidityYears)
     const certificate = new Certificate({
         certificateNumber: certNumber,
         certType: 'course',
+        certTypeRef,
         course: attendance._id,
         user: attendance.user ? attendance.user._id : null,
         recipientName: attendance.recipientName,
