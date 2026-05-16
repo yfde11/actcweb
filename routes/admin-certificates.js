@@ -25,6 +25,77 @@ function errorResponse(res, statusCode, code, message, details = {}) {
     });
 }
 
+// Shared: process an array of normalized records (issued from CSV or JSON body)
+async function processBulkRecords(records, certValidityYears, resolvedCertTypeId, adminUserId) {
+    const results = { success: 0, failed: 0, errors: [] };
+    const successList = [];
+
+    for (let i = 0; i < records.length; i++) {
+        const rec = records[i];
+        const rowNum = rec._rowNum || (i + 1);
+
+        if (!rec.courseName || !rec.recipientName || !rec.attendanceDateStr) {
+            results.failed++;
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: '課程名稱、姓名及出席日期為必填欄位' });
+            continue;
+        }
+
+        if (rec.recipientEmail && !validator.isEmail(rec.recipientEmail)) {
+            results.failed++;
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: `Email 格式不正確：${rec.recipientEmail}` });
+            continue;
+        }
+
+        const attendanceDate = new Date(rec.attendanceDateStr);
+        if (isNaN(attendanceDate.getTime())) {
+            results.failed++;
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: `無效的出席日期：${rec.attendanceDateStr}` });
+            continue;
+        }
+
+        try {
+            let linkedUserId = null;
+            if (rec.recipientEmail) {
+                const user = await User.findOne({ email: rec.recipientEmail }).select('_id');
+                if (user) linkedUserId = user._id;
+            }
+
+            const attendance = new CourseAttendance({
+                courseName: rec.courseName,
+                courseCode: rec.courseCode || undefined,
+                recipientName: rec.recipientName,
+                recipientEmail: rec.recipientEmail || undefined,
+                user: linkedUserId,
+                attendanceDate,
+                completionHours: rec.completionHoursStr ? Number(rec.completionHoursStr) : undefined,
+                instructorName: rec.instructorName || undefined,
+                notes: rec.notes || undefined,
+                createdBy: adminUserId
+            });
+            await attendance.save();
+
+            const { attendance: updatedAttendance, certificate } = await issueCourseAttendanceCertificate(
+                attendance._id.toString(),
+                certValidityYears,
+                resolvedCertTypeId
+            );
+
+            results.success++;
+            successList.push({
+                row: rowNum,
+                recipientName: rec.recipientName,
+                email: rec.recipientEmail || null,
+                certificateNumber: certificate.certificateNumber
+            });
+        } catch (err) {
+            results.failed++;
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: err.message || '發證失敗' });
+        }
+    }
+
+    return { ...results, issued: successList };
+}
+
 // Helper: Escape CSV field
 function escapeCSVField(field) {
     if (field === null || field === undefined) return '';
@@ -302,14 +373,11 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
     }
 });
 
-// POST /api/admin/certificates/course-attendances/bulk - CSV 批次發課程型證書（上限 500 筆）
-// Multipart: file (CSV), certValidityYears (optional), certTypeId (optional)
+// POST /api/admin/certificates/course-attendances/bulk - CSV/JSON 批次發課程型證書（上限 500 筆）
+// Multipart: file (CSV), certValidityYears (optional), certTypeId (optional) — legacy
+// JSON body: { records: [...], certValidityYears?, certTypeId? } — new
 router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async (req, res) => {
     try {
-        if (!req.file) {
-            return errorResponse(res, 400, 'NO_FILE', '請上傳 CSV 檔案');
-        }
-
         const certValidityYears = (req.body.certValidityYears !== undefined && req.body.certValidityYears !== '')
             ? Number(req.body.certValidityYears)
             : undefined;
@@ -327,110 +395,77 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
             resolvedCertTypeId = certTypeIdBody;
         }
 
-        // Parse CSV
-        const rows = await new Promise((resolve, reject) => {
-            const results = [];
-            const readable = new stream.Readable();
-            readable._read = () => {};
-            readable.push(req.file.buffer);
-            readable.push(null);
-            readable
-                .pipe(csv())
-                .on('data', row => results.push(row))
-                .on('end', () => resolve(results))
-                .on('error', reject);
-        });
+        let records;
 
-        if (rows.length === 0) {
-            return errorResponse(res, 400, 'EMPTY_FILE', 'CSV 檔案無資料');
+        // === JSON body path (new) ===
+        if (req.is('application/json') && req.body && Array.isArray(req.body.records)) {
+            const jsonRecords = req.body.records;
+            if (jsonRecords.length === 0) {
+                return errorResponse(res, 400, 'EMPTY_RECORDS', 'records 陣列為空');
+            }
+            if (jsonRecords.length > 500) {
+                return errorResponse(res, 400, 'TOO_MANY_ROWS', `每次批次上限 500 筆，目前共 ${jsonRecords.length} 筆`);
+            }
+
+            records = jsonRecords.map((r, i) => ({
+                _rowNum: i + 1,
+                courseName: (r.courseName || '').trim(),
+                courseCode: (r.courseCode || '').trim(),
+                recipientName: (r.recipientName || '').trim(),
+                recipientEmail: (r.recipientEmail || '').trim().toLowerCase(),
+                attendanceDateStr: (r.attendanceDate || '').trim(),
+                completionHoursStr: r.completionHours !== undefined && r.completionHours !== '' ? String(r.completionHours).trim() : '',
+                instructorName: (r.instructorName || '').trim(),
+                notes: (r.notes || '').trim()
+            }));
+        } else {
+            // === Multipart CSV path (legacy, kept for backward compat) ===
+            if (!req.file) {
+                return errorResponse(res, 400, 'NO_FILE', '請上傳 CSV 檔案');
+            }
+
+            const rows = await new Promise((resolve, reject) => {
+                const results = [];
+                const readable = new stream.Readable();
+                readable._read = () => {};
+                readable.push(req.file.buffer);
+                readable.push(null);
+                readable
+                    .pipe(csv())
+                    .on('data', row => results.push(row))
+                    .on('end', () => resolve(results))
+                    .on('error', reject);
+            });
+
+            if (rows.length === 0) {
+                return errorResponse(res, 400, 'EMPTY_FILE', 'CSV 檔案無資料');
+            }
+
+            if (rows.length > 500) {
+                return errorResponse(res, 400, 'TOO_MANY_ROWS', `每次批次上限 500 筆，目前共 ${rows.length} 筆`);
+            }
+
+            records = rows.map((row, i) => ({
+                _rowNum: i + 2,
+                courseName: (row.courseName || row['課程名稱'] || '').trim(),
+                courseCode: (row.courseCode || row['課程代碼'] || '').trim(),
+                recipientName: (row.recipientName || row['姓名'] || '').trim(),
+                recipientEmail: (row.recipientEmail || row.email || row['Email'] || '').trim().toLowerCase(),
+                attendanceDateStr: (row.attendanceDate || row['出席日期'] || '').trim(),
+                completionHoursStr: (row.completionHours || row['完成時數'] || '').trim(),
+                instructorName: (row.instructorName || row['講師'] || '').trim(),
+                notes: (row.notes || row['備註'] || '').trim()
+            }));
         }
 
-        if (rows.length > 500) {
-            return errorResponse(res, 400, 'TOO_MANY_ROWS', `每次批次上限 500 筆，目前共 ${rows.length} 筆`);
-        }
-
-        const results = { success: 0, failed: 0, errors: [] };
-        const successList = [];
-
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const rowNum = i + 2; // CSV row number (header = 1)
-
-            const courseName = (row.courseName || row['課程名稱'] || '').trim();
-            const courseCode = (row.courseCode || row['課程代碼'] || '').trim();
-            const recipientName = (row.recipientName || row['姓名'] || '').trim();
-            const recipientEmail = (row.recipientEmail || row.email || row['Email'] || '').trim().toLowerCase();
-            const attendanceDateStr = (row.attendanceDate || row['出席日期'] || '').trim();
-            const completionHoursStr = (row.completionHours || row['完成時數'] || '').trim();
-            const instructorName = (row.instructorName || row['講師'] || '').trim();
-            const notes = (row.notes || row['備註'] || '').trim();
-
-            if (!courseName || !recipientName || !attendanceDateStr) {
-                results.failed++;
-                results.errors.push({ row: rowNum, message: '課程名稱、姓名及出席日期為必填欄位' });
-                continue;
-            }
-
-            if (recipientEmail && !validator.isEmail(recipientEmail)) {
-                results.failed++;
-                results.errors.push({ row: rowNum, message: `Email 格式不正確：${recipientEmail}` });
-                continue;
-            }
-
-            const attendanceDate = new Date(attendanceDateStr);
-            if (isNaN(attendanceDate.getTime())) {
-                results.failed++;
-                results.errors.push({ row: rowNum, message: `無效的出席日期：${attendanceDateStr}` });
-                continue;
-            }
-
-            try {
-                // 嘗試以 Email 關聯會員帳號（找不到不報錯，視為外部人士）
-                let linkedUserId = null;
-                if (recipientEmail) {
-                    const user = await User.findOne({ email: recipientEmail }).select('_id');
-                    if (user) linkedUserId = user._id;
-                }
-
-                const attendance = new CourseAttendance({
-                    courseName,
-                    courseCode: courseCode || undefined,
-                    recipientName,
-                    recipientEmail: recipientEmail || undefined,
-                    user: linkedUserId,
-                    attendanceDate,
-                    completionHours: completionHoursStr ? Number(completionHoursStr) : undefined,
-                    instructorName: instructorName || undefined,
-                    notes: notes || undefined,
-                    createdBy: req.user.userId
-                });
-                await attendance.save();
-
-                const { attendance: updatedAttendance, certificate } = await issueCourseAttendanceCertificate(
-                    attendance._id.toString(),
-                    certValidityYears,
-                    resolvedCertTypeId
-                );
-
-                results.success++;
-                successList.push({
-                    row: rowNum,
-                    recipientName,
-                    email: recipientEmail || null,
-                    certificateNumber: certificate.certificateNumber
-                });
-            } catch (err) {
-                results.failed++;
-                results.errors.push({ row: rowNum, message: err.message || '發證失敗' });
-            }
-        }
+        const result = await processBulkRecords(records, certValidityYears, resolvedCertTypeId, req.user.userId);
 
         res.json({
             data: {
-                success: results.success,
-                failed: results.failed,
-                errors: results.errors,
-                issued: successList
+                success: result.success,
+                failed: result.failed,
+                errors: result.errors,
+                issued: result.issued
             }
         });
     } catch (error) {
