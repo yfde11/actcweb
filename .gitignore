@@ -140,3 +140,6 @@ DEPLOYMENT*.md
 # Font files (download separately)
 fonts/*
 !fonts/README.md
+
+# Requirements / spec documents (local only)
+docs/requirements/
