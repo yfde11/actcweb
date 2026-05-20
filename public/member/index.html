@@ -172,7 +172,8 @@
                     <input x-model="reg.username" autocomplete="username" placeholder="使用者名稱（至少3字）" class="w-full border rounded px-3 py-2" />
                     <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
                     <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
-                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名（選填）" class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.fullName" autocomplete="name" placeholder="姓名" required class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.phone" type="tel" autocomplete="tel" placeholder="電話" required class="w-full border rounded px-3 py-2" />
                     <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
                     <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
                         <span x-text="registerSending ? '送出中…' : '註冊'"></span>
@@ -305,6 +306,16 @@
                         <h3 class="text-base font-bold mb-4 flex items-center gap-2">
                             <i class="fa-solid fa-id-card text-actc-orange text-sm"></i>個人資料
                         </h3>
+                        <div x-show="hasPendingRegistration && profileComplete" x-cloak
+                             class="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>個人資料已完整！請<a href="/" class="font-medium underline hover:text-green-900">前往活動頁面</a>完成報名。</span>
+                        </div>
+                        <div x-show="hasPendingRegistration && !profileComplete" x-cloak
+                             class="mb-4 p-3 rounded bg-orange-50 border border-orange-200 text-orange-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span>請填寫姓名及電話後儲存，即可返回活動頁面完成報名。</span>
+                        </div>
                         <form class="space-y-3 max-w-md" @submit.prevent="saveProfile(false)">
                             <div>
                                 <label class="text-xs text-gray-500 mb-1 block">Email</label>
@@ -315,7 +326,7 @@
                                 <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="請輸入姓名" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 mb-1 block">電話（選填）</label>
+                                <label class="text-xs text-gray-500 mb-1 block">電話</label>
                                 <input x-model="profile.phone" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="電話號碼" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
                             </div>
                             <label class="flex items-center gap-2 text-sm cursor-pointer">
@@ -844,7 +855,8 @@
                     </div>
 
                     <!-- 考試進行中 -->
-                    <div x-show="currentAttempt" class="space-y-4">
+                    <template x-if="currentAttempt">
+                    <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <h3 class="text-lg font-semibold">考試進行中</h3>
                             <button @click="currentAttempt = null; loadAvailableExams()" class="text-sm text-gray-500 hover:underline">返回列表</button>
@@ -930,6 +942,7 @@
                             </div>
                         </div>
                     </div>
+                    </template>
 
                     <!-- 提交確認 Modal -->
                     <div x-show="showSubmitConfirm" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display:none;">
@@ -1319,7 +1332,7 @@
                 activeTab: 'overview',
                 me: {},
                 profile: { fullName: '', phone: '', emailSubscribed: true },
-                reg: { username: '', email: '', password: '', fullName: '' },
+                reg: { username: '', email: '', password: '', fullName: '', phone: '' },
                 loginForm: { username: '', password: '' },
                 resendEmail: '',
                 verifyMsg: '',
@@ -1342,6 +1355,12 @@
                 profileOk: false,
                 profileSending: false,
                 profileLastSavedPayload: '',
+                get hasPendingRegistration() {
+                    try { return !!localStorage.getItem('pendingRegistration'); } catch { return false; }
+                },
+                get profileComplete() {
+                    return !!(String(this.profile.fullName || '').trim() && String(this.profile.phone || '').trim());
+                },
                 wgCatalog: [],
                 wgSelectedIds: [],
                 wgPanelMsg: '',
@@ -1911,8 +1930,18 @@
                     const email = String(this.reg.email || '').trim();
                     const pwd = this.reg.password || '';
                     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    const phone = String(this.reg.phone || '').trim();
+                    const fullName = String(this.reg.fullName || '').trim();
                     if (!u || !email || !pwd) {
                         this.registerMsg = '請填寫使用者名稱、Email 與密碼。';
+                        return;
+                    }
+                    if (!fullName) {
+                        this.registerMsg = '請填寫姓名。';
+                        return;
+                    }
+                    if (!phone) {
+                        this.registerMsg = '請填寫電話。';
                         return;
                     }
                     if (u.length < 3) {
@@ -1945,7 +1974,7 @@
                         this.registerOk = r.ok;
                         this.registerMsg = d.message || (r.ok ? '註冊成功' : '註冊失敗');
                         if (r.ok) {
-                            this.reg = { username: '', email: '', password: '', fullName: '' };
+                            this.reg = { username: '', email: '', password: '', fullName: '', phone: '' };
                         }
                     } catch {
                         this.registerMsg = '網路錯誤或無法連線，請檢查網路後再試。';

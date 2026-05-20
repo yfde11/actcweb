@@ -1262,6 +1262,13 @@
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
+                    if (errorData.code === 'PROFILE_INCOMPLETE') {
+                        showNotification('請先至個人資料頁填寫姓名及電話，再完成報名', 'error');
+                        localStorage.setItem('pendingRegistration', JSON.stringify({ eventId, isWaitlist }));
+                        clearPendingRegistrationIntent();
+                        setTimeout(() => { window.location.href = '/member#account'; }, 2000);
+                        return;
+                    }
                     if (response.status === 401 || response.status === 403) {
                         clearPendingRegistrationIntent();
                         const needsVerify = errorData.code === 'EMAIL_NOT_VERIFIED';
@@ -1278,6 +1285,7 @@
                 }
                 const result = await response.json();
                 clearPendingRegistrationIntent();
+                localStorage.removeItem('pendingRegistration');
                 const payment = result.payment || {};
                 if (result.registration?.status === 'waitlisted') {
                     const pos = result.registration.waitlistPosition;

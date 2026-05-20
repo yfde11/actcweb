@@ -133,6 +133,10 @@ router.post('/:eventId/register', verifiedAuth, async (req, res) => {
             return res.status(404).json({ message: 'Event not found' });
         }
 
+        if (!req.authUser.fullName || !String(req.authUser.fullName).trim() || !req.authUser.phone || !String(req.authUser.phone).trim()) {
+            return res.status(400).json({ message: '請先至個人資料頁填寫姓名及電話', code: 'PROFILE_INCOMPLETE' });
+        }
+
         const registration = await createMemberRegistration({
             event,
             user: req.authUser,
