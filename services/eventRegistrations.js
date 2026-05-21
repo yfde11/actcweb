@@ -119,12 +119,20 @@ async function createMemberRegistration({ event, user, participantName, particip
     const { ticketType, amountDue, currency } = determineTicketTypeAndAmount(event);
     const isPaid = event.registrationMode === 'paid' && event.paymentMode === 'manual_bank_transfer';
     const maxWaitlist = Number(event.waitlistCapacity || 0);
-    const currentWaitlistCount = await EventRegistration.countDocuments({ event: event._id, status: 'waitlisted' });
+    const [currentWaitlistCount, currentFormalCount] = await Promise.all([
+        EventRegistration.countDocuments({ event: event._id, status: { $in: ['waitlisted', 'waitlist'] } }),
+        event.capacity
+            ? EventRegistration.countDocuments({
+                  event: event._id,
+                  status: { $in: ['registered', 'confirmed', 'pending_approval'] }
+              })
+            : Promise.resolve(0)
+    ]);
 
     let status = 'registered';
     if (event.registrationMode === 'approval_required') {
         status = 'pending_approval';
-    } else if (event.capacity && event.registeredCount >= event.capacity) {
+    } else if (event.capacity && currentFormalCount >= event.capacity) {
         if (maxWaitlist > currentWaitlistCount) {
             status = 'waitlisted';
         } else {
