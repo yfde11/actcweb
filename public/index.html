@@ -1015,12 +1015,6 @@
                         badgeClass: 'bg-gray-100 text-gray-800'
                     };
                 }
-                if (eventDate < now) {
-                    return {
-                        badge: '已結束',
-                        badgeClass: 'bg-gray-100 text-gray-800'
-                    };
-                }
                 if (status === 'registration_open') {
                     if (event.capacity && event.registeredCount >= event.capacity) {
                         return {
@@ -1037,6 +1031,12 @@
                     return {
                         badge: '報名截止',
                         badgeClass: 'bg-yellow-100 text-yellow-800'
+                    };
+                }
+                if (eventDate < now) {
+                    return {
+                        badge: '已結束',
+                        badgeClass: 'bg-gray-100 text-gray-800'
                     };
                 }
                 return {};
