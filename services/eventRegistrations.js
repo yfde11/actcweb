@@ -75,10 +75,10 @@ async function recalculateRegisteredCount(eventId) {
 
 function isRegistrationOpen(event) {
     const now = new Date();
-    const statusOpen = ['registration_open', 'published'].includes(event.status);
-    const startOk = !event.registrationStartAt || new Date(event.registrationStartAt) <= now;
-    const endOk = !event.registrationEndAt || new Date(event.registrationEndAt) >= now;
-    return statusOpen && startOk && endOk;
+    if (event.status !== 'registration_open') return false;
+    if (event.registrationStartAt && new Date(event.registrationStartAt) > now) return false;
+    if (event.registrationEndAt && new Date(event.registrationEndAt) < now) return false;
+    return true;
 }
 
 function determineTicketTypeAndAmount(event) {
