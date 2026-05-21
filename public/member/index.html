@@ -1356,7 +1356,7 @@
                 profileSending: false,
                 profileLastSavedPayload: '',
                 get hasPendingRegistration() {
-                    try { return !!localStorage.getItem('pendingRegistration'); } catch { return false; }
+                    try { return !!localStorage.getItem('pendingEventRegistrationIntent'); } catch { return false; }
                 },
                 get profileComplete() {
                     return !!(String(this.profile.fullName || '').trim() && String(this.profile.phone || '').trim());
