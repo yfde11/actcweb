@@ -1264,7 +1264,6 @@
                     const errorData = await response.json().catch(() => ({}));
                     if (errorData.code === 'PROFILE_INCOMPLETE') {
                         showNotification('請先至個人資料頁填寫姓名及電話，填寫完成後可直接返回活動頁完成報名', 'warning');
-                        localStorage.setItem('pendingRegistration', JSON.stringify({ eventId, isWaitlist }));
                         savePendingRegistrationIntent({ eventId, isWaitlist: !!isWaitlist, returnTo: '/' });
                         setTimeout(() => { window.location.href = '/member#account'; }, 2000);
                         return;
@@ -1285,7 +1284,6 @@
                 }
                 const result = await response.json();
                 clearPendingRegistrationIntent();
-                localStorage.removeItem('pendingRegistration');
                 const payment = result.payment || {};
                 if (result.registration?.status === 'waitlisted') {
                     const pos = result.registration.waitlistPosition;

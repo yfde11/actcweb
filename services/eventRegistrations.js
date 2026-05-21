@@ -119,24 +119,33 @@ async function createMemberRegistration({ event, user, participantName, particip
     const { ticketType, amountDue, currency } = determineTicketTypeAndAmount(event);
     const isPaid = event.registrationMode === 'paid' && event.paymentMode === 'manual_bank_transfer';
     const maxWaitlist = Number(event.waitlistCapacity || 0);
-    const [currentWaitlistCount, currentFormalCount] = await Promise.all([
-        EventRegistration.countDocuments({ event: event._id, status: { $in: ['waitlisted', 'waitlist'] } }),
-        event.capacity
-            ? EventRegistration.countDocuments({
-                  event: event._id,
-                  status: { $in: ['registered', 'confirmed', 'pending_approval'] }
-              })
-            : Promise.resolve(0)
-    ]);
 
     let status = 'registered';
+    let slotClaimed = false;
+    let currentWaitlistCount = 0;
+
     if (event.registrationMode === 'approval_required') {
         status = 'pending_approval';
-    } else if (event.capacity && currentFormalCount >= event.capacity) {
-        if (maxWaitlist > currentWaitlistCount) {
-            status = 'waitlisted';
+    } else if (event.capacity) {
+        // 原子性搶位：僅在 registeredCount < capacity 時才遞增，避免超賣
+        const claimed = await Event.findOneAndUpdate(
+            { _id: event._id, registeredCount: { $lt: event.capacity } },
+            { $inc: { registeredCount: 1 } }
+        );
+        if (claimed) {
+            slotClaimed = true;
+            // status 維持 'registered'
         } else {
-            throw httpError(400, '名額已滿，候補名單也已滿');
+            // 正式名額已滿，嘗試候補
+            currentWaitlistCount = await EventRegistration.countDocuments({
+                event: event._id,
+                status: { $in: ['waitlisted', 'waitlist'] }
+            });
+            if (maxWaitlist > currentWaitlistCount) {
+                status = 'waitlisted';
+            } else {
+                throw httpError(400, '名額已滿，候補名單也已滿');
+            }
         }
     }
 
@@ -145,22 +154,31 @@ async function createMemberRegistration({ event, user, participantName, particip
             ? currentWaitlistCount + 1
             : undefined;
 
-    const registration = await EventRegistration.create({
-        event: event._id,
-        user: user?._id || null,
-        participantName: String(participantName).trim(),
-        participantEmail: emailNorm,
-        participantPhone: participantPhone ? String(participantPhone).trim() : '',
-        organization: organization ? String(organization).trim() : '',
-        title: title ? String(title).trim() : '',
-        status,
-        waitlistPosition,
-        paymentStatus: isPaid ? 'payment_pending' : 'none',
-        attendanceStatus: 'not_checked_in',
-        ticketType,
-        amountDue,
-        currency
-    });
+    let registration;
+    try {
+        registration = await EventRegistration.create({
+            event: event._id,
+            user: user?._id || null,
+            participantName: String(participantName).trim(),
+            participantEmail: emailNorm,
+            participantPhone: participantPhone ? String(participantPhone).trim() : '',
+            organization: organization ? String(organization).trim() : '',
+            title: title ? String(title).trim() : '',
+            status,
+            waitlistPosition,
+            paymentStatus: isPaid ? 'payment_pending' : 'none',
+            attendanceStatus: 'not_checked_in',
+            ticketType,
+            amountDue,
+            currency
+        });
+    } catch (err) {
+        // 若 EventRegistration 寫入失敗，補償回滾已原子搶到的名額
+        if (slotClaimed) {
+            await Event.updateOne({ _id: event._id }, { $inc: { registeredCount: -1 } });
+        }
+        throw err;
+    }
 
     await recalculateRegisteredCount(event._id);
     return registration;
