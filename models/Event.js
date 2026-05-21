@@ -420,7 +420,7 @@ eventSchema.virtual('statusLabel').get(function() {
 // 虛擬字段：是否仍有正式名額（無設名額時視為仍有名額）
 eventSchema.virtual('canRegister').get(function() {
     const now = new Date();
-    if (this.status !== 'registration_open' && this.status !== 'published') return false;
+    if (this.status !== 'registration_open') return false;
     if (this.registrationStartAt && now < this.registrationStartAt) return false;
     if (this.registrationEndAt && now > this.registrationEndAt) return false;
     if (this.capacity && this.registeredCount >= this.capacity) return false;
@@ -430,7 +430,7 @@ eventSchema.virtual('canRegister').get(function() {
 // 虛擬字段：已額滿且可排入候補（僅在有設定 capacity 時有意義）
 eventSchema.virtual('canJoinWaitlist').get(function() {
     const now = new Date();
-    if (this.status !== 'registration_open' && this.status !== 'published') return false;
+    if (this.status !== 'registration_open') return false;
     if (this.registrationStartAt && now < this.registrationStartAt) return false;
     if (this.registrationEndAt && now > this.registrationEndAt) return false;
     return !!this.capacity && this.registeredCount >= this.capacity;
