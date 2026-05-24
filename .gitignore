@@ -137,9 +137,9 @@ DOMAIN_SETUP.md
 VPS_SYNC_README.md
 DEPLOYMENT*.md
 
-# Font files (download separately)
-fonts/*
-!fonts/README.md
+# Font files tracked in git for production deployment
+!fonts/NotoSansCJKtc-Regular.ttf
+!fonts/NotoSansCJKtc-Bold.otf
 
 # Requirements / spec documents (local only)
 docs/requirements/

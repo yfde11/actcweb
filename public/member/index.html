@@ -2535,7 +2535,9 @@
                 },
 
                 async downloadCertificate(certificateNumber) {
-                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken');
+                    if (this._downloadingCert) return;
+                    this._downloadingCert = true;
+                    const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken') || '';
                     try {
                         const res = await fetch(`/api/member/exams/certificate/${certificateNumber}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
@@ -2550,12 +2552,18 @@
                             a.click();
                             document.body.removeChild(a);
                             window.URL.revokeObjectURL(url);
+                        } else if (res.status === 401 || res.status === 403) {
+                            alert('請重新登入後再試');
+                        } else if (res.status === 404) {
+                            alert('找不到此證書');
                         } else {
-                            alert('下載失敗');
+                            alert('下載失敗，請稍後再試');
                         }
                     } catch (e) {
                         console.error('Download certificate error:', e);
-                        alert('下載失敗');
+                        alert('下載失敗，請稍後再試');
+                    } finally {
+                        this._downloadingCert = false;
                     }
                 },
 
