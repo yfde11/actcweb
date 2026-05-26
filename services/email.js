@@ -62,10 +62,35 @@ function fallbackRecipientTo() {
  * @returns {{ ok: boolean, messageId?: string, mock?: boolean }}
  */
 async function sendMail({ to, subject, html, text, bcc }) {
+    const recipient = to || fallbackRecipientTo();
+
+    // Resend HTTP API 優先（適用 Render 等封鎖 SMTP port 的環境）
+    if (process.env.RESEND_API_KEY) {
+        const body = {
+            from: fromAddress(),
+            to: recipient ? [recipient] : [],
+            subject,
+            ...(html && { html }),
+            ...(text && { text }),
+            ...(bcc && bcc.length && { bcc })
+        };
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || data.name || 'Resend API error');
+        return { ok: true, messageId: data.id };
+    }
+
     const transport = createTransport();
     const mail = {
         from: fromAddress(),
-        to: to || fallbackRecipientTo(),
+        to: recipient,
         subject,
         html,
         text

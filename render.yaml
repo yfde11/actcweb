@@ -48,3 +48,5 @@ services:
         sync: false
       - key: NOTIFY_FALLBACK_TO
         sync: false
+      - key: RESEND_API_KEY
+        sync: false  # Render 封鎖 SMTP port 時設此項取代 SMTP
