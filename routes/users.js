@@ -70,9 +70,12 @@ router.post('/', adminAuth, async (req, res) => {
     } catch (error) {
         console.error('Create user error:', error);
         if (error.code === 11000) {
-            return res.status(400).json({
-                message: 'Username already exists'
-            });
+            const field = error.keyPattern && error.keyPattern.email ? 'Email' : 'Username';
+            return res.status(400).json({ message: `${field} already exists` });
+        }
+        if (error.name === 'ValidationError') {
+            const msg = Object.values(error.errors).map(e => e.message).join('; ');
+            return res.status(400).json({ message: msg });
         }
         res.status(500).json({
             message: 'Internal server error'

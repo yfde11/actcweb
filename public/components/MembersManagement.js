@@ -633,6 +633,10 @@ function usersTab() {
         },
 
         async createUser() {
+            if (!this.userForm.username || this.userForm.username.trim().length < 3) {
+                this.showToast('使用者名稱至少需要 3 個字元', 'error');
+                return;
+            }
             try {
                 const response = await fetch('/api/users', {
                     method: 'POST',
