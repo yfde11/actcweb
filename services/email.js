@@ -66,8 +66,9 @@ async function sendMail({ to, subject, html, text, bcc }) {
 
     // Resend HTTP API 優先（適用 Render 等封鎖 SMTP port 的環境）
     if (process.env.RESEND_API_KEY) {
+        const resendFrom = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
         const body = {
-            from: fromAddress(),
+            from: resendFrom,
             to: recipient ? [recipient] : [],
             subject,
             ...(html && { html }),

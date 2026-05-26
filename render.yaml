@@ -50,3 +50,5 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false  # Render 封鎖 SMTP port 時設此項取代 SMTP
+      - key: RESEND_FROM_EMAIL
+        value: onboarding@resend.dev  # 未驗證 domain 時使用；已驗證 domain 請改為對應地址
