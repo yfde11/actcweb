@@ -503,4 +503,35 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Logged out' });
 });
 
+// 暫時 debug endpoint：測試 SMTP 連線（僅 admin，部署驗證後應移除）
+router.post('/debug-smtp', adminAuth, async (req, res) => {
+    const { sendMail, isConfigured } = require('../services/email');
+    const configured = isConfigured();
+    if (!configured) {
+        return res.json({
+            ok: false,
+            configured: false,
+            env: {
+                SMTP_HOST: process.env.SMTP_HOST || '(未設)',
+                SMTP_PORT: process.env.SMTP_PORT || '(未設)',
+                SMTP_USERNAME: process.env.SMTP_USERNAME ? '(已設)' : '(未設)',
+                SMTP_PASSWORD: process.env.SMTP_PASSWORD ? '(已設)' : '(未設)',
+                SMTP_USE_TLS: process.env.SMTP_USE_TLS || '(未設)',
+            }
+        });
+    }
+    try {
+        const to = req.body.to || process.env.DIGEST_FROM_EMAIL || process.env.SMTP_USERNAME;
+        const result = await sendMail({
+            to,
+            subject: 'ACTC SMTP 測試信',
+            text: 'SMTP 設定正常，此為測試信。',
+            html: '<p>SMTP 設定正常，此為測試信。</p>'
+        });
+        res.json({ ok: true, messageId: result.messageId, to });
+    } catch (err) {
+        res.json({ ok: false, configured: true, error: err.message, code: err.code });
+    }
+});
+
 module.exports = router;
