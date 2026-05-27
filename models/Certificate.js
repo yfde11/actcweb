@@ -93,7 +93,7 @@ const certificateSchema = new mongoose.Schema({
 
 certificateSchema.index({ user: 1, exam: 1 });
 certificateSchema.index({ issuedAt: -1 });
-certificateSchema.index({ attempt: 1 }, { unique: true, sparse: true });
+certificateSchema.index({ attempt: 1 }, { sparse: true });  // unique 由應用層防重（findOne 先查）
 certificateSchema.index({ certType: 1, issuedAt: -1 });
 certificateSchema.index({ isRevoked: 1, expiresAt: 1 });
 
