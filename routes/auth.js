@@ -83,7 +83,7 @@ router.post('/register', async (req, res) => {
         res.status(201).json({
             message: emailSent
                 ? '註冊成功，請至信箱點擊驗證連結後再登入。'
-                : '帳號已建立，但驗證信未能寄出（伺服器未設定 SMTP 或寄件失敗）。請聯絡管理員，或於設定 SMTP 後使用「重送驗證信」。',
+                : '帳號已建立，但驗證信未能寄出。請聯絡管理員，或稍後使用「未收到驗證信？」重新寄送。',
             emailSent,
             email: user.email
         });
@@ -172,9 +172,9 @@ router.post('/resend-verification', async (req, res) => {
             mailResult = { ok: false, error: e.message };
         }
         if (!mailResult.ok) {
+            const detail = mailResult.error ? `（${mailResult.error}）` : '';
             return res.status(503).json({
-                message:
-                    '驗證信無法寄出：請確認伺服器已設定 SMTP_HOST、SMTP_USERNAME、SMTP_PASSWORD（Gmail 須使用應用程式專用密碼），並查看主機日誌。',
+                message: `驗證信寄送失敗，請聯絡管理員${detail}`,
                 emailSent: false
             });
         }
