@@ -87,7 +87,8 @@ const certificateSchema = new mongoose.Schema({
         maxlength: [1000, 'Admin note cannot exceed 1000 characters']
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    autoIndex: false  // 索引由 bootstrapDb.fixCertificateAttemptIndex 管理，避免 attempt_1 非 sparse 衝突
 });
 
 certificateSchema.index({ user: 1, exam: 1 });
