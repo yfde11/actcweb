@@ -238,9 +238,15 @@ async function generateCertificatePDF(certificateId, res) {
     }
 
     // ── Signature section (理事長) ────────────────────────────────────────────
-    const SIG_Y  = H - 138;                     // 457
+    const SIG_Y  = H - 138;
     const sigW   = 160;
-    const sigX   = W * 0.5 - sigW / 2;          // 置中
+    const sigX   = W * 0.5 - sigW / 2;
+
+    const signPath = path.join(__dirname, '../public/assets/images/EricMaoSign.png');
+    if (fs.existsSync(signPath)) {
+        const sigImgH = 48;
+        doc.image(signPath, sigX, SIG_Y - sigImgH - 4, { height: sigImgH, fit: [sigW, sigImgH] });
+    }
 
     doc.moveTo(sigX, SIG_Y).lineTo(sigX + sigW, SIG_Y)
        .strokeColor(NAVY).lineWidth(0.75).stroke();
