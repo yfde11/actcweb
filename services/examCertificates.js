@@ -237,6 +237,23 @@ async function generateCertificatePDF(certificateId, res) {
                  marginX, validityY, { width: contentW, align: 'center' });
     }
 
+    // ── Course details（僅課程型）────────────────────────────────────────────
+    if (isCourse && certificate.course) {
+        const detailY = validityY + 28;
+        const parts = [];
+        if (certificate.course.attendanceDate) {
+            const d = new Date(certificate.course.attendanceDate);
+            parts.push(`課程日期：${d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}`);
+        }
+        if (certificate.course.completionHours) {
+            parts.push(`課程時數：${certificate.course.completionHours} 小時`);
+        }
+        if (parts.length > 0) {
+            doc.font('Regular').fontSize(11).fillColor(NAVY)
+               .text(parts.join('　　'), marginX, detailY, { width: contentW, align: 'center' });
+        }
+    }
+
     // ── Signature section (理事長) ────────────────────────────────────────────
     const SIG_Y  = H - 138;
     const sigW   = 160;
