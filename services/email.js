@@ -19,7 +19,7 @@ function useTls() {
 }
 
 function isConfigured() {
-    return !!(process.env.SMTP_HOST && smtpUser() && smtpPass());
+    return !!(process.env.RESEND_API_KEY || (process.env.SMTP_HOST && smtpUser() && smtpPass()));
 }
 
 function createTransport() {
