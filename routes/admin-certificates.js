@@ -369,7 +369,7 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
             }
             return errorResponse(res, 400, 'VALIDATION_ERROR', '欄位驗證失敗', details);
         }
-        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤', { debug: error.message });
     }
 });
 
