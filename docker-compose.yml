@@ -19,7 +19,7 @@ services:
     networks:
       - actc-net
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -63,7 +63,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # 僅內網自簽 HTTPS 時取消下行註解，並改用 Caddyfile.selfsigned.example 內容作為 Caddyfile
-      # - ./caddy-certs:/certs:ro
+      - ./caddy-certs:/etc/caddy/certs:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:

@@ -1,21 +1,12 @@
-# 本機 / 內網 Docker：Caddy 僅在容器內聽 80/443，對外埠由 docker-compose 的 HTTP_PORT/HTTPS_PORT 映射。
-# HTTPS 使用內部 CA 憑證（瀏覽器會顯示不安全，按「進階」繼續即可）。
-# 公網 Let's Encrypt 請參考 Caddyfile.production.example。
-
+# 公開站：https://www.actc-tw.org （Let's Encrypt 自動申請／續約）
+# 註：根域名 actc-tw.org 若未設定 A／ALIAS，請勿寫進此檔，否則 LE 會因 DNS 驗證失敗。
+# ACME 通知信箱（可改為協會信箱）
 {
-	auto_https off
-	servers {
-		protocols h1 h2
-	}
+	email actcactc2023@gmail.com
 }
 
-:80 {
+www.actc-tw.org {
 	encode gzip
-	reverse_proxy web:5001
-}
-
-:443 {
-	tls internal
-	encode gzip
+	tls /etc/caddy/certs/cloudflare-origin.pem /etc/caddy/certs/cloudflare-origin.key
 	reverse_proxy web:5001
 }
