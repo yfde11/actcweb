@@ -67,7 +67,24 @@ app.use(helmet({
 const _corsOrigins = (() => {
     const origins = [];
     if (process.env.SITE_URL) {
-        origins.push(process.env.SITE_URL.replace(/\/$/, ''));
+        const base = process.env.SITE_URL.replace(/\/$/, '');
+        origins.push(base);
+        // 同時允許 www ↔ 非 www 及 http ↔ https 變體，避免 Cloudflare/CDN 前端 origin 不一致
+        try {
+            const u = new URL(base);
+            const alts = [];
+            if (u.hostname.startsWith('www.')) {
+                alts.push(u.hostname.slice(4));
+            } else {
+                alts.push('www.' + u.hostname);
+            }
+            for (const alt of alts) {
+                origins.push(`https://${alt}`);
+                origins.push(`http://${alt}`);
+            }
+            // HTTP 版本的主網域
+            origins.push(`http://${u.hostname}`);
+        } catch {}
     }
     if (process.env.NODE_ENV !== 'production') {
         origins.push(
