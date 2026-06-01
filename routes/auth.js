@@ -534,4 +534,17 @@ router.post('/debug-smtp', adminAuth, async (req, res) => {
     }
 });
 
+// GET /api/auth/email-health - 公開端點，僅回傳 email 是否設定（不傳送信件）
+router.get('/email-health', (req, res) => {
+    const { isConfigured } = require('../services/email');
+    const hasResend = !!process.env.RESEND_API_KEY;
+    const hasSmtp = !!(process.env.SMTP_HOST && process.env.SMTP_USERNAME && process.env.SMTP_PASSWORD);
+    res.json({
+        configured: isConfigured(),
+        resend: hasResend,
+        smtp: hasSmtp,
+        smtpHost: process.env.SMTP_HOST || null
+    });
+});
+
 module.exports = router;
