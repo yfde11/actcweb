@@ -183,74 +183,90 @@ async function generateCertificatePDF(certificateId, res) {
        .text(`證書編號：${certificate.certificateNumber}`,
              marginX, certNumY, { width: contentW, align: 'center' });
 
-    // ── Recipient name ────────────────────────────────────────────────────────
-    const nameY = certNumY + 28;                // 250
-    doc.font('Bold').fontSize(28).fillColor(NAVY)
-       .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
-
-    // ── Achievement text ──────────────────────────────────────────────────────
-    const achieveY = nameY + 46;                // 296
-
-    // Resolve bodyText from certTypeRef with template variable substitution
-    const examTitle = certificate.exam ? certificate.exam.title : '考試';
     const courseName = certificate.course ? certificate.course.courseName : '本課程';
-    const issuedDateStrForBody = certificate.issuedAt.toLocaleDateString('zh-TW', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
 
-    let bodyText = certificate.certTypeRef?.bodyText;
-    if (bodyText) {
-        bodyText = bodyText
-            .replace(/\{\{name\}\}/g, recipientDisplayName)
-            .replace(/\{\{examTitle\}\}/g, examTitle)
-            .replace(/\{\{courseName\}\}/g, courseName)
-            .replace(/\{\{date\}\}/g, issuedDateStrForBody)
-            .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
+    if (isCourse) {
+        // ── Recipient Name & Course details (isCourse Layout) ──────────────────────
+        const introY = certNumY + 26;
+        doc.font('Regular').fontSize(14).fillColor(NAVY)
+           .text('特此頒發予', marginX, introY, { width: contentW, align: 'center' });
 
+        const nameY = introY + 26;
+        doc.font('Bold').fontSize(28).fillColor(NAVY)
+           .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
+
+        const congratsY = nameY + 44;
         doc.font('Regular').fontSize(14).fillColor(NAVY)
-           .text(bodyText, marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
-    } else if (isCourse) {
-        doc.font('Regular').fontSize(14).fillColor(NAVY)
-           .text(`本證書證明持證者已完成「${courseName}」課程訓練，符合協會所定各項訓練要求。`,
-                 marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
+           .text('恭喜您順利完成', marginX, congratsY, { width: contentW, align: 'center' });
+
+        const courseNameY = congratsY + 24;
+        doc.font('Bold').fontSize(20).fillColor(NAVY)
+           .text(`【${courseName}】`, marginX, courseNameY, { width: contentW, align: 'center' });
+
+        const hoursY = courseNameY + 36;
+        const completionHours = certificate.course?.completionHours || '—';
+        doc.font('Regular').fontSize(12).fillColor(NAVY)
+           .text(`課程時數：${completionHours} 小時`, marginX, hoursY, { width: contentW, align: 'center' });
+
+        const dateY = hoursY + 18;
+        const formattedDate = (() => {
+            if (!certificate.course || !certificate.course.attendanceDate) return '—';
+            const d = new Date(certificate.course.attendanceDate);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}.${m}.${day}`;
+        })();
+        doc.font('Regular').fontSize(12).fillColor(NAVY)
+           .text(`課程日期：${formattedDate}`, marginX, dateY, { width: contentW, align: 'center' });
     } else {
-        doc.font('Regular').fontSize(14).fillColor(NAVY)
-           .text(`本證書證明持證者已通過「${examTitle}」考試，具備相關資訊安全知識與實務能力，符合協會所定認證標準。`,
-                 marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
-    }
+        // ── Recipient name ────────────────────────────────────────────────────────
+        const nameY = certNumY + 28;                // 250
+        doc.font('Bold').fontSize(28).fillColor(NAVY)
+           .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
-    // ── Validity line ─────────────────────────────────────────────────────────
-    const validityY = achieveY + 52;            // ~348
-    const issuedDateStr = certificate.issuedAt.toLocaleDateString('zh-TW', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
-    if (certificate.expiresAt) {
-        const expiryDateStr = certificate.expiresAt.toLocaleDateString('zh-TW', {
+        // ── Achievement text ──────────────────────────────────────────────────────
+        const achieveY = nameY + 46;                // 296
+
+        // Resolve bodyText from certTypeRef with template variable substitution
+        const examTitle = certificate.exam ? certificate.exam.title : '考試';
+        const issuedDateStrForBody = certificate.issuedAt.toLocaleDateString('zh-TW', {
             year: 'numeric', month: 'long', day: 'numeric'
         });
-        doc.font('Regular').fontSize(12).fillColor(NAVY)
-           .text(`發證日期：${issuedDateStr}　　有效期限：${expiryDateStr}`,
-                 marginX, validityY, { width: contentW, align: 'center' });
-    } else {
-        doc.font('Regular').fontSize(12).fillColor(NAVY)
-           .text(`發證日期：${issuedDateStr}　　有效期限：永久`,
-                 marginX, validityY, { width: contentW, align: 'center' });
-    }
 
-    // ── Course details（僅課程型）────────────────────────────────────────────
-    if (isCourse && certificate.course) {
-        const detailY = validityY + 28;
-        const parts = [];
-        if (certificate.course.attendanceDate) {
-            const d = new Date(certificate.course.attendanceDate);
-            parts.push(`課程日期：${d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}`);
+        let bodyText = certificate.certTypeRef?.bodyText;
+        if (bodyText) {
+            bodyText = bodyText
+                .replace(/\{\{name\}\}/g, recipientDisplayName)
+                .replace(/\{\{examTitle\}\}/g, examTitle)
+                .replace(/\{\{courseName\}\}/g, courseName)
+                .replace(/\{\{date\}\}/g, issuedDateStrForBody)
+                .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
+
+            doc.font('Regular').fontSize(14).fillColor(NAVY)
+               .text(bodyText, marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
+        } else {
+            doc.font('Regular').fontSize(14).fillColor(NAVY)
+               .text(`本證書證明持證者已通過「${examTitle}」考試，具備相關資訊安全知識與實務能力，符合協會所定認證標準。`,
+                     marginX + 60, achieveY, { width: contentW - 120, align: 'center' });
         }
-        if (certificate.course.completionHours) {
-            parts.push(`課程時數：${certificate.course.completionHours} 小時`);
-        }
-        if (parts.length > 0) {
-            doc.font('Regular').fontSize(11).fillColor(NAVY)
-               .text(parts.join('　　'), marginX, detailY, { width: contentW, align: 'center' });
+
+        // ── Validity line ─────────────────────────────────────────────────────────
+        const validityY = achieveY + 52;            // ~348
+        const issuedDateStr = certificate.issuedAt.toLocaleDateString('zh-TW', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        if (certificate.expiresAt) {
+            const expiryDateStr = certificate.expiresAt.toLocaleDateString('zh-TW', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            doc.font('Regular').fontSize(12).fillColor(NAVY)
+               .text(`發證日期：${issuedDateStr}　　有效期限：${expiryDateStr}`,
+                     marginX, validityY, { width: contentW, align: 'center' });
+        } else {
+            doc.font('Regular').fontSize(12).fillColor(NAVY)
+               .text(`發證日期：${issuedDateStr}　　有效期限：永久`,
+                     marginX, validityY, { width: contentW, align: 'center' });
         }
     }
 
