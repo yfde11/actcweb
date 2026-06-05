@@ -187,28 +187,28 @@ async function generateCertificatePDF(certificateId, res) {
 
     if (isCourse) {
         // ── Recipient Name & Course details (isCourse Layout) ──────────────────────
-        const introY = certNumY + 24;
+        const introY = certNumY + 16;
         doc.font('Regular').fontSize(14).fillColor(NAVY)
            .text('特此頒發予', marginX, introY, { width: contentW, align: 'center' });
 
-        const nameY = introY + 24;
+        const nameY = introY + 16;
         doc.font('Bold').fontSize(28).fillColor(NAVY)
            .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
-        const congratsY = doc.y + 12;
+        const congratsY = doc.y + 4;
         doc.font('Regular').fontSize(14).fillColor(NAVY)
            .text('恭喜您順利完成', marginX, congratsY, { width: contentW, align: 'center' });
 
-        const courseNameY = doc.y + 10;
+        const courseNameY = doc.y + 4;
         doc.font('Bold').fontSize(20).fillColor(NAVY)
            .text(`【${courseName}】`, marginX, courseNameY, { width: contentW, align: 'center' });
 
-        const hoursY = doc.y + 14;
+        const hoursY = doc.y + 8;
         const completionHours = certificate.course?.completionHours || '—';
         doc.font('Regular').fontSize(12).fillColor(NAVY)
            .text(`課程時數：${completionHours} 小時`, marginX, hoursY, { width: contentW, align: 'center' });
 
-        const dateY = doc.y + 6;
+        const dateY = doc.y + 4;
         const formattedDate = (() => {
             if (!certificate.course || !certificate.course.attendanceDate) return '—';
             const d = new Date(certificate.course.attendanceDate);
