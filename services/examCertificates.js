@@ -132,30 +132,27 @@ async function generateCertificatePDF(certificateId, res) {
     const GRAY  = '#888888';
     const cx    = W / 2;
     const marginX  = 55;
-    const contentW = W - marginX * 2;   // 731.89
+    const contentW = W - marginX * 2;
 
-    // ── Borders ──────────────────────────────────────────────────────────────
-    // Outer gold border
-    doc.rect(12, 12, W - 24, H - 24)
+    // ── Borders ───────────────────────────────────────────────────────────────
+    doc.rect(18, 18, W - 36, H - 36)
        .strokeColor(GOLD).lineWidth(3).stroke();
-
-    // Inner navy border
-    doc.rect(22, 22, W - 44, H - 44)
+    doc.rect(30, 30, W - 60, H - 60)
        .strokeColor(NAVY).lineWidth(1.5).stroke();
 
-    // ── Logo ─────────────────────────────────────────────────────────────────
+    // ── Logo ──────────────────────────────────────────────────────────────────
     const logoPath = path.join(__dirname, '../public/assets/images/actc-logo.png');
     const logoFallback = path.join(__dirname, '../public/assets/images/actc-logo.jpg');
     const logoSrc = fs.existsSync(logoPath) ? logoPath : (fs.existsSync(logoFallback) ? logoFallback : null);
 
-    const LOGO_H   = 52;
-    const LOGO_TOP = 40;
+    const LOGO_H   = 50;
+    const LOGO_TOP = 55;
     if (logoSrc) {
-        doc.image(logoSrc, cx - 32, LOGO_TOP, { height: LOGO_H, fit: [64, LOGO_H] });
+        doc.image(logoSrc, cx - 30, LOGO_TOP, { height: LOGO_H, fit: [60, LOGO_H] });
     }
 
     // ── Title ─────────────────────────────────────────────────────────────────
-    const titleTop = LOGO_TOP + LOGO_H + 10;   // ~102
+    const titleTop = 117;
     const titleZh = certificate.certTypeRef?.titleZh
         || (isCourse ? '課程結業證書' : '資安能力認證證書');
     const titleEn = certificate.certTypeRef?.titleEn
@@ -164,36 +161,36 @@ async function generateCertificatePDF(certificateId, res) {
     doc.font('Bold').fontSize(28).fillColor(NAVY)
        .text(titleZh, marginX, titleTop, { width: contentW, align: 'center' });
 
-    const subtitleTop = titleTop + 36;          // ~138
+    const subtitleTop = 151;
     doc.font('Regular').fontSize(11).fillColor(NAVY)
        .text(titleEn, marginX, subtitleTop, { width: contentW, align: 'center' });
 
     // ── Gold divider ──────────────────────────────────────────────────────────
-    const dividerY = subtitleTop + 22;          // ~160
+    const dividerY = 170;
     doc.moveTo(W * 0.25, dividerY).lineTo(W * 0.75, dividerY)
        .strokeColor(GOLD).lineWidth(1).stroke();
 
     // ── Award phrase ──────────────────────────────────────────────────────────
-    const awardZhY = dividerY + 14;             // ~174
-    doc.font('Bold').fontSize(14).fillColor(NAVY)
+    const awardZhY = 187;
+    doc.font('Bold').fontSize(13).fillColor(NAVY)
        .text('特此頒發予', marginX, awardZhY, { width: contentW, align: 'center' });
 
-    const awardEnY = awardZhY + 20;             // ~194
-    doc.font('Regular').fontSize(11).fillColor(NAVY)
+    const awardEnY = 201;
+    doc.font('Regular').fontSize(10).fillColor(NAVY)
        .text('This certificate is hereby awarded to', marginX, awardEnY, { width: contentW, align: 'center' });
 
     // ── Recipient name ────────────────────────────────────────────────────────
-    const nameY = awardEnY + 14;                // ~208
-    doc.font('Bold').fontSize(30).fillColor(NAVY)
+    const nameY = 217;
+    doc.font('Bold').fontSize(28).fillColor(NAVY)
        .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
     // ── Congrats phrase ───────────────────────────────────────────────────────
-    const congratsZhY = nameY + 44;             // ~252
-    doc.font('Bold').fontSize(14).fillColor(NAVY)
+    const congratsZhY = 258;
+    doc.font('Bold').fontSize(13).fillColor(NAVY)
        .text('恭喜順利完成', marginX, congratsZhY, { width: contentW, align: 'center' });
 
-    const congratsEnY = congratsZhY + 20;       // ~272
-    doc.font('Regular').fontSize(11).fillColor(NAVY)
+    const congratsEnY = 272;
+    doc.font('Regular').fontSize(10).fillColor(NAVY)
        .text('has successfully completed', marginX, congratsEnY, { width: contentW, align: 'center' });
 
     // ── Standalone course/exam name ───────────────────────────────────────────
@@ -201,7 +198,6 @@ async function generateCertificatePDF(certificateId, res) {
         ? (certificate.course ? `【${certificate.course.courseName}】` : '【本課程】')
         : (certificate.exam   ? `【${certificate.exam.title}】`        : '【本考試】');
 
-    // Resolve bodyText template (for certTypeRef override)
     const examTitle  = certificate.exam   ? certificate.exam.title         : '考試';
     const courseName = certificate.course ? certificate.course.courseName   : '本課程';
 
@@ -218,128 +214,114 @@ async function generateCertificatePDF(certificateId, res) {
             .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
     }
 
-    const titleNameY = congratsEnY + 14;        // ~286
-    if (customBodyText) {
-        // certTypeRef bodyText overrides the standalone title line
-        doc.font('Bold').fontSize(15).fillColor(NAVY)
-           .text(customBodyText, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
-    } else {
-        doc.font('Bold').fontSize(16).fillColor(NAVY)
-           .text(displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
-    }
+    const titleNameY = 290;
+    doc.font('Bold').fontSize(15).fillColor(NAVY)
+       .text(customBodyText || displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
     // ── Course / Exam info — two-column layout ────────────────────────────────
-    const infoLabelY = titleNameY + 30;         // ~316
-    const infoValueY = infoLabelY + 22;         // ~338
+    const infoLabelY = 328;
+    const infoLabelEnY = 342;
+    const infoValueY = 333;
 
-    const colLeftX  = W * 0.22;
-    const colRightX = W * 0.57;
-    const colW      = 185;
+    const colLeftX  = cx - 190;
+    const colRightX = cx + 10;
+    const colW      = 175;
 
     if (isCourse && certificate.course) {
-        // Left column — Course Date
+        // Left — Course Date
         doc.font('Bold').fontSize(12).fillColor(NAVY)
-           .text('課程日期', colLeftX, infoLabelY, { width: colW });
+           .text('課程日期', colLeftX, infoLabelY);
         doc.font('Regular').fontSize(9).fillColor(GRAY)
-           .text('Course Date', colLeftX, infoLabelY + 16, { width: colW });
-
+           .text('Course Date', colLeftX, infoLabelEnY);
         if (certificate.course.attendanceDate) {
             const d = new Date(certificate.course.attendanceDate);
             const dateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-            doc.font('Regular').fontSize(15).fillColor(NAVY)
-               .text(dateVal, colLeftX, infoValueY, { width: colW });
+            doc.font('Regular').fontSize(14).fillColor(NAVY)
+               .text(dateVal, colLeftX + 90, infoValueY);
         }
-
-        // Right column — Course Duration
+        // Right — Course Duration
         doc.font('Bold').fontSize(12).fillColor(NAVY)
-           .text('課程時數', colRightX, infoLabelY, { width: colW });
+           .text('課程時數', colRightX, infoLabelY);
         doc.font('Regular').fontSize(9).fillColor(GRAY)
-           .text('Course Duration', colRightX, infoLabelY + 16, { width: colW });
-
+           .text('Course Duration', colRightX, infoLabelEnY);
         if (certificate.course.completionHours) {
-            doc.font('Regular').fontSize(15).fillColor(NAVY)
-               .text(`${certificate.course.completionHours}小時`, colRightX, infoValueY, { width: colW });
-            doc.font('Regular').fontSize(10).fillColor(GRAY)
-               .text(`${certificate.course.completionHours} Hours`, colRightX, infoValueY + 20, { width: colW });
+            doc.font('Regular').fontSize(14).fillColor(NAVY)
+               .text(`${certificate.course.completionHours}小時`, colRightX + 90, infoLabelY);
+            doc.font('Regular').fontSize(9).fillColor(GRAY)
+               .text(`${certificate.course.completionHours} Hours`, colRightX + 90, infoLabelEnY);
         }
     } else if (!isCourse) {
-        // Exam type — show exam validity info in info row
-        const issuedDateStr = certificate.issuedAt.toLocaleDateString('zh-TW', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
-
-        // Left column — Issue Date
-        doc.font('Bold').fontSize(11).fillColor(NAVY)
-           .text('發證日期', colLeftX, infoLabelY, { width: colW });
-        doc.font('Regular').fontSize(8).fillColor(GRAY)
-           .text('Issue Date', colLeftX, infoLabelY + 14, { width: colW });
-        doc.font('Regular').fontSize(12).fillColor(NAVY)
-           .text(issuedDateStr, colLeftX, infoValueY, { width: colW });
-
-        // Right column — Validity
-        doc.font('Bold').fontSize(11).fillColor(NAVY)
-           .text('有效期限', colRightX, infoLabelY, { width: colW });
-        doc.font('Regular').fontSize(8).fillColor(GRAY)
-           .text('Valid Until', colRightX, infoLabelY + 14, { width: colW });
-
+        // Left — Issue Date
+        const d = new Date(certificate.issuedAt);
+        const issuedDateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+        doc.font('Bold').fontSize(12).fillColor(NAVY)
+           .text('發證日期', colLeftX, infoLabelY);
+        doc.font('Regular').fontSize(9).fillColor(GRAY)
+           .text('Issue Date', colLeftX, infoLabelEnY);
+        doc.font('Regular').fontSize(14).fillColor(NAVY)
+           .text(issuedDateVal, colLeftX + 90, infoValueY);
+        // Right — Validity
+        doc.font('Bold').fontSize(12).fillColor(NAVY)
+           .text('有效期限', colRightX, infoLabelY);
+        doc.font('Regular').fontSize(9).fillColor(GRAY)
+           .text('Valid Until', colRightX, infoLabelEnY);
         if (certificate.expiresAt) {
-            const expiryDateStr = certificate.expiresAt.toLocaleDateString('zh-TW', {
-                year: 'numeric', month: 'long', day: 'numeric'
-            });
-            doc.font('Regular').fontSize(12).fillColor(NAVY)
-               .text(expiryDateStr, colRightX, infoValueY, { width: colW });
+            const dExp = new Date(certificate.expiresAt);
+            const expiryDateVal = `${dExp.getFullYear()}.${String(dExp.getMonth() + 1).padStart(2, '0')}.${String(dExp.getDate()).padStart(2, '0')}`;
+            doc.font('Regular').fontSize(14).fillColor(NAVY)
+               .text(expiryDateVal, colRightX + 90, infoValueY);
         } else {
-            doc.font('Regular').fontSize(12).fillColor(NAVY)
-               .text('永久', colRightX, infoValueY, { width: colW });
+            doc.font('Regular').fontSize(14).fillColor(NAVY)
+               .text('永久', colRightX + 90, infoLabelY);
+            doc.font('Regular').fontSize(9).fillColor(GRAY)
+               .text('Permanent', colRightX + 90, infoLabelEnY);
         }
     }
 
-    // ── Thin separator before bottom section ──────────────────────────────────
-    const separatorY = H - 148;                 // ~447
-    doc.moveTo(marginX, separatorY).lineTo(W - marginX, separatorY)
-       .strokeColor(GOLD).lineWidth(0.5).stroke();
-
-    // ── Bottom section: cert number (left) + signature (right) ───────────────
-    const bottomY = separatorY + 10;            // ~457
+    // ── Bottom section ────────────────────────────────────────────────────────
+    const bottomY = 385;
 
     // Left — Certificate number
-    const certNumLeftX = marginX + 20;
-    doc.font('Bold').fontSize(12).fillColor(NAVY)
-       .text(`證書編號：${certificate.certificateNumber}`, certNumLeftX, bottomY, { width: 300 });
+    doc.font('Bold').fontSize(10).fillColor(NAVY)
+       .text('證書編號：', colLeftX, bottomY);
     doc.font('Regular').fontSize(9).fillColor(GRAY)
-       .text('Certificate No.', certNumLeftX, bottomY + 17, { width: 300 });
+       .text('Certificate No.', colLeftX, bottomY + 13);
 
-    // Right — Signature block (置中於右半區)
-    const sigBlockX = W * 0.55;
-    const sigBlockW = W * 0.40;                 // 固定寬度讓簽名有空間置中
-    const sigLineY  = bottomY + 68;             // ~525
+    const certNum = certificate.certificateNumber;
+    const lastHyphenIndex = certNum.lastIndexOf('-');
+    const certNumPrefix = lastHyphenIndex !== -1 ? certNum.substring(0, lastHyphenIndex + 1) : certNum;
+    const certNumSerial = lastHyphenIndex !== -1 ? certNum.substring(lastHyphenIndex + 1) : '';
 
+    doc.font('Bold').fontSize(10).fillColor(NAVY)
+       .text(certNumPrefix, colLeftX + 90, bottomY);
+    doc.font('Bold').fontSize(10).fillColor(NAVY)
+       .text(certNumSerial, colLeftX + 90, bottomY + 13);
+
+    // Right — Signature block side-by-side with Chairman
     const signPath = path.join(__dirname, '../public/assets/images/EricMaoSign.png');
+    const sigImgW = 100;
+    const sigImgH = 30;
     if (fs.existsSync(signPath)) {
-        const sigImgH = 48;
-        const sigImgW = 140;                    // 控制圖片寬度，讓它在 sigBlockW 內真正置中
-        const sigImgX = sigBlockX + (sigBlockW - sigImgW) / 2;
-        doc.image(signPath, sigImgX, sigLineY - sigImgH - 4,
+        doc.image(signPath, colRightX, bottomY - 3,
                   { height: sigImgH, fit: [sigImgW, sigImgH] });
     }
 
-    doc.moveTo(sigBlockX, sigLineY).lineTo(sigBlockX + sigBlockW, sigLineY)
-       .strokeColor(NAVY).lineWidth(0.75).stroke();
-
-    // 理事長 / Chairman
+    const sigTextX = colRightX + sigImgW + 5;
     doc.font('Bold').fontSize(11).fillColor(NAVY)
-       .text('理事長', sigBlockX, sigLineY + 5, { width: sigBlockW, align: 'center' });
+       .text('理事長', sigTextX, bottomY + 2);
     doc.font('Regular').fontSize(9).fillColor(GRAY)
-       .text('Chairman', sigBlockX, sigLineY + 19, { width: sigBlockW, align: 'center' });
+       .text('Chairman', sigTextX, bottomY + 14);
 
-    // Organisation name
+    // Organization name (centered below signature + chairman)
+    const orgW = 195;
+    const orgX = colRightX - 10;
     doc.font('Bold').fontSize(10).fillColor(NAVY)
-       .text('國際資訊安全人才培育與推廣協會', sigBlockX, sigLineY + 33, { width: sigBlockW, align: 'center' });
+       .text('國際資訊安全人才培育與推廣協會', orgX, bottomY + 36, { width: orgW, align: 'center' });
     doc.font('Regular').fontSize(8).fillColor(GRAY)
-       .text('Association of Cybersecurity Talent Cultivation', sigBlockX, sigLineY + 46, { width: sigBlockW, align: 'center' });
+       .text('Association of Cybersecurity Talent Cultivation', orgX, bottomY + 49, { width: orgW, align: 'center' });
 
-    // ── Footer（內框底線在 H-22=573，footer 留在 H-50 以上確保不重疊）────────
-    const footerY = H - 52;
+    // ── Footer ────────────────────────────────────────────────────────────────
+    const footerY = 537;
     doc.font('Regular').fontSize(7).fillColor(GRAY)
        .text(`© ${new Date().getFullYear()} 國際資訊安全人才培育與推廣協會保留所有權利`,
              marginX + 10, footerY, { width: contentW - 20, align: 'center' });
@@ -348,7 +330,6 @@ async function generateCertificatePDF(certificateId, res) {
     doc.fontSize(7).fillColor(GRAY)
        .text(`驗證：${siteUrl}/verify-certificate/${certificate.certificateNumber}`,
              marginX + 10, footerY + 11, { width: contentW - 20, align: 'center' });
-
     // Finalize PDF
     doc.end();
 
