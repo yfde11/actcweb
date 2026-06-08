@@ -74,57 +74,7 @@ function hasChineseFont() {
  * @param {Object} res - Express response object (for streaming)
  * @returns {Promise<void>}
  */
-async function generateCertificatePDF(certificateId, res) {
-    if (!hasChineseFont()) {
-        throw new Error('CHINESE_FONT_NOT_FOUND');
-    }
-
-    const certificate = await Certificate.findById(certificateId)
-        .populate('exam')
-        .populate('course')
-        .populate('user')
-        .populate('certTypeRef');
-
-    if (!certificate) {
-        throw new Error('CERTIFICATE_NOT_FOUND');
-    }
-
-    if (certificate.isRevoked) {
-        throw new Error('CERTIFICATE_REVOKED');
-    }
-
-    const user = certificate.user;
-    const isCourse = certificate.certType === 'course';
-
-    // Get attempt for additional details (exam type only)
-    let attempt = null;
-    if (!isCourse && certificate.attempt) {
-        attempt = await ExamAttempt.findById(certificate.attempt);
-    }
-
-    // Recipient name: prefer certificate.recipientName, fallback to user fields
-    const recipientDisplayName = certificate.recipientName
-        || (user && (user.fullName || user.username))
-        || '—';
-
-    // Create PDF document — A4 landscape: 841.89 × 595.28 pt
-    const doc = new PDFDocument({
-        size: 'A4',
-        layout: 'landscape',
-        margins: { top: 0, bottom: 0, left: 0, right: 0 }
-    });
-
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="certificate-${certificate.certificateNumber}.pdf"`);
-
-    // Pipe PDF to response
-    doc.pipe(res);
-
-    // Register fonts
-    doc.registerFont('Regular', FONT_PATH);
-    doc.registerFont('Bold', BOLD_FONT_PATH || FONT_PATH);
-
+function drawCertificateLayout(doc, data) {
     const W = doc.page.width;   // 841.89
     const H = doc.page.height;  // 595.28
     const NAVY  = '#003366';
@@ -153,17 +103,12 @@ async function generateCertificatePDF(certificateId, res) {
 
     // ── Title ─────────────────────────────────────────────────────────────────
     const titleTop = 117;
-    const titleZh = certificate.certTypeRef?.titleZh
-        || (isCourse ? '課程結業證書' : '資安能力認證證書');
-    const titleEn = certificate.certTypeRef?.titleEn
-        || (isCourse ? 'Course Completion Certificate' : 'Cybersecurity Competency Certificate');
-
     doc.font('Bold').fontSize(28).fillColor(NAVY)
-       .text(titleZh, marginX, titleTop, { width: contentW, align: 'center' });
+       .text(data.titleZh, marginX, titleTop, { width: contentW, align: 'center' });
 
     const subtitleTop = 151;
     doc.font('Regular').fontSize(11).fillColor(NAVY)
-       .text(titleEn, marginX, subtitleTop, { width: contentW, align: 'center' });
+       .text(data.titleEn, marginX, subtitleTop, { width: contentW, align: 'center' });
 
     // ── Gold divider ──────────────────────────────────────────────────────────
     const dividerY = 170;
@@ -182,7 +127,7 @@ async function generateCertificatePDF(certificateId, res) {
     // ── Recipient name ────────────────────────────────────────────────────────
     const nameY = 217;
     doc.font('Bold').fontSize(28).fillColor(NAVY)
-       .text(recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
+       .text(data.recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
     // ── Congrats phrase ───────────────────────────────────────────────────────
     const congratsZhY = 258;
@@ -194,29 +139,9 @@ async function generateCertificatePDF(certificateId, res) {
        .text('has successfully completed', marginX, congratsEnY, { width: contentW, align: 'center' });
 
     // ── Standalone course/exam name ───────────────────────────────────────────
-    const displayTitle = isCourse
-        ? (certificate.course ? `【${certificate.course.courseName}】` : '【本課程】')
-        : (certificate.exam   ? `【${certificate.exam.title}】`        : '【本考試】');
-
-    const examTitle  = certificate.exam   ? certificate.exam.title         : '考試';
-    const courseName = certificate.course ? certificate.course.courseName   : '本課程';
-
-    let customBodyText = certificate.certTypeRef?.bodyText;
-    if (customBodyText) {
-        const issuedDateStrForBody = certificate.issuedAt.toLocaleDateString('zh-TW', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
-        customBodyText = customBodyText
-            .replace(/\{\{name\}\}/g, recipientDisplayName)
-            .replace(/\{\{examTitle\}\}/g, examTitle)
-            .replace(/\{\{courseName\}\}/g, courseName)
-            .replace(/\{\{date\}\}/g, issuedDateStrForBody)
-            .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
-    }
-
     const titleNameY = 290;
     doc.font('Bold').fontSize(15).fillColor(NAVY)
-       .text(customBodyText || displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
+       .text(data.customBodyText || data.displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
     // ── Course / Exam info — two-column layout ────────────────────────────────
     const infoLabelY = 328;
@@ -227,14 +152,14 @@ async function generateCertificatePDF(certificateId, res) {
     const colRightX = cx + 10;
     const colW      = 175;
 
-    if (isCourse && certificate.course) {
+    if (data.isCourse && data.course) {
         // Left — Course Date
         doc.font('Bold').fontSize(12).fillColor(NAVY)
            .text('課程日期', colLeftX, infoLabelY);
         doc.font('Regular').fontSize(9).fillColor(GRAY)
            .text('Course Date', colLeftX, infoLabelEnY);
-        if (certificate.course.attendanceDate) {
-            const d = new Date(certificate.course.attendanceDate);
+        if (data.course.attendanceDate) {
+            const d = new Date(data.course.attendanceDate);
             const dateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
             doc.font('Regular').fontSize(14).fillColor(NAVY)
                .text(dateVal, colLeftX + 90, infoValueY);
@@ -244,15 +169,15 @@ async function generateCertificatePDF(certificateId, res) {
            .text('課程時數', colRightX, infoLabelY);
         doc.font('Regular').fontSize(9).fillColor(GRAY)
            .text('Course Duration', colRightX, infoLabelEnY);
-        if (certificate.course.completionHours) {
+        if (data.course.completionHours) {
             doc.font('Regular').fontSize(14).fillColor(NAVY)
-               .text(`${certificate.course.completionHours}小時`, colRightX + 90, infoLabelY);
+               .text(`${data.course.completionHours}小時`, colRightX + 90, infoLabelY);
             doc.font('Regular').fontSize(9).fillColor(GRAY)
-               .text(`${certificate.course.completionHours} Hours`, colRightX + 90, infoLabelEnY);
+               .text(`${data.course.completionHours} Hours`, colRightX + 90, infoLabelEnY);
         }
-    } else if (!isCourse) {
+    } else if (!data.isCourse) {
         // Left — Issue Date
-        const d = new Date(certificate.issuedAt);
+        const d = new Date(data.issuedAt);
         const issuedDateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
         doc.font('Bold').fontSize(12).fillColor(NAVY)
            .text('發證日期', colLeftX, infoLabelY);
@@ -265,8 +190,8 @@ async function generateCertificatePDF(certificateId, res) {
            .text('有效期限', colRightX, infoLabelY);
         doc.font('Regular').fontSize(9).fillColor(GRAY)
            .text('Valid Until', colRightX, infoLabelEnY);
-        if (certificate.expiresAt) {
-            const dExp = new Date(certificate.expiresAt);
+        if (data.expiresAt) {
+            const dExp = new Date(data.expiresAt);
             const expiryDateVal = `${dExp.getFullYear()}.${String(dExp.getMonth() + 1).padStart(2, '0')}.${String(dExp.getDate()).padStart(2, '0')}`;
             doc.font('Regular').fontSize(14).fillColor(NAVY)
                .text(expiryDateVal, colRightX + 90, infoValueY);
@@ -287,7 +212,7 @@ async function generateCertificatePDF(certificateId, res) {
     doc.font('Regular').fontSize(9).fillColor(GRAY)
        .text('Certificate No.', colLeftX, bottomY + 13);
 
-    const certNum = certificate.certificateNumber;
+    const certNum = data.certificateNumber;
     const lastHyphenIndex = certNum.lastIndexOf('-');
     const certNumPrefix = lastHyphenIndex !== -1 ? certNum.substring(0, lastHyphenIndex + 1) : certNum;
     const certNumSerial = lastHyphenIndex !== -1 ? certNum.substring(lastHyphenIndex + 1) : '';
@@ -328,8 +253,104 @@ async function generateCertificatePDF(certificateId, res) {
 
     const siteUrl = (process.env.SITE_URL || 'https://actc.org.tw').replace(/\/$/, '');
     doc.fontSize(7).fillColor(GRAY)
-       .text(`驗證：${siteUrl}/verify-certificate/${certificate.certificateNumber}`,
+       .text(`驗證：${siteUrl}/verify-certificate/${data.certificateNumber}`,
              marginX + 10, footerY + 11, { width: contentW - 20, align: 'center' });
+}
+
+/**
+ * Generate certificate PDF on-the-fly (streaming)
+ * @param {string} certificateId - Certificate ID
+ * @param {Object} res - Express response object (for streaming)
+ * @returns {Promise<void>}
+ */
+async function generateCertificatePDF(certificateId, res) {
+    if (!hasChineseFont()) {
+        throw new Error('CHINESE_FONT_NOT_FOUND');
+    }
+
+    const certificate = await Certificate.findById(certificateId)
+        .populate('exam')
+        .populate('course')
+        .populate('user')
+        .populate('certTypeRef');
+
+    if (!certificate) {
+        throw new Error('CERTIFICATE_NOT_FOUND');
+    }
+
+    if (certificate.isRevoked) {
+        throw new Error('CERTIFICATE_REVOKED');
+    }
+
+    const user = certificate.user;
+    const isCourse = certificate.certType === 'course';
+
+    // Recipient name: prefer certificate.recipientName, fallback to user fields
+    const recipientDisplayName = certificate.recipientName
+        || (user && (user.fullName || user.username))
+        || '—';
+
+    // Create PDF document — A4 landscape: 841.89 × 595.28 pt
+    const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margins: { top: 0, bottom: 0, left: 0, right: 0 }
+    });
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="certificate-${certificate.certificateNumber}.pdf"`);
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Register fonts
+    doc.registerFont('Regular', FONT_PATH);
+    doc.registerFont('Bold', BOLD_FONT_PATH || FONT_PATH);
+
+    const titleZh = certificate.certTypeRef?.titleZh
+        || (isCourse ? '課程結業證書' : '資安能力認證證書');
+    const titleEn = certificate.certTypeRef?.titleEn
+        || (isCourse ? 'Course Completion Certificate' : 'Cybersecurity Competency Certificate');
+
+    const displayTitle = isCourse
+        ? (certificate.course ? `【${certificate.course.courseName}】` : '【本課程】')
+        : (certificate.exam   ? `【${certificate.exam.title}】`        : '【本考試】');
+
+    const examTitle  = certificate.exam   ? certificate.exam.title         : '考試';
+    const courseName = certificate.course ? certificate.course.courseName   : '本課程';
+
+    let customBodyText = certificate.certTypeRef?.bodyText;
+    if (customBodyText) {
+        const issuedDateStrForBody = certificate.issuedAt.toLocaleDateString('zh-TW', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        customBodyText = customBodyText
+            .replace(/\{\{name\}\}/g, recipientDisplayName)
+            .replace(/\{\{examTitle\}\}/g, examTitle)
+            .replace(/\{\{courseName\}\}/g, courseName)
+            .replace(/\{\{date\}\}/g, issuedDateStrForBody)
+            .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
+    }
+
+    const data = {
+        certificateNumber: certificate.certificateNumber,
+        isCourse,
+        recipientDisplayName,
+        titleZh,
+        titleEn,
+        customBodyText,
+        displayTitle,
+        course: isCourse && certificate.course ? {
+            attendanceDate: certificate.course.attendanceDate,
+            completionHours: certificate.course.completionHours
+        } : null,
+        issuedAt: certificate.issuedAt,
+        expiresAt: certificate.expiresAt
+    };
+
+    drawCertificateLayout(doc, data);
+
     // Finalize PDF
     doc.end();
 
@@ -337,6 +358,73 @@ async function generateCertificatePDF(certificateId, res) {
     certificate.downloadCount += 1;
     certificate.lastDownloadedAt = new Date();
     await certificate.save();
+}
+
+/**
+ * Generate preview certificate PDF on-the-fly
+ * @param {Object} previewData - { titleZh, titleEn, bodyText }
+ * @param {Object} res - Express response object
+ */
+async function generatePreviewPDF(previewData, res) {
+    if (!hasChineseFont()) {
+        throw new Error('CHINESE_FONT_NOT_FOUND');
+    }
+
+    const { titleZh, titleEn, bodyText } = previewData;
+    const isCourse = true; // Preview defaults to course layout format for display
+
+    const recipientDisplayName = '陳小明';
+    const certificateNumber = 'ACTC-PREVIEW-2026-000001';
+    
+    const displayTitle = '【ISO 27001 資訊安全管理系統主導稽核員課程】';
+    const examTitle = 'CISM 國際資訊安全經理人認證考試';
+    const courseName = 'ISO 27001 資訊安全管理系統主導稽核員課程';
+    
+    let customBodyText = bodyText;
+    if (customBodyText) {
+        const issuedDateStrForBody = new Date().toLocaleDateString('zh-TW', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        customBodyText = customBodyText
+            .replace(/\{\{name\}\}/g, recipientDisplayName)
+            .replace(/\{\{examTitle\}\}/g, examTitle)
+            .replace(/\{\{courseName\}\}/g, courseName)
+            .replace(/\{\{date\}\}/g, issuedDateStrForBody)
+            .replace(/\{\{certNumber\}\}/g, certificateNumber);
+    }
+
+    const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margins: { top: 0, bottom: 0, left: 0, right: 0 }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="preview.pdf"');
+
+    doc.pipe(res);
+
+    doc.registerFont('Regular', FONT_PATH);
+    doc.registerFont('Bold', BOLD_FONT_PATH || FONT_PATH);
+
+    const data = {
+        certificateNumber,
+        isCourse,
+        recipientDisplayName,
+        titleZh: titleZh || '課程結業證書',
+        titleEn: titleEn || 'Course Completion Certificate',
+        customBodyText,
+        displayTitle,
+        course: {
+            attendanceDate: new Date(),
+            completionHours: 40
+        },
+        issuedAt: new Date(),
+        expiresAt: null
+    };
+
+    drawCertificateLayout(doc, data);
+    doc.end();
 }
 
 /**
@@ -476,6 +564,7 @@ async function issueCourseAttendanceCertificate(attendanceId, certValidityYears,
 module.exports = {
     verifyCertificate,
     generateCertificatePDF,
+    generatePreviewPDF,
     regenerateCertificate,
     issueCourseAttendanceCertificate
 };

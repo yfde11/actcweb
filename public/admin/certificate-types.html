@@ -127,6 +127,14 @@
                     </div>
                 </div>
             </div>
+            <!-- 起始流水號欄位 -->
+            <div x-show="!editingItem || (editingItem && form.confirmPrefixChange)">
+                <label class="block text-sm font-medium text-gray-700 mb-1">起始流水號</label>
+                <input type="number" x-model="form.startingSequence" min="1"
+                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="預設為 1">
+                <p class="text-xs text-gray-400 mt-1">此編號前綴之流水號起始值。例如輸入 100，則下一張證書將為 000100。</p>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">中文標題 <span class="text-red-500">*</span></label>
                 <input type="text" x-model="form.titleZh"
@@ -150,6 +158,11 @@
             <div x-show="formError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="formError"></div>
         </div>
         <div class="p-6 border-t flex justify-end gap-3">
+            <button @click="previewCertificate()" :disabled="previewLoading"
+                    class="px-4 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-50">
+                <span x-show="previewLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                預覽證書
+            </button>
             <button @click="showModal = false"
                     class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
             <button @click="submitForm()"
@@ -157,6 +170,29 @@
                     class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
                 <span x-show="formLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
                 <span x-text="editingItem ? '儲存' : '新增'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PDF 預覽彈窗 Modal -->
+<div x-show="showPreviewModal" x-cloak
+     class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+     @click.self="closePreview()" @keydown.escape.window="closePreview()">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl h-[85vh] flex flex-col" @click.stop>
+        <div class="p-4 border-b flex justify-between items-center shrink-0">
+            <h3 class="text-lg font-bold text-gray-900">證書 PDF 即時預覽</h3>
+            <button @click="closePreview()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="flex-1 bg-gray-100 p-2 overflow-hidden relative">
+            <iframe :src="previewUrl" class="w-full h-full rounded border bg-white" frameborder="0"></iframe>
+        </div>
+        <div class="p-4 border-t flex justify-end shrink-0">
+            <button @click="closePreview()"
+                    class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                關閉預覽
             </button>
         </div>
     </div>
@@ -171,10 +207,15 @@ function certTypeAdmin() {
 
         showModal: false,
         editingItem: null,
-        form: { name: '', prefix: '', titleZh: '', titleEn: '', bodyText: '', confirmPrefixChange: false },
+        form: { name: '', prefix: '', titleZh: '', titleEn: '', bodyText: '', confirmPrefixChange: false, startingSequence: 1 },
         prefixEditMode: false,
         formError: '',
         formLoading: false,
+
+        // 預覽狀態
+        showPreviewModal: false,
+        previewUrl: '',
+        previewLoading: false,
 
         toast: { visible: false, message: '', type: 'success' },
 
@@ -213,10 +254,11 @@ function certTypeAdmin() {
 
         openCreate() {
             this.editingItem = null;
-            this.form = { name: '', prefix: '', titleZh: '', titleEn: '', bodyText: '', confirmPrefixChange: false };
+            this.form = { name: '', prefix: '', titleZh: '', titleEn: '', bodyText: '', confirmPrefixChange: false, startingSequence: 1 };
             this.prefixEditMode = false;
             this.formError = '';
             this.showModal = true;
+            this.closePreview();
         },
 
         openEdit(item) {
@@ -227,11 +269,56 @@ function certTypeAdmin() {
                 titleZh: item.titleZh,
                 titleEn: item.titleEn || '',
                 bodyText: item.bodyText || '',
-                confirmPrefixChange: false
+                confirmPrefixChange: false,
+                startingSequence: 1
             };
             this.prefixEditMode = false;
             this.formError = '';
             this.showModal = true;
+            this.closePreview();
+        },
+
+        async previewCertificate() {
+            this.formError = '';
+            if (!this.form.titleZh.trim()) {
+                this.formError = '預覽前請先填寫中文標題';
+                return;
+            }
+            const body = {
+                titleZh: this.form.titleZh.trim(),
+                titleEn: this.form.titleEn.trim(),
+                bodyText: this.form.bodyText.trim()
+            };
+            this.previewLoading = true;
+            try {
+                const res = await fetch('/api/admin/certificate-types/preview', {
+                    method: 'POST',
+                    headers: this.getAuthHeaders(),
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) {
+                    const json = await res.json();
+                    throw new Error(json.error?.message || '產生預覽失敗');
+                }
+                const blob = await res.blob();
+                if (this.previewUrl) {
+                    URL.revokeObjectURL(this.previewUrl);
+                }
+                this.previewUrl = URL.createObjectURL(blob);
+                this.showPreviewModal = true;
+            } catch (e) {
+                this.formError = e.message;
+            } finally {
+                this.previewLoading = false;
+            }
+        },
+
+        closePreview() {
+            this.showPreviewModal = false;
+            if (this.previewUrl) {
+                URL.revokeObjectURL(this.previewUrl);
+                this.previewUrl = '';
+            }
         },
 
         async submitForm() {
@@ -251,7 +338,8 @@ function certTypeAdmin() {
                     prefix: this.form.prefix.trim(),
                     titleZh: this.form.titleZh.trim(),
                     titleEn: this.form.titleEn.trim() || undefined,
-                    bodyText: this.form.bodyText.trim() || undefined
+                    bodyText: this.form.bodyText.trim() || undefined,
+                    startingSequence: this.form.startingSequence ? Number(this.form.startingSequence) : 1
                 };
                 if (this.editingItem) {
                     body.confirmPrefixChange = this.form.confirmPrefixChange === true;

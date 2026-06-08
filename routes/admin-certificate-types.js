@@ -27,7 +27,7 @@ router.get('/', adminAuth, async (req, res) => {
 // POST /api/admin/certificate-types
 router.post('/', adminAuth, async (req, res) => {
     try {
-        const { name, titleZh, titleEn, prefix, bodyText } = req.body;
+        const { name, titleZh, titleEn, prefix, bodyText, startingSequence } = req.body;
         if (!name || !titleZh) {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '名稱與中文標題為必填');
         }
@@ -51,6 +51,20 @@ router.post('/', adminAuth, async (req, res) => {
             createdBy: req.user.userId
         });
         await certType.save();
+
+        if (startingSequence !== undefined) {
+            const startSeqNum = Number(startingSequence);
+            if (!isNaN(startSeqNum) && startSeqNum >= 1) {
+                const Counter = require('../models/Counter');
+                const startVal = startSeqNum - 1;
+                await Counter.findByIdAndUpdate(
+                    certType.counterKey,
+                    { $set: { seq: startVal } },
+                    { upsert: true, new: true }
+                );
+            }
+        }
+
         res.status(201).json({ data: certType });
     } catch (error) {
         console.error('Create certificate type error:', error);
@@ -64,7 +78,7 @@ router.post('/', adminAuth, async (req, res) => {
 // PATCH /api/admin/certificate-types/:id
 router.patch('/:id', adminAuth, async (req, res) => {
     try {
-        const { name, titleZh, titleEn, isActive, prefix, bodyText, confirmPrefixChange } = req.body;
+        const { name, titleZh, titleEn, isActive, prefix, bodyText, confirmPrefixChange, startingSequence } = req.body;
         const update = {};
         if (name !== undefined) update.name = name.trim();
         if (titleZh !== undefined) update.titleZh = titleZh.trim();
@@ -80,6 +94,7 @@ router.patch('/:id', adminAuth, async (req, res) => {
                 return errorResponse(res, 400, 'VALIDATION_ERROR', '前綴格式不正確');
             }
             update.prefix = prefix.trim();
+            update.counterKey = prefix.trim().toLowerCase().replace(/-/g, '_') + '_cert_num';
         }
 
         const certType = await CertificateType.findByIdAndUpdate(
@@ -90,6 +105,20 @@ router.patch('/:id', adminAuth, async (req, res) => {
         if (!certType) {
             return errorResponse(res, 404, 'NOT_FOUND', '找不到該證書類型');
         }
+
+        if (prefix !== undefined && startingSequence !== undefined) {
+            const startSeqNum = Number(startingSequence);
+            if (!isNaN(startSeqNum) && startSeqNum >= 1) {
+                const Counter = require('../models/Counter');
+                const startVal = startSeqNum - 1;
+                await Counter.findByIdAndUpdate(
+                    certType.counterKey,
+                    { $set: { seq: startVal } },
+                    { upsert: true, new: true }
+                );
+            }
+        }
+
         res.json({ data: certType });
     } catch (error) {
         console.error('Update certificate type error:', error);
@@ -103,6 +132,14 @@ router.patch('/:id', adminAuth, async (req, res) => {
 // DELETE /api/admin/certificate-types/:id（軟刪除）
 router.delete('/:id', adminAuth, async (req, res) => {
     try {
+        const Exam = require('../models/Exam');
+        // Find if any active exam uses this certificate type
+        const activeExams = await Exam.find({ certTypeRef: req.params.id, isActive: true }, 'title');
+        if (activeExams.length > 0) {
+            const examTitles = activeExams.map(e => `「${e.title}」`).join('、');
+            return errorResponse(res, 400, 'DEPENDENCY_ERROR', `無法停用此類型，因為它正被以下啟用中的考試使用：${examTitles}`);
+        }
+
         const certType = await CertificateType.findByIdAndUpdate(
             req.params.id,
             { $set: { isActive: false } },
@@ -115,6 +152,19 @@ router.delete('/:id', adminAuth, async (req, res) => {
     } catch (error) {
         console.error('Delete certificate type error:', error);
         errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤');
+    }
+});
+
+// POST /api/admin/certificate-types/preview
+router.post('/preview', adminAuth, async (req, res) => {
+    try {
+        const { titleZh, titleEn, bodyText } = req.body;
+        const { generatePreviewPDF } = require('../services/examCertificates');
+        
+        await generatePreviewPDF({ titleZh, titleEn, bodyText }, res);
+    } catch (error) {
+        console.error('Preview certificate error:', error);
+        errorResponse(res, 500, 'INTERNAL_ERROR', '產生預覽 PDF 失敗');
     }
 });
 
