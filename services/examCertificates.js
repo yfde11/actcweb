@@ -109,41 +109,41 @@ function drawCertificateLayout(doc, data) {
     }
 
     // ── Title ─────────────────────────────────────────────────────────────────
-    const titleTop = 117;
+    const titleTop = 100;
     doc.font('Bold').fontSize(28).fillColor(NAVY)
        .text(data.titleZh, marginX, titleTop, { width: contentW, align: 'center' });
 
-    const subtitleTop = 151;
+    const subtitleTop = 132;
     doc.font('Regular').fontSize(11).fillColor(NAVY)
        .text(data.titleEn, marginX, subtitleTop, { width: contentW, align: 'center' });
 
     // ── Gold divider ──────────────────────────────────────────────────────────
-    const dividerY = 170;
+    const dividerY = 150;
     doc.moveTo(W * 0.25, dividerY).lineTo(W * 0.75, dividerY)
        .strokeColor(GOLD).lineWidth(1).stroke();
 
     // ── Award phrase ──────────────────────────────────────────────────────────
-    const awardZhY = 187;
+    const awardZhY = 167;
     doc.font('Bold').fontSize(13).fillColor(NAVY)
        .text('特此頒發予', marginX, awardZhY, { width: contentW, align: 'center' });
 
-    const awardEnY = 201;
+    const awardEnY = 181;
     doc.font('Regular').fontSize(10).fillColor(NAVY)
        .text('This certificate is hereby awarded to', marginX, awardEnY, { width: contentW, align: 'center' });
 
     // ── Recipient name & Spacing adjustment ────────────────────────────────────
-    let nameY = 217;
-    let congratsZhY = 258;
-    let congratsEnY = 272;
-    let titleNameY = 290;
+    let nameY = 215;
+    let congratsZhY = 260;
+    let congratsEnY = 274;
+    let titleNameY = 298;
 
     const hasEnName = !!(data.recipientEnglishName && data.recipientEnglishName.trim());
 
     if (hasEnName) {
-        nameY = 214;
-        congratsZhY = 262;
-        congratsEnY = 276;
-        titleNameY = 294;
+        nameY = 205;
+        congratsZhY = 265;
+        congratsEnY = 279;
+        titleNameY = 308;
     }
 
     doc.font('Bold').fontSize(hasEnName ? 26 : 28).fillColor(NAVY)
@@ -151,7 +151,7 @@ function drawCertificateLayout(doc, data) {
 
     if (hasEnName) {
         doc.font('Regular').fontSize(15).fillColor(NAVY)
-           .text(data.recipientEnglishName.trim(), marginX, 238, { width: contentW, align: 'center' });
+           .text(data.recipientEnglishName.trim(), marginX, 232, { width: contentW, align: 'center' });
     }
 
     // ── Congrats phrase ───────────────────────────────────────────────────────
@@ -166,9 +166,9 @@ function drawCertificateLayout(doc, data) {
        .text(data.customBodyText || data.displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
     // ── Course / Exam info — two-column layout ────────────────────────────────
-    const infoLabelY = 328;
-    const infoLabelEnY = 342;
-    const infoValueY = 333;
+    const infoLabelY = 360;
+    const infoLabelEnY = 374;
+    const infoValueY = 365;
 
     const colLeftX  = cx - 230;
     const colRightX = cx + 50;
