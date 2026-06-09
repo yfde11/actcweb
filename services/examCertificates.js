@@ -132,44 +132,45 @@ function drawCertificateLayout(doc, data) {
        .text('This certificate is hereby awarded to', marginX, awardEnY, { width: contentW, align: 'center' });
 
     // ── Recipient name & Spacing adjustment ────────────────────────────────────
-    let nameY = 222;
+    // ── Recipient name & Spacing adjustment ────────────────────────────────────
+    let nameY = 216;
     let congratsZhY = 286;
-    let congratsEnY = 300;
+    let congratsEnY = 303;
     let titleNameY = 338;
-    let nameEnY = 248;
+    let nameEnY = 244;
 
     const hasEnName = !!(data.recipientEnglishName && data.recipientEnglishName.trim());
 
     if (hasEnName) {
-        nameY = 210;
-        congratsZhY = 290;
-        congratsEnY = 304;
-        titleNameY = 340;
+        nameY = 202;
+        congratsZhY = 292;
+        congratsEnY = 309;
+        titleNameY = 345;
     }
 
-    doc.font('Bold').fontSize(hasEnName ? 26 : 28).fillColor(NAVY)
+    doc.font('Bold').fontSize(hasEnName ? 32 : 34).fillColor(NAVY)
        .text(data.recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
     if (hasEnName) {
-        doc.font('Regular').fontSize(15).fillColor(NAVY)
+        doc.font('Regular').fontSize(18).fillColor(NAVY)
            .text(data.recipientEnglishName.trim(), marginX, nameEnY, { width: contentW, align: 'center' });
     }
 
     // ── Congrats phrase ───────────────────────────────────────────────────────
-    doc.font('Bold').fontSize(13).fillColor(NAVY)
+    doc.font('Bold').fontSize(15).fillColor(NAVY)
        .text('恭喜順利完成', marginX, congratsZhY, { width: contentW, align: 'center' });
 
-    doc.font('Regular').fontSize(10).fillColor(NAVY)
+    doc.font('Regular').fontSize(11).fillColor(NAVY)
        .text('has successfully completed', marginX, congratsEnY, { width: contentW, align: 'center' });
 
     // ── Standalone course/exam name ───────────────────────────────────────────
-    doc.font('Bold').fontSize(15).fillColor(NAVY)
+    doc.font('Bold').fontSize(18).fillColor(NAVY)
        .text(data.customBodyText || data.displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
     // ── Course / Exam info — two-column layout ────────────────────────────────
-    const infoLabelY = 390;
-    const infoLabelEnY = 404;
-    const infoValueY = 395;
+    const infoLabelY = 394;
+    const infoLabelEnY = 409;
+    const infoValueY = 398;
 
     const colLeftX  = cx - 230;
     const colRightX = cx + 50;
@@ -177,73 +178,73 @@ function drawCertificateLayout(doc, data) {
 
     if (data.isCourse && data.course) {
         // Left — Course Date
-        doc.font('Bold').fontSize(12).fillColor(NAVY)
+        doc.font('Bold').fontSize(13).fillColor(NAVY)
            .text('課程日期', colLeftX, infoLabelY);
-        doc.font('Regular').fontSize(9).fillColor(GRAY)
+        doc.font('Regular').fontSize(10).fillColor(GRAY)
            .text('Course Date', colLeftX, infoLabelEnY);
         if (data.course.attendanceDate) {
             const d = new Date(data.course.attendanceDate);
             const dateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-            doc.font('Regular').fontSize(14).fillColor(NAVY)
+            doc.font('Bold').fontSize(16).fillColor(NAVY)
                .text(dateVal, colLeftX + 90, infoValueY);
         }
         // Right — Course Duration
-        doc.font('Bold').fontSize(12).fillColor(NAVY)
+        doc.font('Bold').fontSize(13).fillColor(NAVY)
            .text('課程時數', colRightX, infoLabelY);
-        doc.font('Regular').fontSize(9).fillColor(GRAY)
+        doc.font('Regular').fontSize(10).fillColor(GRAY)
            .text('Course Duration', colRightX, infoLabelEnY);
         if (data.course.completionHours) {
-            doc.font('Regular').fontSize(14).fillColor(NAVY)
-               .text(`${data.course.completionHours}小時`, colRightX + 90, infoLabelY);
-            doc.font('Regular').fontSize(9).fillColor(GRAY)
+            doc.font('Bold').fontSize(16).fillColor(NAVY)
+               .text(`${data.course.completionHours}小時`, colRightX + 90, infoLabelY - 1);
+            doc.font('Regular').fontSize(10).fillColor(GRAY)
                .text(`${data.course.completionHours} Hours`, colRightX + 90, infoLabelEnY);
         }
     } else if (!data.isCourse) {
         // Left — Issue Date
         const d = new Date(data.issuedAt);
         const issuedDateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-        doc.font('Bold').fontSize(12).fillColor(NAVY)
+        doc.font('Bold').fontSize(13).fillColor(NAVY)
            .text('發證日期', colLeftX, infoLabelY);
-        doc.font('Regular').fontSize(9).fillColor(GRAY)
+        doc.font('Regular').fontSize(10).fillColor(GRAY)
            .text('Issue Date', colLeftX, infoLabelEnY);
-        doc.font('Regular').fontSize(14).fillColor(NAVY)
+        doc.font('Bold').fontSize(16).fillColor(NAVY)
            .text(issuedDateVal, colLeftX + 90, infoValueY);
         // Right — Validity
-        doc.font('Bold').fontSize(12).fillColor(NAVY)
+        doc.font('Bold').fontSize(13).fillColor(NAVY)
            .text('有效期限', colRightX, infoLabelY);
-        doc.font('Regular').fontSize(9).fillColor(GRAY)
+        doc.font('Regular').fontSize(10).fillColor(GRAY)
            .text('Valid Until', colRightX, infoLabelEnY);
         if (data.expiresAt) {
             const dExp = new Date(data.expiresAt);
             const expiryDateVal = `${dExp.getFullYear()}.${String(dExp.getMonth() + 1).padStart(2, '0')}.${String(dExp.getDate()).padStart(2, '0')}`;
-            doc.font('Regular').fontSize(14).fillColor(NAVY)
+            doc.font('Bold').fontSize(16).fillColor(NAVY)
                .text(expiryDateVal, colRightX + 90, infoValueY);
         } else {
-            doc.font('Regular').fontSize(14).fillColor(NAVY)
-               .text('永久', colRightX + 90, infoLabelY);
-            doc.font('Regular').fontSize(9).fillColor(GRAY)
+            doc.font('Bold').fontSize(16).fillColor(NAVY)
+               .text('永久', colRightX + 90, infoLabelY - 1);
+            doc.font('Regular').fontSize(10).fillColor(GRAY)
                .text('Permanent', colRightX + 90, infoLabelEnY);
         }
     }
 
     // ── Bottom section ────────────────────────────────────────────────────────
-    const bottomY = 450;
+    const bottomY = 455;
 
     // Left — Certificate number
-    doc.font('Bold').fontSize(10).fillColor(NAVY)
+    doc.font('Bold').fontSize(11).fillColor(NAVY)
        .text('證書編號：', colLeftX, bottomY);
-    doc.font('Regular').fontSize(9).fillColor(GRAY)
-       .text('Certificate No.', colLeftX, bottomY + 13);
+    doc.font('Regular').fontSize(10).fillColor(GRAY)
+       .text('Certificate No.', colLeftX, bottomY + 15);
 
     const certNum = data.certificateNumber;
     const lastHyphenIndex = certNum.lastIndexOf('-');
     const certNumPrefix = lastHyphenIndex !== -1 ? certNum.substring(0, lastHyphenIndex + 1) : certNum;
     const certNumSerial = lastHyphenIndex !== -1 ? certNum.substring(lastHyphenIndex + 1) : '';
 
-    doc.font('Bold').fontSize(10).fillColor(NAVY)
+    doc.font('Bold').fontSize(11).fillColor(NAVY)
        .text(certNumPrefix, colLeftX + 90, bottomY);
-    doc.font('Bold').fontSize(10).fillColor(NAVY)
-       .text(certNumSerial, colLeftX + 90, bottomY + 13);
+    doc.font('Bold').fontSize(11).fillColor(NAVY)
+       .text(certNumSerial, colLeftX + 90, bottomY + 15);
 
     // Right — Signature block side-by-side with Chairman
     const signPath = path.join(__dirname, '../public/assets/images/EricMaoSign.png');
@@ -255,18 +256,18 @@ function drawCertificateLayout(doc, data) {
     }
 
     const sigTextX = colRightX + sigImgW + 5;
-    doc.font('Bold').fontSize(11).fillColor(NAVY)
+    doc.font('Bold').fontSize(12).fillColor(NAVY)
        .text('理事長', sigTextX, bottomY + 2);
-    doc.font('Regular').fontSize(9).fillColor(GRAY)
-       .text('Chairman', sigTextX, bottomY + 14);
+    doc.font('Regular').fontSize(10).fillColor(GRAY)
+       .text('Chairman', sigTextX, bottomY + 16);
 
     // Organization name (centered below signature + chairman)
     const orgW = 195;
     const orgX = colRightX - 10;
-    doc.font('Bold').fontSize(10).fillColor(NAVY)
-       .text('國際資訊安全人才培育與推廣協會', orgX, bottomY + 36, { width: orgW, align: 'center' });
-    doc.font('Regular').fontSize(8).fillColor(GRAY)
-       .text('Association of Cybersecurity Talent Cultivation', orgX, bottomY + 49, { width: orgW, align: 'center' });
+    doc.font('Bold').fontSize(11).fillColor(NAVY)
+       .text('國際資訊安全人才培育與推廣協會', orgX, bottomY + 38, { width: orgW, align: 'center' });
+    doc.font('Regular').fontSize(9).fillColor(GRAY)
+       .text('Association of Cybersecurity Talent Cultivation', orgX, bottomY + 52, { width: orgW, align: 'center' });
 
     // ── Footer ────────────────────────────────────────────────────────────────
     const footerY = 537;

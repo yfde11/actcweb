@@ -83,6 +83,7 @@ Certificate.findOne = (query) => {
                 recipientEnglishName: cert.recipientEnglishName,
                 recipientEmail: cert.recipientEmail,
                 user: cert.user ? db.users.find(u => u._id.toString() === cert.user.toString()) : null,
+                course: cert.course ? db.attendances.find(a => a._id.toString() === cert.course.toString()) : null,
                 expiresAt: cert.expiresAt,
                 issuedAt: cert.issuedAt || new Date(),
                 save: async function() {
@@ -115,6 +116,7 @@ Certificate.findById = (id) => {
                 recipientEnglishName: cert.recipientEnglishName,
                 recipientEmail: cert.recipientEmail,
                 user: cert.user ? db.users.find(u => u._id.toString() === cert.user.toString()) : null,
+                course: cert.course ? db.attendances.find(a => a._id.toString() === cert.course.toString()) : null,
                 expiresAt: cert.expiresAt,
                 issuedAt: cert.issuedAt || new Date(),
                 save: async function() {
