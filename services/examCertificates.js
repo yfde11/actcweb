@@ -148,8 +148,8 @@ function drawCertificateLayout(doc, data) {
     const infoLabelEnY = 342;
     const infoValueY = 333;
 
-    const colLeftX  = cx - 190;
-    const colRightX = cx + 10;
+    const colLeftX  = cx - 230;
+    const colRightX = cx + 50;
     const colW      = 175;
 
     if (data.isCourse && data.course) {
@@ -204,7 +204,7 @@ function drawCertificateLayout(doc, data) {
     }
 
     // ── Bottom section ────────────────────────────────────────────────────────
-    const bottomY = 385;
+    const bottomY = 425;
 
     // Left — Certificate number
     doc.font('Bold').fontSize(10).fillColor(NAVY)
