@@ -45,6 +45,7 @@ function usersTab() {
             username: '',
             email: '',
             fullName: '',
+            englishName: '',
             role: 'user',
             membershipStatus: 'none'
         },
@@ -151,7 +152,7 @@ function usersTab() {
             const nickname = ''; // TODO: model field
 
             // 次名稱：僅當 username 與顯示名不同時才顯示，避免重複
-            const subline = nickname || (displayName !== u.username ? u.username : '');
+            const subline = (nickname || (displayName !== u.username ? u.username : '')) + (u.englishName ? (displayName !== u.username || nickname ? ` / ${u.englishName}` : u.englishName) : '');
 
             return {
                 id: u._id,
@@ -624,6 +625,7 @@ function usersTab() {
                 username: member.username,
                 email: member.email,
                 fullName: member.raw.fullName || '',
+                englishName: member.raw.englishName || '',
                 role: member.role,
                 membershipStatus: member.reviewStatus
             };
@@ -665,6 +667,7 @@ function usersTab() {
                     username: this.userForm.username,
                     email: this.userForm.email,
                     fullName: this.userForm.fullName,
+                    englishName: this.userForm.englishName,
                     role: this.userForm.role
                 };
                 if (this.editingUser && this.editingUser.role === 'user') {
@@ -781,6 +784,7 @@ function usersTab() {
                 username: '',
                 email: '',
                 fullName: '',
+                englishName: '',
                 role: 'user',
                 membershipStatus: 'none'
             };
@@ -796,6 +800,7 @@ function usersTab() {
                 username: '',
                 email: '',
                 fullName: '',
+                englishName: '',
                 role: 'user',
                 membershipStatus: 'none'
             };

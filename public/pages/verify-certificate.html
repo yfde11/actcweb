@@ -261,6 +261,9 @@
                                 <div class="mb-6 text-center">
                                     <p class="cert-field-label mb-1">持證人</p>
                                     <p class="text-2xl font-bold text-actc-orange" x-text="result.data.holderName"></p>
+                                    <template x-if="result.data.holderEnglishName">
+                                        <p class="text-lg text-gray-500 font-semibold mt-1" x-text="result.data.holderEnglishName"></p>
+                                    </template>
                                 </div>
 
                                 <hr class="cert-divider mb-6">

@@ -27,7 +27,7 @@ async function verifyCertificate(certificateNumber) {
     })
         .populate('exam', 'title')
         .populate('course', 'courseName')
-        .populate('user', 'username fullName')
+        .populate('user', 'username fullName englishName')
         .populate('certTypeRef', 'name titleZh');
 
     if (!certificate) {
@@ -49,10 +49,17 @@ async function verifyCertificate(certificateNumber) {
             exam: certificate.exam,
             course: certificate.course,
             recipientName: certificate.recipientName || null,
+            recipientEnglishName: certificate.recipientEnglishName || null,
             recipientEmail: certificate.recipientEmail || null,
+            holderName: certificate.recipientName
+                || (certificate.user && (certificate.user.fullName || certificate.user.username))
+                || '—',
+            holderEnglishName: certificate.recipientEnglishName
+                || (certificate.user && certificate.user.englishName)
+                || null,
             user: certificate.user
-                ? { username: certificate.user.username, fullName: certificate.user.fullName }
-                : { username: null, fullName: certificate.recipientName || null }
+                ? { username: certificate.user.username, fullName: certificate.user.fullName, englishName: certificate.user.englishName }
+                : { username: null, fullName: certificate.recipientName || null, englishName: certificate.recipientEnglishName || null }
         }
     };
 }
@@ -124,22 +131,37 @@ function drawCertificateLayout(doc, data) {
     doc.font('Regular').fontSize(10).fillColor(NAVY)
        .text('This certificate is hereby awarded to', marginX, awardEnY, { width: contentW, align: 'center' });
 
-    // ── Recipient name ────────────────────────────────────────────────────────
-    const nameY = 217;
-    doc.font('Bold').fontSize(28).fillColor(NAVY)
+    // ── Recipient name & Spacing adjustment ────────────────────────────────────
+    let nameY = 217;
+    let congratsZhY = 258;
+    let congratsEnY = 272;
+    let titleNameY = 290;
+
+    const hasEnName = !!(data.recipientEnglishName && data.recipientEnglishName.trim());
+
+    if (hasEnName) {
+        nameY = 214;
+        congratsZhY = 262;
+        congratsEnY = 276;
+        titleNameY = 294;
+    }
+
+    doc.font('Bold').fontSize(hasEnName ? 26 : 28).fillColor(NAVY)
        .text(data.recipientDisplayName, marginX, nameY, { width: contentW, align: 'center' });
 
+    if (hasEnName) {
+        doc.font('Regular').fontSize(15).fillColor(NAVY)
+           .text(data.recipientEnglishName.trim(), marginX, 238, { width: contentW, align: 'center' });
+    }
+
     // ── Congrats phrase ───────────────────────────────────────────────────────
-    const congratsZhY = 258;
     doc.font('Bold').fontSize(13).fillColor(NAVY)
        .text('恭喜順利完成', marginX, congratsZhY, { width: contentW, align: 'center' });
 
-    const congratsEnY = 272;
     doc.font('Regular').fontSize(10).fillColor(NAVY)
        .text('has successfully completed', marginX, congratsEnY, { width: contentW, align: 'center' });
 
     // ── Standalone course/exam name ───────────────────────────────────────────
-    const titleNameY = 290;
     doc.font('Bold').fontSize(15).fillColor(NAVY)
        .text(data.customBodyText || data.displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
@@ -290,6 +312,17 @@ async function generateCertificatePDF(certificateId, res) {
         || (user && (user.fullName || user.username))
         || '—';
 
+    // Recipient English name: prefer certificate.recipientEnglishName, fallback to user fields
+    let recipientEnglishName = certificate.recipientEnglishName
+        || (user && user.englishName)
+        || null;
+
+    // Solidify to DB if empty on certificate but present on user profile
+    if (!certificate.recipientEnglishName && user && user.englishName) {
+        certificate.recipientEnglishName = user.englishName;
+        certificate.save().catch(err => console.error('Solidify recipientEnglishName error:', err));
+    }
+
     // Create PDF document — A4 landscape: 841.89 × 595.28 pt
     const doc = new PDFDocument({
         size: 'A4',
@@ -337,6 +370,7 @@ async function generateCertificatePDF(certificateId, res) {
         certificateNumber: certificate.certificateNumber,
         isCourse,
         recipientDisplayName,
+        recipientEnglishName,
         titleZh,
         titleEn,
         customBodyText,
@@ -374,6 +408,7 @@ async function generatePreviewPDF(previewData, res) {
     const isCourse = true; // Preview defaults to course layout format for display
 
     const recipientDisplayName = '陳小明';
+    const recipientEnglishName = 'John Doe';
     const certificateNumber = 'ACTC-PREVIEW-2026-000001';
     
     const displayTitle = '【ISO 27001 資訊安全管理系統主導稽核員課程】';
@@ -411,6 +446,7 @@ async function generatePreviewPDF(previewData, res) {
         certificateNumber,
         isCourse,
         recipientDisplayName,
+        recipientEnglishName,
         titleZh: titleZh || '課程結業證書',
         titleEn: titleEn || 'Course Completion Certificate',
         customBodyText,
@@ -486,6 +522,7 @@ async function regenerateCertificate(attemptId) {
         exam: attempt.exam._id,
         user: attempt.user._id || attempt.user,
         recipientName: attempt.user.fullName || attempt.user.username || null,
+        recipientEnglishName: attempt.user.englishName || null,
         attempt: attempt._id,
         expiresAt
     });
@@ -547,6 +584,7 @@ async function issueCourseAttendanceCertificate(attendanceId, certValidityYears,
         course: attendance._id,
         user: attendance.user ? attendance.user._id : null,
         recipientName: attendance.recipientName,
+        recipientEnglishName: attendance.recipientEnglishName || (attendance.user && attendance.user.englishName) || null,
         recipientEmail: attendance.recipientEmail || null,
         expiresAt
     });

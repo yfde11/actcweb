@@ -21,6 +21,7 @@ async function userResponsePayload(u) {
         username: u.username,
         email: u.email,
         fullName: u.fullName,
+        englishName: u.englishName,
         phone: u.phone,
         role: u.role,
         emailVerified: u.emailVerified,
@@ -106,9 +107,10 @@ router.delete('/me/event-registrations/:eventId', verifiedAuth, async (req, res)
 router.patch('/me', verifiedAuth, async (req, res) => {
     try {
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        const { fullName, phone, emailSubscribed } = req.body;
+        const { fullName, englishName, phone, emailSubscribed } = req.body;
         const u = await User.findById(req.authUser._id);
         if (fullName !== undefined) u.fullName = fullName;
+        if (englishName !== undefined) u.englishName = englishName;
         if (phone !== undefined) u.phone = phone;
         if (emailSubscribed !== undefined) u.emailSubscribed = !!emailSubscribed;
         await u.save();

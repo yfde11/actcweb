@@ -173,6 +173,7 @@
                     <input x-model="reg.email" type="email" autocomplete="email" placeholder="Email" class="w-full border rounded px-3 py-2" />
                     <input x-model="reg.password" type="password" autocomplete="new-password" placeholder="密碼（至少6字）" class="w-full border rounded px-3 py-2" />
                     <input x-model="reg.fullName" autocomplete="name" placeholder="姓名" required class="w-full border rounded px-3 py-2" />
+                    <input x-model="reg.englishName" placeholder="英文姓名 (選填)" class="w-full border rounded px-3 py-2 mt-2" />
                     <input x-model="reg.phone" type="tel" autocomplete="tel" placeholder="電話" required class="w-full border rounded px-3 py-2" />
                     <p class="text-sm min-h-[1.25rem]" :class="registerOk ? 'text-green-600' : 'text-red-600'" x-show="registerMsg" x-text="registerMsg" role="status" aria-live="polite"></p>
                     <button type="submit" :disabled="registerSending" :aria-busy="registerSending" class="w-full bg-orange-600 text-white py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
@@ -324,6 +325,8 @@
                             <div>
                                 <label class="text-xs text-gray-500 mb-1 block">姓名</label>
                                 <input x-model="profile.fullName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="請輸入姓名" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
+                                <label class="block text-sm font-semibold text-gray-700 mb-1 mt-3">英文姓名 (選填)</label>
+                                <input x-model="profile.englishName" @input.debounce.700ms="saveProfile(true)" @blur="saveProfile(true)" placeholder="請輸入英文姓名 (例如：John Doe)" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-actc-orange/30" />
                             </div>
                             <div>
                                 <label class="text-xs text-gray-500 mb-1 block">電話</label>
@@ -1331,8 +1334,8 @@
                 token: localStorage.getItem('memberToken') || '',
                 activeTab: 'overview',
                 me: {},
-                profile: { fullName: '', phone: '', emailSubscribed: true },
-                reg: { username: '', email: '', password: '', fullName: '', phone: '' },
+                profile: { fullName: '', englishName: '', phone: '', emailSubscribed: true },
+                reg: { username: '', email: '', password: '', fullName: '', englishName: '', phone: '' },
                 loginForm: { username: '', password: '' },
                 resendEmail: '',
                 verifyMsg: '',
@@ -1827,6 +1830,7 @@
                         const d = await r.json();
                         this.me = d.user;
                         this.profile.fullName = d.user.fullName || '';
+                        this.profile.englishName = d.user.englishName || '';
                         this.profile.phone = d.user.phone || '';
                         this.profile.emailSubscribed = d.user.emailSubscribed !== false;
                         this.profileLastSavedPayload = JSON.stringify(this.profile);
@@ -1974,7 +1978,7 @@
                         this.registerOk = r.ok;
                         this.registerMsg = d.message || (r.ok ? '註冊成功' : '註冊失敗');
                         if (r.ok) {
-                            this.reg = { username: '', email: '', password: '', fullName: '', phone: '' };
+                            this.reg = { username: '', email: '', password: '', fullName: '', englishName: '', phone: '' };
                         }
                     } catch {
                         this.registerMsg = '網路錯誤或無法連線，請檢查網路後再試。';
@@ -2152,6 +2156,7 @@
                 async saveProfile(isAuto = false) {
                     const payload = {
                         fullName: this.profile.fullName,
+                        englishName: this.profile.englishName,
                         phone: this.profile.phone,
                         emailSubscribed: this.profile.emailSubscribed
                     };
@@ -2190,6 +2195,7 @@
                         if (d.user) {
                             this.me = d.user;
                             this.profile.fullName = d.user.fullName || '';
+                            this.profile.englishName = d.user.englishName || '';
                             this.profile.phone = d.user.phone || '';
                             this.profile.emailSubscribed = d.user.emailSubscribed !== false;
                             this.profileLastSavedPayload = JSON.stringify(this.profile);

@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    englishName: {
+        type: String,
+        trim: true
+    },
     lastLogin: {
         type: Date
     },

@@ -15,6 +15,10 @@ const courseAttendanceSchema = new mongoose.Schema({
         required: [true, '受證者姓名為必填'],
         trim: true
     },
+    recipientEnglishName: {
+        type: String,
+        trim: true
+    },
     recipientEmail: {
         type: String,
         trim: true,

@@ -40,7 +40,7 @@
                         <div class="p-4 bg-green-50 border border-green-200 rounded">
                             <p class="text-green-800 font-medium">✅ 證書有效</p>
                             <p class="text-sm text-green-700 mt-2">考試：${cert.exam?.title || '考試'}</p>
-                            <p class="text-sm text-green-700">持證人：${cert.user?.fullName || cert.user?.username || '未知'}</p>
+                            <p class="text-sm text-green-700">持證人：${cert.holderName || '未知'}${cert.holderEnglishName ? ` (${cert.holderEnglishName})` : ''}</p>
                             <p class="text-sm text-green-700">發證日期：${new Date(cert.issuedAt).toLocaleDateString()}</p>
                             ${cert.expiresAt ? `<p class="text-sm text-green-700">有效期限：${new Date(cert.expiresAt).toLocaleDateString()}</p>` : ''}
                         </div>

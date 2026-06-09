@@ -23,7 +23,7 @@ const FORGOT_PASSWORD_RESPONSE = {
 // 註冊（需驗證信箱後才可登入）
 router.post('/register', async (req, res) => {
     try {
-        const { username, password, email, fullName, phone } = req.body;
+        const { username, password, email, fullName, englishName, phone } = req.body;
         if (!username || !password || !email) {
             return res.status(400).json({ message: '請提供使用者名稱、密碼與 email' });
         }
@@ -58,6 +58,7 @@ router.post('/register', async (req, res) => {
             password,
             email: String(email).trim().toLowerCase(),
             fullName: String(fullName).trim(),
+            englishName: englishName ? String(englishName).trim() : undefined,
             phone: String(phone).trim(),
             role: 'user',
             emailVerified: false,

@@ -165,7 +165,7 @@ async function generateCertificate(attemptId) {
         throw new Error('INVALID_ATTEMPT_ID');
     }
 
-    const attempt = await ExamAttempt.findById(attemptId).populate('exam');
+    const attempt = await ExamAttempt.findById(attemptId).populate('exam').populate('user');
     if (!attempt) {
         throw new Error('ATTEMPT_NOT_FOUND');
     }
@@ -208,7 +208,9 @@ async function generateCertificate(attemptId) {
         certType: 'exam',
         certTypeRef: attempt.exam.certTypeRef?._id || null,
         exam: attempt.exam._id,
-        user: attempt.user,
+        user: attempt.user ? attempt.user._id : null,
+        recipientName: attempt.user ? (attempt.user.fullName || attempt.user.username) : null,
+        recipientEnglishName: attempt.user ? attempt.user.englishName : null,
         attempt: attempt._id,
         expiresAt
     });

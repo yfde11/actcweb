@@ -26,7 +26,7 @@ router.get('/', adminAuth, async (req, res) => {
 // 創建新使用者 (僅管理員)
 router.post('/', adminAuth, async (req, res) => {
     try {
-        const { username, email, fullName, role = 'user' } = req.body;
+        const { username, email, fullName, englishName, role = 'user' } = req.body;
 
         // 驗證輸入
         if (!username) {
@@ -51,6 +51,7 @@ router.post('/', adminAuth, async (req, res) => {
             password: 'user', // 預設密碼，會透過 pre-save middleware 加密
             email,
             fullName,
+            englishName: englishName ? String(englishName).trim() : undefined,
             role: roleNorm,
             isFirstLogin: true,
             emailVerified: true,
@@ -109,7 +110,7 @@ router.get('/:id', adminAuth, async (req, res) => {
 // 更新使用者 (僅管理員)
 router.put('/:id', adminAuth, async (req, res) => {
     try {
-        const { username, email, fullName, role, membershipStatus } = req.body;
+        const { username, email, fullName, englishName, role, membershipStatus } = req.body;
         const userId = req.params.id;
 
         // 不允許修改自己的角色
@@ -129,6 +130,7 @@ router.put('/:id', adminAuth, async (req, res) => {
         if (username) user.username = String(username).trim();
         if (email !== undefined) user.email = email ? String(email).trim().toLowerCase() : email;
         if (fullName !== undefined) user.fullName = fullName ? String(fullName).trim() : '';
+        if (englishName !== undefined) user.englishName = englishName ? String(englishName).trim() : '';
         if (role && ['admin', 'user'].includes(role)) {
             user.role = role;
         }
