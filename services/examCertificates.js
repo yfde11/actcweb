@@ -132,18 +132,19 @@ function drawCertificateLayout(doc, data) {
        .text('This certificate is hereby awarded to', marginX, awardEnY, { width: contentW, align: 'center' });
 
     // ── Recipient name & Spacing adjustment ────────────────────────────────────
-    let nameY = 215;
-    let congratsZhY = 260;
-    let congratsEnY = 274;
-    let titleNameY = 298;
+    let nameY = 222;
+    let congratsZhY = 286;
+    let congratsEnY = 300;
+    let titleNameY = 338;
+    let nameEnY = 248;
 
     const hasEnName = !!(data.recipientEnglishName && data.recipientEnglishName.trim());
 
     if (hasEnName) {
-        nameY = 205;
-        congratsZhY = 265;
-        congratsEnY = 279;
-        titleNameY = 308;
+        nameY = 210;
+        congratsZhY = 290;
+        congratsEnY = 304;
+        titleNameY = 340;
     }
 
     doc.font('Bold').fontSize(hasEnName ? 26 : 28).fillColor(NAVY)
@@ -151,7 +152,7 @@ function drawCertificateLayout(doc, data) {
 
     if (hasEnName) {
         doc.font('Regular').fontSize(15).fillColor(NAVY)
-           .text(data.recipientEnglishName.trim(), marginX, 232, { width: contentW, align: 'center' });
+           .text(data.recipientEnglishName.trim(), marginX, nameEnY, { width: contentW, align: 'center' });
     }
 
     // ── Congrats phrase ───────────────────────────────────────────────────────
@@ -166,9 +167,9 @@ function drawCertificateLayout(doc, data) {
        .text(data.customBodyText || data.displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
     // ── Course / Exam info — two-column layout ────────────────────────────────
-    const infoLabelY = 360;
-    const infoLabelEnY = 374;
-    const infoValueY = 365;
+    const infoLabelY = 390;
+    const infoLabelEnY = 404;
+    const infoValueY = 395;
 
     const colLeftX  = cx - 230;
     const colRightX = cx + 50;
@@ -226,7 +227,7 @@ function drawCertificateLayout(doc, data) {
     }
 
     // ── Bottom section ────────────────────────────────────────────────────────
-    const bottomY = 425;
+    const bottomY = 450;
 
     // Left — Certificate number
     doc.font('Bold').fontSize(10).fillColor(NAVY)
