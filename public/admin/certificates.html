@@ -149,14 +149,14 @@
         <div x-show="showIssueModal" x-cloak
              class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
              @click.self="showIssueModal = false" @keydown.escape.window="showIssueModal = false">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg" @click.stop>
-                <div class="p-6 border-b flex justify-between items-center">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col" style="max-height: 90vh;" @click.stop>
+                <div class="p-6 border-b flex justify-between items-center shrink-0">
                     <h3 class="text-lg font-bold">手動發課程型證書</h3>
                     <button @click="showIssueModal = false" class="text-gray-400 hover:text-gray-600">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="p-6 space-y-4">
+                <div class="p-6 space-y-4 overflow-y-auto flex-1">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">課程名稱 <span class="text-red-500">*</span></label>
                         <input type="text" x-model="issueForm.courseName"
@@ -230,7 +230,7 @@
                     </div>
                     <div x-show="issueError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="issueError"></div>
                 </div>
-                <div class="p-6 border-t flex justify-end gap-3">
+                <div class="p-6 border-t flex justify-end gap-3 shrink-0">
                     <button @click="showIssueModal = false"
                             class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
                     <button @click="submitIssue()" :disabled="issueLoading"
