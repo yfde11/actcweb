@@ -453,7 +453,7 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
                 courseName: (row.courseName || row['課程名稱'] || '').trim(),
                 courseCode: (row.courseCode || row['課程代碼'] || '').trim(),
                 recipientName: (row.recipientName || row['姓名'] || '').trim(),
-                recipientEnglishName: (row.recipientEnglishName || row['英文姓名'] || '').trim(),
+                recipientEnglishName: (row.recipientEnglishName || row.englishName || row['English Name'] || row['英文姓名'] || '').trim(),
                 recipientEmail: (row.recipientEmail || row.email || row['Email'] || '').trim().toLowerCase(),
                 attendanceDateStr: (row.attendanceDate || row['出席日期'] || '').trim(),
                 completionHoursStr: (row.completionHours || row['完成時數'] || '').trim(),

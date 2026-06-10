@@ -1,0 +1,55 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 請先登入或註冊
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - text:    
+  - main [ref=e21]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - heading "登入會員" [level=2] [ref=e25]
+        - generic [ref=e26]:
+          - textbox "使用者名稱或 Email" [ref=e27]
+          - textbox "密碼" [ref=e28]
+          - button "登入" [ref=e29] [cursor=pointer]
+        - paragraph [ref=e30]: 忘記密碼？
+        - paragraph [ref=e31]: 輸入註冊時已驗證的 Email，我們將寄送重設連結（1 小時內有效）。
+        - generic [ref=e32]:
+          - textbox "Email" [ref=e33]
+          - button "寄送重設連結" [ref=e34] [cursor=pointer]
+        - paragraph [ref=e35]: 未收到驗證信？
+        - generic [ref=e36]:
+          - textbox "註冊時的 Email" [ref=e37]
+          - button "重寄" [ref=e38] [cursor=pointer]
+      - generic [ref=e39]:
+        - heading "建立帳號" [level=2] [ref=e40]
+        - paragraph [ref=e41]: 尚未有帳號？在此免費註冊。
+        - generic [ref=e42]:
+          - textbox "使用者名稱（至少3字）" [ref=e43]
+          - textbox "Email" [ref=e44]
+          - textbox "密碼（至少6字）" [ref=e45]
+          - textbox "姓名（選填）" [ref=e46]
+          - button "註冊" [ref=e47] [cursor=pointer]
+    - text:               

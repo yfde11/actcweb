@@ -32,6 +32,25 @@ User.prototype.save = async function() {
     return this;
 };
 
+User.findOne = (query) => {
+    const queryObj = {
+        select: function(fields) {
+            return this;
+        },
+        then: function(onSuccess, onFailure) {
+            const user = db.users.find(u => {
+                if (query.email && u.email.toLowerCase() !== query.email.toLowerCase()) return false;
+                return true;
+            });
+            return Promise.resolve(user).then(onSuccess, onFailure);
+        },
+        catch: function(onFailure) {
+            return this.then(null, onFailure);
+        }
+    };
+    return queryObj;
+};
+
 // Mock CourseAttendance methods
 CourseAttendance.prototype.save = async function() {
     if (!this._id) this._id = new mongoose.Types.ObjectId();
@@ -131,6 +150,14 @@ Certificate.findById = (id) => {
         }
     };
     return queryObj;
+};
+
+Certificate.updateOne = async (query, update) => {
+    const cert = db.certificates.find(c => c._id.toString() === query._id.toString());
+    if (cert && update.$set) {
+        Object.assign(cert, update.$set);
+    }
+    return { nModified: 1 };
 };
 
 // Mock Counter sequence generator
@@ -259,6 +286,56 @@ async function run() {
             console.log('✅ HISTORICAL UPGRADE PASSED: englishName solidified on download');
         } else {
             console.log('❌ HISTORICAL UPGRADE FAILED');
+        }
+
+        console.log('\n--- Case 7: Test On-The-Fly Linking (user registers AFTER certificate is imported) ---');
+        // 1. Create a certificate with user: null and recipientEmail
+        const certUnlinked = new Certificate({
+            certificateNumber: `TEST-CERT-${new Date().getFullYear()}-999999`,
+            certType: 'course',
+            course: attendance._id,
+            user: null,
+            recipientName: '張大千',
+            recipientEmail: 'late_register@example.com',
+            issuedAt: new Date()
+        });
+        await certUnlinked.save();
+
+        // 2. Register user with matching email
+        const userLate = new User({
+            username: 'late_user_chang',
+            email: 'late_register@example.com',
+            password: 'password123',
+            fullName: '張大千',
+            englishName: 'Chang Dai-chien',
+            phone: '0987654321',
+            emailVerified: true
+        });
+        await userLate.save();
+
+        // 3. Render PDF to trigger on-the-fly linking
+        const pdfFilenameLate = path.join(__dirname, 'test_cert_late.pdf');
+        if (fs.existsSync(pdfFilenameLate)) {
+            fs.unlinkSync(pdfFilenameLate);
+        }
+        const mockResLate = fs.createWriteStream(pdfFilenameLate);
+        mockResLate.setHeader = function(key, val) {};
+
+        await new Promise((resolve, reject) => {
+            mockResLate.on('finish', resolve);
+            mockResLate.on('error', reject);
+            generateCertificatePDF(certUnlinked._id.toString(), mockResLate).catch(reject);
+        });
+
+        // 4. Verify linking and English name solidification in DB
+        const updatedCertLate = db.certificates.find(c => c._id.toString() === certUnlinked._id.toString());
+        console.log('After linking - cert.user:', updatedCertLate.user ? updatedCertLate.user.toString() : 'null');
+        console.log('After linking - cert.recipientEnglishName:', updatedCertLate.recipientEnglishName);
+
+        if (updatedCertLate.user && updatedCertLate.user.toString() === userLate._id.toString() && updatedCertLate.recipientEnglishName === 'Chang Dai-chien') {
+            console.log('✅ ON-THE-FLY LINKING PASSED: user linked and englishName solidified');
+        } else {
+            console.log('❌ ON-THE-FLY LINKING FAILED');
         }
 
         console.log('\n🌟 ALL TESTS COMPLETED SUCCESSFULY! 🌟');

@@ -1,0 +1,83 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - navigation "會員專區導覽" [ref=e51]:
+    - button " 總覽" [ref=e52] [cursor=pointer]:
+      - generic [ref=e53]: 
+      - text: 總覽
+    - button " 帳號設定" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]: 
+      - text: 帳號設定
+    - button " 我的活動" [ref=e56] [cursor=pointer]:
+      - generic [ref=e57]: 
+      - text: 我的活動
+    - button " 考試與證書" [ref=e58] [cursor=pointer]:
+      - generic [ref=e59]: 
+      - text: 考試與證書
+  - main [ref=e21]:
+    - generic [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - generic [ref=e64]: 
+          - generic [ref=e65]:
+            - heading "歡迎回來，admin！" [level=2] [ref=e66]
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]: 
+                - generic [ref=e70]: 信箱已驗證
+              - generic [ref=e72]: 已核准
+          - link "管理後台" [ref=e73] [cursor=pointer]:
+            - /url: /admin
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e77]: 
+              - heading "帳號狀態" [level=3] [ref=e78]
+            - generic [ref=e79]:
+              - generic [ref=e80]:
+                - generic [ref=e81]: 信箱驗證
+                - generic [ref=e82]: 已完成 ✓
+              - generic [ref=e83]:
+                - generic [ref=e84]: 會員資格
+                - generic [ref=e85]: 已核准
+            - button "前往帳號設定 →" [ref=e86] [cursor=pointer]
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - generic [ref=e89]: 
+              - heading "我的活動" [level=3] [ref=e90]
+            - paragraph [ref=e92]:
+              - text: 尚無進行中的活動報名。
+              - link "瀏覽活動" [ref=e93] [cursor=pointer]:
+                - /url: /#events
+            - button "查看全部活動 →" [ref=e94] [cursor=pointer]
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - generic [ref=e97]: 
+              - heading "考試與證書" [level=3] [ref=e98]
+            - paragraph [ref=e100]: 前往考試專區查看可報考考試與您的證書紀錄。
+            - button "前往考試專區 →" [ref=e101] [cursor=pointer]
+      - text:          

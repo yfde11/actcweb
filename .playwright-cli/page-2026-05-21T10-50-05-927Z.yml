@@ -1,0 +1,251 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: "#home"
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: about.html
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: "#news"
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: "#events"
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: "#corporate-members"
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: workgroups.html
+          - generic [ref=e16]:
+            - generic [ref=e17]: 請先登入或註冊
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - generic [ref=e22]:
+    - img "ACTC Logo" [ref=e25]
+    - heading "ACTC" [level=1] [ref=e26]
+    - heading "國際資訊安全人才培育與推廣協會" [level=2] [ref=e27]
+    - paragraph [ref=e28]: 致力於推動資訊安全教育，培養專業人才，建立安全的數位環境
+  - generic [ref=e30]:
+    - heading "最新消息" [level=2] [ref=e32]
+    - generic [ref=e34]:
+      - button "全部消息" [ref=e35] [cursor=pointer]
+      - button "聯盟動態" [ref=e36] [cursor=pointer]
+      - button "活動預告" [ref=e37] [cursor=pointer]
+      - button "技術分享" [ref=e38] [cursor=pointer]
+      - button "一般消息" [ref=e39] [cursor=pointer]
+    - button "點擊查看 歡迎來到 ACTC 國際資訊安全人才培育與推廣協會 的詳細資訊" [ref=e41] [cursor=pointer]:
+      - generic [ref=e42]:
+        - img [ref=e43]
+        - generic [ref=e46]: 一般
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - heading "歡迎來到 ACTC 國際資訊安全人才培育與推廣協會" [level=3] [ref=e49]
+          - generic [ref=e50]: 2026/5/4
+        - paragraph [ref=e51]: 我們致力於推動資訊安全領域的人才培育，提供專業的培訓課程、認證考試和國際交流機會。歡迎加入我們的社群，一起為資訊安全事業努力！
+        - link "活動連結" [ref=e53]:
+          - /url: https://actc.org.tw
+          - img [ref=e54]
+          - text: 活動連結
+  - generic [ref=e57]:
+    - generic [ref=e58]:
+      - heading "活動課程" [level=2] [ref=e59]
+      - paragraph [ref=e61]: 專業的資安培訓課程、工作坊和研討會，助您提升資訊安全技能
+    - generic [ref=e62]:
+      - heading "活動報名說明" [level=3] [ref=e63]
+      - generic [ref=e64]:
+        - paragraph [ref=e65]: 1. 報名前請先登入會員並完成信箱驗證。
+        - paragraph [ref=e66]: 2. 未登入點「立即報名」會先導向會員登入。
+        - paragraph [ref=e67]: 3. 登入後會回到首頁並確認要報名的活動。
+        - paragraph [ref=e68]: 4. 已報名活動會顯示「活動管理」可直達紀錄。
+        - paragraph [ref=e69]: 5. 付費活動請至會員專區補上後五碼/繳費憑證。
+        - paragraph [ref=e70]: 6. 取消後可再次報名，名額依當下狀態重新計算。
+      - paragraph [ref=e71]: 小提醒：若帳號尚未填寫電話，報名時會提醒先到會員專區補上，以利活動聯繫。
+    - generic [ref=e72]:
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]: 搜尋活動課程
+          - generic [ref=e76]:
+            - textbox "搜尋標題、描述、講師..." [ref=e77]
+            - img [ref=e79]
+        - generic [ref=e81]:
+          - generic [ref=e82]: 活動類型
+          - combobox [ref=e83]:
+            - option "全部類型" [selected]
+            - option "課程"
+            - option "工作坊"
+            - option "聚會"
+            - option "研討會"
+            - option "培訓"
+            - option "其他"
+        - generic [ref=e84]:
+          - generic [ref=e85]: 排序方式
+          - combobox [ref=e86]:
+            - option "日期 (近到遠，最新優先)" [selected]
+            - option "日期 (遠到近，最舊優先)"
+            - option "標題 (A-Z)"
+            - option "標題 (Z-A)"
+      - generic [ref=e88]: 熱門標籤
+    - generic [ref=e89]:
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - img [ref=e92]
+          - generic [ref=e95]: 課程
+          - generic [ref=e97]: 報名開放
+        - generic [ref=e98]:
+          - heading "測試" [level=3] [ref=e99]
+          - paragraph [ref=e100]: 測試
+          - generic [ref=e101]:
+            - img [ref=e102]
+            - generic [ref=e104]: 24小時
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - img [ref=e107]
+              - generic [ref=e109]: 2026/05/21 15:21～2026/05/22 15:22
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - generic [ref=e114]: 台北
+            - button "立即報名" [ref=e116] [cursor=pointer]
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - img [ref=e119]
+          - generic [ref=e122]: 工作坊
+          - generic [ref=e124]: 已結束
+        - generic [ref=e125]:
+          - heading "資安實務工作坊" [level=3] [ref=e126]
+          - paragraph [ref=e127]: 實作導向的資安技能培訓，包含滲透測試、惡意軟體分析等主題
+          - generic [ref=e128]:
+            - img [ref=e129]
+            - generic [ref=e131]: 王建國 - 資安講師
+          - generic [ref=e132]:
+            - img [ref=e133]
+            - generic [ref=e135]: 時長未定
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - img [ref=e138]
+              - generic [ref=e140]: 2025/11/10 13:00
+            - generic [ref=e141]:
+              - img [ref=e142]
+              - generic [ref=e145]: 高雄市前金區中正四路211號
+            - generic [ref=e146]:
+              - img [ref=e147]
+              - generic [ref=e149]: NT$1500
+            - generic [ref=e151]:
+              - img [ref=e152]
+              - generic [ref=e154]: 0/25 人（已報名）
+            - link "Teams" [ref=e156] [cursor=pointer]:
+              - /url: https://teams.microsoft.com/l/meetup-join/19%3ameeting_actc
+      - generic [ref=e157]:
+        - generic [ref=e158]:
+          - img [ref=e159]
+          - generic [ref=e162]: 聚會
+          - generic [ref=e164]: 報名開放
+        - generic [ref=e165]:
+          - heading "駭客馬拉松競賽" [level=3] [ref=e166]
+          - paragraph [ref=e167]: 24小時不間斷的資安競賽，挑戰技術能力與創新思維
+          - generic [ref=e168]:
+            - img [ref=e169]
+            - generic [ref=e171]: 李美華 - 競賽總監
+          - generic [ref=e172]:
+            - img [ref=e173]
+            - generic [ref=e175]: 時長未定
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - img [ref=e178]
+              - generic [ref=e180]: 2025/10/20 08:00
+            - generic [ref=e181]:
+              - img [ref=e182]
+              - generic [ref=e185]: 新北市板橋區文化路一段188號
+            - generic [ref=e187]:
+              - img [ref=e188]
+              - generic [ref=e190]: 2/100 人（已報名）
+            - generic [ref=e191]:
+              - button "立即報名" [ref=e192] [cursor=pointer]
+              - link "Discord" [ref=e193] [cursor=pointer]:
+                - /url: https://discord.gg/actc-hackathon
+      - generic [ref=e194]:
+        - generic [ref=e195]:
+          - img [ref=e196]
+          - generic [ref=e199]: 課程
+          - generic [ref=e201]: 已結束
+        - generic [ref=e202]:
+          - heading "資訊安全認證培訓課程" [level=3] [ref=e203]
+          - paragraph [ref=e204]: 專業認證課程，涵蓋網路安全、密碼學、風險管理等核心領域
+          - generic [ref=e205]:
+            - img [ref=e206]
+            - generic [ref=e208]: 陳志明 - 資安顧問
+          - generic [ref=e209]:
+            - img [ref=e210]
+            - generic [ref=e212]: 時長未定
+          - generic [ref=e213]:
+            - generic [ref=e214]:
+              - img [ref=e215]
+              - generic [ref=e217]: 2025/09/15 09:00
+            - generic [ref=e218]:
+              - img [ref=e219]
+              - generic [ref=e222]: 105台北市松山區復興北路57號
+            - generic [ref=e224]:
+              - img [ref=e225]
+              - generic [ref=e227]: 0/30 人（已報名）
+  - generic [ref=e229]:
+    - generic [ref=e230]:
+      - heading "企業會員專區" [level=2] [ref=e231]
+      - paragraph [ref=e233]: 感謝企業夥伴的支持與參與，共同推動資訊安全人才培育發展
+    - generic [ref=e234]:
+      - generic [ref=e236]:
+        - img [ref=e238]
+        - generic [ref=e240]:
+          - heading "全智網科技股份有限公司" [level=3] [ref=e241]
+          - paragraph [ref=e242]: 資安及網路課程專家，官方授權教育訓練中心；提供 Cisco、CompTIA、AWS、ISO 等國際認證與企業培訓課程。
+        - link "訪問網站" [ref=e244] [cursor=pointer]:
+          - /url: https://ainetwork-training.com
+          - generic [ref=e245]: 訪問網站
+          - img [ref=e246]
+      - generic [ref=e249]:
+        - img [ref=e251]
+        - generic [ref=e253]:
+          - heading "酪梨智慧有限公司" [level=3] [ref=e254]
+          - paragraph [ref=e255]: 由 AI Agent 驅動的新世代資安平台，整合 NDR、EDR 與日誌於單一平台，支援 IT／OT 跨場域偵測與應變。
+        - link "訪問網站" [ref=e257] [cursor=pointer]:
+          - /url: https://www.avocadolab.ai/zh-Hant
+          - generic [ref=e258]: 訪問網站
+          - img [ref=e259]
+    - link "查看所有企業會員" [ref=e262] [cursor=pointer]:
+      - /url: /corporate-members
+      - text: 查看所有企業會員
+      - img [ref=e263]
+  - contentinfo [ref=e265]:
+    - generic [ref=e266]:
+      - generic [ref=e267]:
+        - generic [ref=e268]:
+          - generic [ref=e269]:
+            - img "ACTC Logo" [ref=e271]
+            - generic [ref=e272]: ACTC
+          - paragraph [ref=e273]: 國際資訊安全人才培育與推廣協會
+          - paragraph [ref=e274]: 致力於推動資訊安全教育，培養專業人才
+        - generic [ref=e275]:
+          - heading "聯絡資訊" [level=3] [ref=e276]
+          - generic [ref=e277]:
+            - paragraph [ref=e278]: 信箱：actcactc2023@gmail.com
+            - paragraph [ref=e279]: 地址：105台北市松山區復興北路57號
+        - generic [ref=e280]:
+          - heading "快速連結" [level=3] [ref=e281]
+          - generic [ref=e282]:
+            - link "關於協會" [ref=e283] [cursor=pointer]:
+              - /url: about.html
+            - link "會員中心" [ref=e284] [cursor=pointer]:
+              - /url: /member
+            - link "最新消息" [ref=e285] [cursor=pointer]:
+              - /url: "#news"
+            - link "活動課程" [ref=e286] [cursor=pointer]:
+              - /url: "#events"
+            - link "企業會員" [ref=e287] [cursor=pointer]:
+              - /url: "#corporate-members"
+            - link "工作小組" [ref=e288] [cursor=pointer]:
+              - /url: workgroups.html
+            - link "證書驗證" [ref=e289] [cursor=pointer]:
+              - /url: /verify-certificate
+      - paragraph [ref=e291]: © 2026 ACTC - 國際資訊安全人才培育與推廣協會. 版權所有.

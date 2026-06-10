@@ -1,0 +1,115 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - navigation "會員專區導覽" [ref=e51]:
+    - button " 總覽" [ref=e52] [cursor=pointer]:
+      - generic [ref=e53]: 
+      - text: 總覽
+    - button " 帳號設定" [active] [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]: 
+      - text: 帳號設定
+    - button " 我的活動" [ref=e56] [cursor=pointer]:
+      - generic [ref=e57]: 
+      - text: 我的活動
+    - button " 考試與證書" [ref=e58] [cursor=pointer]:
+      - generic [ref=e59]: 
+      - text: 考試與證書
+  - main [ref=e21]:
+    - generic [ref=e60]:
+      - text:     
+      - generic [ref=e102]:
+        - generic [ref=e103]:
+          - heading " 帳號狀態" [level=2] [ref=e104]:
+            - generic [ref=e105]: 
+            - text: 帳號狀態
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - paragraph [ref=e108]: 信箱驗證
+              - paragraph [ref=e109]: 已完成 ✓
+            - generic [ref=e110]:
+              - paragraph [ref=e111]: 會員審核
+              - paragraph [ref=e112]: 已核准
+          - paragraph [ref=e113]:
+            - text: 管理後台「使用者啟用」僅代表此帳號可登入，
+            - strong [ref=e114]: 不會
+            - text: 自動變成「已核准」會員。
+          - generic [ref=e115]:
+            - link "前往管理後台" [ref=e116] [cursor=pointer]:
+              - /url: /admin
+            - button " 重新整理狀態" [ref=e117] [cursor=pointer]:
+              - generic [ref=e118]: 
+              - text: 重新整理狀態
+          - generic [ref=e119]:
+            - heading " 個人資料" [level=3] [ref=e120]:
+              - generic [ref=e121]: 
+              - text: 個人資料
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - generic [ref=e124]: Email
+                - paragraph [ref=e125]: "-"
+              - generic [ref=e126]:
+                - generic [ref=e127]: 姓名
+                - textbox "請輸入姓名" [ref=e128]
+              - generic [ref=e129]:
+                - generic [ref=e130]: 電話（選填）
+                - textbox "電話號碼" [ref=e131]
+              - generic [ref=e132] [cursor=pointer]:
+                - checkbox "接收協會通知郵件（僅限已驗證帳號之發送對象）" [checked] [ref=e133]
+                - text: 接收協會通知郵件（僅限已驗證帳號之發送對象）
+              - button "立即同步" [ref=e134] [cursor=pointer]
+        - generic [ref=e135]:
+          - heading " 工作小組" [level=3] [ref=e136]:
+            - generic [ref=e137]: 
+            - text: 工作小組
+          - paragraph [ref=e138]:
+            - text: 勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見
+            - link "工作小組介紹" [ref=e139] [cursor=pointer]:
+              - /url: /workgroups
+            - text: 。
+          - generic [ref=e140]:
+            - generic [ref=e141] [cursor=pointer]:
+              - checkbox "WG1 產學讀書會 促進技術交流與研究連結，建立學術與產業對話平台。" [ref=e142]
+              - generic [ref=e143]:
+                - text: WG1 產學讀書會
+                - generic [ref=e144]: 促進技術交流與研究連結，建立學術與產業對話平台。
+            - generic [ref=e145] [cursor=pointer]:
+              - checkbox "WG2 教育人培 發展課程體系與職能培訓機制，提升資安人才專業能力。" [ref=e146]
+              - generic [ref=e147]:
+                - text: WG2 教育人培
+                - generic [ref=e148]: 發展課程體系與職能培訓機制，提升資安人才專業能力。
+            - generic [ref=e149] [cursor=pointer]:
+              - checkbox "WG3 Gov 白帽駭客 推動政府合作專案，強化國家資安意識與防護能力。" [ref=e150]
+              - generic [ref=e151]:
+                - text: WG3 Gov 白帽駭客
+                - generic [ref=e152]: 推動政府合作專案，強化國家資安意識與防護能力。
+            - generic [ref=e153] [cursor=pointer]:
+              - checkbox "WG4 國際認證培訓 聚焦產業實務與 AI 資安應用認證培訓，推動國際化認證落地與技術創新。" [ref=e154]
+              - generic [ref=e155]:
+                - text: WG4 國際認證培訓
+                - generic [ref=e156]: 聚焦產業實務與 AI 資安應用認證培訓，推動國際化認證落地與技術創新。
+          - button "重試儲存" [ref=e157] [cursor=pointer]
+      - text:      

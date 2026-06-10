@@ -1,0 +1,110 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - heading "證書管理" [level=1] [ref=e5]
+      - link " 返回管理後台" [ref=e6] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=e7]: 
+        - text: 返回管理後台
+  - main [ref=e8]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - button "+ 手動發證" [active] [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: +
+          - text: 手動發證
+        - button " 批次上傳" [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: 
+          - text: 批次上傳
+        - link " 匯出 CSV" [ref=e16] [cursor=pointer]:
+          - /url: /api/admin/certificates/export
+          - generic [ref=e17]: 
+          - text: 匯出 CSV
+      - generic [ref=e18]:
+        - combobox [ref=e19]:
+          - option "全部類型" [selected]
+          - option "考試型"
+          - option "課程型"
+        - combobox [ref=e20]:
+          - option "全部狀態" [selected]
+          - option "有效"
+          - option "已撤銷"
+        - textbox "會員 ID（選填）" [ref=e21]
+        - button " 篩選" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: 
+          - text: 篩選
+    - generic [ref=e24]:
+      - table [ref=e25]:
+        - rowgroup [ref=e26]:
+          - row "類型 證書編號 持有人 考試/課程 狀態 發證日期 到期日 操作" [ref=e27]:
+            - columnheader "類型" [ref=e28]
+            - columnheader "證書編號" [ref=e29]
+            - columnheader "持有人" [ref=e30]
+            - columnheader "考試/課程" [ref=e31]
+            - columnheader "狀態" [ref=e32]
+            - columnheader "發證日期" [ref=e33]
+            - columnheader "到期日" [ref=e34]
+            - columnheader "操作" [ref=e35]
+        - rowgroup [ref=e36]:
+          - row "考試型 ACTC-EXAM-2026-000002 admin test0507-1 有效 2026/5/7 2028/5/7 修改到期 撤銷" [ref=e37]:
+            - cell "考試型" [ref=e38]
+            - cell "ACTC-EXAM-2026-000002" [ref=e39]
+            - cell "admin" [ref=e40]:
+              - generic [ref=e41]: admin
+            - cell "test0507-1" [ref=e42]
+            - cell "有效" [ref=e43]
+            - cell "2026/5/7" [ref=e44]
+            - cell "2028/5/7" [ref=e45]
+            - cell "修改到期 撤銷" [ref=e46]:
+              - button "修改到期" [ref=e47] [cursor=pointer]
+              - button "撤銷" [ref=e48] [cursor=pointer]
+          - row "考試型 ACTC-EXAM-2026-000001 admin ACTC 截圖測試考卷 2026 有效 2026/5/4 2028/5/4 修改到期 撤銷" [ref=e49]:
+            - cell "考試型" [ref=e50]
+            - cell "ACTC-EXAM-2026-000001" [ref=e51]
+            - cell "admin" [ref=e52]:
+              - generic [ref=e53]: admin
+            - cell "ACTC 截圖測試考卷 2026" [ref=e54]
+            - cell "有效" [ref=e55]
+            - cell "2026/5/4" [ref=e56]
+            - cell "2028/5/4" [ref=e57]
+            - cell "修改到期 撤銷" [ref=e58]:
+              - button "修改到期" [ref=e59] [cursor=pointer]
+              - button "撤銷" [ref=e60] [cursor=pointer]
+      - generic [ref=e63]: 已顯示全部
+  - generic [ref=e65]:
+    - generic [ref=e66]:
+      - heading "手動發課程型證書" [level=3] [ref=e67]
+      - button "" [ref=e68] [cursor=pointer]:
+        - generic [ref=e69]: 
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]: 課程名稱 *
+        - textbox "課程名稱" [ref=e73]
+      - generic [ref=e74]:
+        - generic [ref=e75]: 課程代碼
+        - textbox "選填" [ref=e76]
+      - generic [ref=e77]:
+        - generic [ref=e78]: 受證者姓名 *
+        - textbox "姓名（必填）" [ref=e79]
+      - generic [ref=e80]:
+        - generic [ref=e81]: 受證者 Email
+        - textbox "選填，有助於與會員帳號連結" [ref=e82]
+      - generic [ref=e83]:
+        - generic [ref=e84]: 出席日期 *
+        - textbox [ref=e85]
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - generic [ref=e88]: 完成時數
+          - spinbutton [ref=e89]
+        - generic [ref=e90]:
+          - generic [ref=e91]: 有效年限
+          - spinbutton [ref=e92]
+      - generic [ref=e93]:
+        - generic [ref=e94]: 講師
+        - textbox "選填" [ref=e95]
+      - generic [ref=e96]:
+        - generic [ref=e97]: 備註
+        - textbox "選填" [ref=e98]
+    - generic [ref=e99]:
+      - button "取消" [ref=e100] [cursor=pointer]
+      - button "發證" [ref=e101] [cursor=pointer]:  發證
+  - text:      

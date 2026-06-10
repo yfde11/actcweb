@@ -1,0 +1,60 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - navigation "會員專區導覽" [ref=e51]:
+    - button " 總覽" [ref=e52] [cursor=pointer]:
+      - generic [ref=e53]: 
+      - text: 總覽
+    - button " 帳號設定" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]: 
+      - text: 帳號設定
+    - button " 我的活動" [ref=e56] [cursor=pointer]:
+      - generic [ref=e57]: 
+      - text: 我的活動
+    - button " 考試與證書" [active] [ref=e58] [cursor=pointer]:
+      - generic [ref=e59]: 
+      - text: 考試與證書
+  - main [ref=e21]:
+    - generic [ref=e60]:
+      - text:            
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - heading " 考試與證書" [level=2] [ref=e170]:
+            - generic [ref=e171]: 
+            - text: 考試與證書
+          - paragraph [ref=e172]: 參加考試、查看成績與下載證書
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - paragraph [ref=e175]: 我的證書
+            - paragraph [ref=e176]: 查看及下載您的考試合格證書
+          - button " 查看證書" [ref=e177] [cursor=pointer]:
+            - generic [ref=e178]: 
+            - text: 查看證書
+        - generic [ref=e179]:
+          - heading "可報考考試" [level=3] [ref=e180]
+          - paragraph [ref=e181]: 目前沒有可報考的考試。
+      - text: 

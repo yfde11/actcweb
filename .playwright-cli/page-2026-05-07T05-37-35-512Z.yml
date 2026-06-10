@@ -1,0 +1,36 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "← 返回後台" [ref=e4] [cursor=pointer]:
+        - /url: /admin
+      - generic [ref=e5]: "|"
+      - heading "考試授權管理" [level=1] [ref=e6]
+    - button "手動授予授權" [ref=e8] [cursor=pointer]
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]: 考試 ID
+      - textbox "貼上考試 ObjectId" [ref=e12]
+    - generic [ref=e13]:
+      - generic [ref=e14]: 使用者 ID
+      - textbox "貼上使用者 ObjectId" [ref=e15]
+    - generic [ref=e16]:
+      - generic [ref=e17]: 狀態
+      - combobox [ref=e18]:
+        - option "全部" [selected]
+        - option "有效"
+        - option "已撤銷"
+    - button "篩選" [ref=e19] [cursor=pointer]
+    - button "重置" [ref=e20] [cursor=pointer]
+  - table [ref=e23]:
+    - rowgroup [ref=e24]:
+      - row "使用者 考試 授權來源 到期日 狀態 備註 操作" [ref=e25]:
+        - columnheader "使用者" [ref=e26]
+        - columnheader "考試" [ref=e27]
+        - columnheader "授權來源" [ref=e28]
+        - columnheader "到期日" [ref=e29]
+        - columnheader "狀態" [ref=e30]
+        - columnheader "備註" [ref=e31]
+        - columnheader "操作" [ref=e32]
+    - rowgroup [ref=e33]:
+      - row "載入中…" [ref=e34]:
+        - cell "載入中…" [ref=e35]

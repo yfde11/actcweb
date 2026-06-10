@@ -1,0 +1,175 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - heading "證書管理" [level=1] [ref=e5]
+      - link " 返回管理後台" [ref=e6] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=e7]: 
+        - text: 返回管理後台
+  - main [ref=e8]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - button "+ 手動發證" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: +
+          - text: 手動發證
+        - button " 批次上傳" [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: 
+          - text: 批次上傳
+        - link " 匯出 CSV" [ref=e16] [cursor=pointer]:
+          - /url: /api/admin/certificates/export
+          - generic [ref=e17]: 
+          - text: 匯出 CSV
+      - generic [ref=e18]:
+        - combobox [ref=e19]:
+          - option "全部類型" [selected]
+          - option "考試型"
+          - option "課程型"
+        - combobox [ref=e20]:
+          - option "全部狀態" [selected]
+          - option "有效"
+          - option "已撤銷"
+        - textbox "會員 ID（選填）" [ref=e21]
+        - button " 篩選" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: 
+          - text: 篩選
+    - generic [ref=e24]:
+      - table [ref=e25]:
+        - rowgroup [ref=e26]:
+          - row "類型 證書編號 持有人 考試/課程 狀態 發證日期 到期日 操作" [ref=e27]:
+            - columnheader "類型" [ref=e28]
+            - columnheader "證書編號" [ref=e29]
+            - columnheader "持有人" [ref=e30]
+            - columnheader "考試/課程" [ref=e31]
+            - columnheader "狀態" [ref=e32]
+            - columnheader "發證日期" [ref=e33]
+            - columnheader "到期日" [ref=e34]
+            - columnheader "操作" [ref=e35]
+        - rowgroup [ref=e36]:
+          - row "課程型 ACTC-COURSE-2026-000011 測試人員 測試課程 有效 2026/5/15 永久 修改到期 撤銷" [ref=e37]:
+            - cell "課程型" [ref=e38]
+            - cell "ACTC-COURSE-2026-000011" [ref=e39]
+            - cell "測試人員" [ref=e40]:
+              - generic [ref=e41]: 測試人員
+            - cell "測試課程" [ref=e42]
+            - cell "有效" [ref=e43]
+            - cell "2026/5/15" [ref=e44]
+            - cell "永久" [ref=e45]
+            - cell "修改到期 撤銷" [ref=e46]:
+              - button "修改到期" [ref=e47] [cursor=pointer]
+              - button "撤銷" [ref=e48] [cursor=pointer]
+          - row "課後作業審查 ACTC-COURSE-2026-000010 MSX test@actc.com helloworld 有效 2026/5/15 永久 修改到期 撤銷" [ref=e49]:
+            - cell "課後作業審查" [ref=e50]
+            - cell "ACTC-COURSE-2026-000010" [ref=e51]
+            - cell "MSX test@actc.com" [ref=e52]:
+              - generic [ref=e53]: MSX
+              - generic [ref=e54]: test@actc.com
+            - cell "helloworld" [ref=e55]
+            - cell "有效" [ref=e56]
+            - cell "2026/5/15" [ref=e57]
+            - cell "永久" [ref=e58]
+            - cell "修改到期 撤銷" [ref=e59]:
+              - button "修改到期" [ref=e60] [cursor=pointer]
+              - button "撤銷" [ref=e61] [cursor=pointer]
+          - row "課後作業審查 ACTC-COURSE-2026-000009 ms helloworld 有效 2026/5/15 永久 修改到期 撤銷" [ref=e62]:
+            - cell "課後作業審查" [ref=e63]
+            - cell "ACTC-COURSE-2026-000009" [ref=e64]
+            - cell "ms" [ref=e65]:
+              - generic [ref=e66]: ms
+            - cell "helloworld" [ref=e67]
+            - cell "有效" [ref=e68]
+            - cell "2026/5/15" [ref=e69]
+            - cell "永久" [ref=e70]
+            - cell "修改到期 撤銷" [ref=e71]:
+              - button "修改到期" [ref=e72] [cursor=pointer]
+              - button "撤銷" [ref=e73] [cursor=pointer]
+          - row "課程型 ACTC-COURSE-2026-000008 777888 test@actc.com hello 有效 2026/5/15 永久 修改到期 撤銷" [ref=e74]:
+            - cell "課程型" [ref=e75]
+            - cell "ACTC-COURSE-2026-000008" [ref=e76]
+            - cell "777888 test@actc.com" [ref=e77]:
+              - generic [ref=e78]: "777888"
+              - generic [ref=e79]: test@actc.com
+            - cell "hello" [ref=e80]
+            - cell "有效" [ref=e81]
+            - cell "2026/5/15" [ref=e82]
+            - cell "永久" [ref=e83]
+            - cell "修改到期 撤銷" [ref=e84]:
+              - button "修改到期" [ref=e85] [cursor=pointer]
+              - button "撤銷" [ref=e86] [cursor=pointer]
+          - row "考試型 ACTC-EXAM-2026-000003 ms test@actc.com 0507-2 有效 2026/5/7 2028/5/7 修改到期 撤銷" [ref=e87]:
+            - cell "考試型" [ref=e88]
+            - cell "ACTC-EXAM-2026-000003" [ref=e89]
+            - cell "ms test@actc.com" [ref=e90]:
+              - generic [ref=e91]: ms
+              - generic [ref=e92]: test@actc.com
+            - cell "0507-2" [ref=e93]
+            - cell "有效" [ref=e94]
+            - cell "2026/5/7" [ref=e95]
+            - cell "2028/5/7" [ref=e96]
+            - cell "修改到期 撤銷" [ref=e97]:
+              - button "修改到期" [ref=e98] [cursor=pointer]
+              - button "撤銷" [ref=e99] [cursor=pointer]
+          - row "課程型 ACTC-COURSE-2026-000007 ＭＳ test@actc.com ＨＥＸ 有效 2026/5/7 永久 修改到期 撤銷" [ref=e100]:
+            - cell "課程型" [ref=e101]
+            - cell "ACTC-COURSE-2026-000007" [ref=e102]
+            - cell "ＭＳ test@actc.com" [ref=e103]:
+              - generic [ref=e104]: ＭＳ
+              - generic [ref=e105]: test@actc.com
+            - cell "ＨＥＸ" [ref=e106]
+            - cell "有效" [ref=e107]
+            - cell "2026/5/7" [ref=e108]
+            - cell "永久" [ref=e109]
+            - cell "修改到期 撤銷" [ref=e110]:
+              - button "修改到期" [ref=e111] [cursor=pointer]
+              - button "撤銷" [ref=e112] [cursor=pointer]
+          - row "課程型 ACTC-COURSE-2026-000006 陳大文 chen@test.com 資安課程2 有效 2026/5/7 永久 修改到期 撤銷" [ref=e113]:
+            - cell "課程型" [ref=e114]
+            - cell "ACTC-COURSE-2026-000006" [ref=e115]
+            - cell "陳大文 chen@test.com" [ref=e116]:
+              - generic [ref=e117]: 陳大文
+              - generic [ref=e118]: chen@test.com
+            - cell "資安課程2" [ref=e119]
+            - cell "有效" [ref=e120]
+            - cell "2026/5/7" [ref=e121]
+            - cell "永久" [ref=e122]
+            - cell "修改到期 撤銷" [ref=e123]:
+              - button "修改到期" [ref=e124] [cursor=pointer]
+              - button "撤銷" [ref=e125] [cursor=pointer]
+          - row "課程型 ACTC-COURSE-2026-000001 王小明 test@example.com 資安測試課程 有效 2026/5/7 永久 修改到期 撤銷" [ref=e126]:
+            - cell "課程型" [ref=e127]
+            - cell "ACTC-COURSE-2026-000001" [ref=e128]
+            - cell "王小明 test@example.com" [ref=e129]:
+              - generic [ref=e130]: 王小明
+              - generic [ref=e131]: test@example.com
+            - cell "資安測試課程" [ref=e132]
+            - cell "有效" [ref=e133]
+            - cell "2026/5/7" [ref=e134]
+            - cell "永久" [ref=e135]
+            - cell "修改到期 撤銷" [ref=e136]:
+              - button "修改到期" [ref=e137] [cursor=pointer]
+              - button "撤銷" [ref=e138] [cursor=pointer]
+          - row "考試型 ACTC-EXAM-2026-000002 admin test0507-1 有效 2026/5/7 2028/5/7 修改到期 撤銷" [ref=e139]:
+            - cell "考試型" [ref=e140]
+            - cell "ACTC-EXAM-2026-000002" [ref=e141]
+            - cell "admin" [ref=e142]:
+              - generic [ref=e143]: admin
+            - cell "test0507-1" [ref=e144]
+            - cell "有效" [ref=e145]
+            - cell "2026/5/7" [ref=e146]
+            - cell "2028/5/7" [ref=e147]
+            - cell "修改到期 撤銷" [ref=e148]:
+              - button "修改到期" [ref=e149] [cursor=pointer]
+              - button "撤銷" [ref=e150] [cursor=pointer]
+          - row "考試型 ACTC-EXAM-2026-000001 admin ACTC 截圖測試考卷 2026 有效 2026/5/4 2028/5/4 修改到期 撤銷" [ref=e151]:
+            - cell "考試型" [ref=e152]
+            - cell "ACTC-EXAM-2026-000001" [ref=e153]
+            - cell "admin" [ref=e154]:
+              - generic [ref=e155]: admin
+            - cell "ACTC 截圖測試考卷 2026" [ref=e156]
+            - cell "有效" [ref=e157]
+            - cell "2026/5/4" [ref=e158]
+            - cell "2028/5/4" [ref=e159]
+            - cell "修改到期 撤銷" [ref=e160]:
+              - button "修改到期" [ref=e161] [cursor=pointer]
+              - button "撤銷" [ref=e162] [cursor=pointer]
+      - generic [ref=e164]: 已顯示全部
+  - text:        

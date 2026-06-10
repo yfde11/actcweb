@@ -1,0 +1,228 @@
+- generic [ref=e1]:
+  - navigation "全站與管理後台導覽" [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - generic "管理後台資訊列" [ref=e21]:
+        - heading "ACTC 管理後台" [level=1] [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: 歡迎，admin（admin）
+          - button "登出" [ref=e25] [cursor=pointer]
+      - text:  
+  - generic [ref=e27]:
+    - complementary [ref=e28]:
+      - navigation [ref=e29]:
+        - generic [ref=e31] [cursor=pointer]: 會員管理
+        - generic [ref=e33] [cursor=pointer]: 最新消息管理
+        - generic [ref=e35] [cursor=pointer]: 活動課程管理
+        - generic [ref=e37] [cursor=pointer]: 企業會員管理
+        - generic [ref=e39] [cursor=pointer]: 工作小組
+        - generic [ref=e41] [cursor=pointer]: 考試管理
+        - generic [ref=e43] [cursor=pointer]: 題庫管理
+        - generic [ref=e45] [cursor=pointer]: 變更我的密碼
+    - main [ref=e46]:
+      - generic [ref=e462]:
+        - generic [ref=e464]:
+          - generic [ref=e465]:
+            - heading "考試管理" [level=2] [ref=e466]
+            - paragraph [ref=e467]: 管理考卷、題目、作答紀錄與證書
+          - button "新增考卷" [ref=e469] [cursor=pointer]:
+            - img [ref=e470]
+            - text: 新增考卷
+        - table [ref=e473]:
+          - rowgroup [ref=e474]:
+            - row "標題 狀態 題數 通過分數 操作" [ref=e475]:
+              - columnheader "標題" [ref=e476]
+              - columnheader "狀態" [ref=e477]
+              - columnheader "題數" [ref=e478]
+              - columnheader "通過分數" [ref=e479]
+              - columnheader "操作" [ref=e480]
+          - rowgroup [ref=e481]:
+            - row "ACTC 截圖測試考卷 2026 active 0 0% 預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e482]:
+              - cell "ACTC 截圖測試考卷 2026" [ref=e483]
+              - cell "active" [ref=e484]:
+                - generic [ref=e485]: active
+              - cell "0" [ref=e486]
+              - cell "0%" [ref=e487]
+              - cell "預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e488]:
+                - button "預覽" [ref=e489] [cursor=pointer]
+                - button "編輯" [ref=e490] [cursor=pointer]
+                - button "題目" [ref=e491] [cursor=pointer]
+                - button "作答" [ref=e492] [cursor=pointer]
+                - button "統計" [active] [ref=e493] [cursor=pointer]
+                - button "匯出CSV" [ref=e494] [cursor=pointer]
+                - button "證書" [ref=e495] [cursor=pointer]
+                - button "刪除" [ref=e496] [cursor=pointer]
+            - row "ACTC 截圖測試考卷 2026 draft 0 0% 預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e497]:
+              - cell "ACTC 截圖測試考卷 2026" [ref=e498]
+              - cell "draft" [ref=e499]:
+                - generic [ref=e500]: draft
+              - cell "0" [ref=e501]
+              - cell "0%" [ref=e502]
+              - cell "預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e503]:
+                - button "預覽" [ref=e504] [cursor=pointer]
+                - button "編輯" [ref=e505] [cursor=pointer]
+                - button "題目" [ref=e506] [cursor=pointer]
+                - button "作答" [ref=e507] [cursor=pointer]
+                - button "統計" [ref=e508] [cursor=pointer]
+                - button "匯出CSV" [ref=e509] [cursor=pointer]
+                - button "證書" [ref=e510] [cursor=pointer]
+                - button "刪除" [ref=e511] [cursor=pointer]
+            - row "考試測試 active 1 70% 預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e512]:
+              - cell "考試測試" [ref=e513]
+              - cell "active" [ref=e514]:
+                - generic [ref=e515]: active
+              - cell "1" [ref=e516]
+              - cell "70%" [ref=e517]
+              - cell "預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e518]:
+                - button "預覽" [ref=e519] [cursor=pointer]
+                - button "編輯" [ref=e520] [cursor=pointer]
+                - button "題目" [ref=e521] [cursor=pointer]
+                - button "作答" [ref=e522] [cursor=pointer]
+                - button "統計" [ref=e523] [cursor=pointer]
+                - button "匯出CSV" [ref=e524] [cursor=pointer]
+                - button "證書" [ref=e525] [cursor=pointer]
+                - button "刪除" [ref=e526] [cursor=pointer]
+            - row "Concurrency Test Exam active 0 60% 預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e527]:
+              - cell "Concurrency Test Exam" [ref=e528]
+              - cell "active" [ref=e529]:
+                - generic [ref=e530]: active
+              - cell "0" [ref=e531]
+              - cell "60%" [ref=e532]
+              - cell "預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e533]:
+                - button "預覽" [ref=e534] [cursor=pointer]
+                - button "編輯" [ref=e535] [cursor=pointer]
+                - button "題目" [ref=e536] [cursor=pointer]
+                - button "作答" [ref=e537] [cursor=pointer]
+                - button "統計" [ref=e538] [cursor=pointer]
+                - button "匯出CSV" [ref=e539] [cursor=pointer]
+                - button "證書" [ref=e540] [cursor=pointer]
+                - button "刪除" [ref=e541] [cursor=pointer]
+            - row "E2E Test Exam mor5i47b archived 3 60% 預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e542]:
+              - cell "E2E Test Exam mor5i47b" [ref=e543]
+              - cell "archived" [ref=e544]:
+                - generic [ref=e545]: archived
+              - cell "3" [ref=e546]
+              - cell "60%" [ref=e547]
+              - cell "預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e548]:
+                - button "預覽" [ref=e549] [cursor=pointer]
+                - button "編輯" [ref=e550] [cursor=pointer]
+                - button "題目" [ref=e551] [cursor=pointer]
+                - button "作答" [ref=e552] [cursor=pointer]
+                - button "統計" [ref=e553] [cursor=pointer]
+                - button "匯出CSV" [ref=e554] [cursor=pointer]
+                - button "證書" [ref=e555] [cursor=pointer]
+                - button "刪除" [ref=e556] [cursor=pointer]
+            - row "E2E Test Exam mor5gpu1 archived 3 60% 預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e557]:
+              - cell "E2E Test Exam mor5gpu1" [ref=e558]
+              - cell "archived" [ref=e559]:
+                - generic [ref=e560]: archived
+              - cell "3" [ref=e561]
+              - cell "60%" [ref=e562]
+              - cell "預覽 編輯 題目 作答 統計 匯出CSV 證書 刪除" [ref=e563]:
+                - button "預覽" [ref=e564] [cursor=pointer]
+                - button "編輯" [ref=e565] [cursor=pointer]
+                - button "題目" [ref=e566] [cursor=pointer]
+                - button "作答" [ref=e567] [cursor=pointer]
+                - button "統計" [ref=e568] [cursor=pointer]
+                - button "匯出CSV" [ref=e569] [cursor=pointer]
+                - button "證書" [ref=e570] [cursor=pointer]
+                - button "刪除" [ref=e571] [cursor=pointer]
+        - generic [ref=e573]:
+          - generic [ref=e574]:
+            - heading "考試統計" [level=3] [ref=e575]
+            - button [ref=e576] [cursor=pointer]:
+              - img [ref=e577]
+          - generic [ref=e580]:
+            - generic [ref=e581]:
+              - generic [ref=e582]:
+                - paragraph [ref=e583]: 總嘗試次數
+                - paragraph [ref=e584]: "1"
+              - generic [ref=e585]:
+                - paragraph [ref=e586]: 通過次數
+                - paragraph [ref=e587]: "1"
+              - generic [ref=e588]:
+                - paragraph [ref=e589]: 通過率
+                - paragraph [ref=e590]: 100.0%
+              - generic [ref=e591]:
+                - paragraph [ref=e592]: 平均分數
+                - paragraph [ref=e593]: "100.0"
+            - heading "分數分佈" [level=4] [ref=e595]
+            - generic [ref=e597]:
+              - heading "各題正確率" [level=4] [ref=e598]
+              - table [ref=e600]:
+                - rowgroup [ref=e601]:
+                  - row "題號 題型 難度 總作答數 正確次數 正確率" [ref=e602]:
+                    - columnheader "題號" [ref=e603]
+                    - columnheader "題型" [ref=e604]
+                    - columnheader "難度" [ref=e605]
+                    - columnheader "總作答數" [ref=e606]
+                    - columnheader "正確次數" [ref=e607]
+                    - columnheader "正確率" [ref=e608]
+                - rowgroup [ref=e609]:
+                  - row "7 選擇題 medium 0 0 0.0%" [ref=e610]:
+                    - cell "7" [ref=e611]
+                    - cell "選擇題" [ref=e612]
+                    - cell "medium" [ref=e613]:
+                      - generic [ref=e614]: medium
+                    - cell "0" [ref=e615]
+                    - cell "0" [ref=e616]
+                    - cell "0.0%" [ref=e617]:
+                      - generic [ref=e618]: 0.0%
+                  - row "8 選擇題 medium 1 1 100.0%" [ref=e619]:
+                    - cell "8" [ref=e620]
+                    - cell "選擇題" [ref=e621]
+                    - cell "medium" [ref=e622]:
+                      - generic [ref=e623]: medium
+                    - cell "1" [ref=e624]
+                    - cell "1" [ref=e625]
+                    - cell "100.0%" [ref=e626]:
+                      - generic [ref=e627]: 100.0%
+                  - row "9 選擇題 medium 0 0 0.0%" [ref=e628]:
+                    - cell "9" [ref=e629]
+                    - cell "選擇題" [ref=e630]
+                    - cell "medium" [ref=e631]:
+                      - generic [ref=e632]: medium
+                    - cell "0" [ref=e633]
+                    - cell "0" [ref=e634]
+                    - cell "0.0%" [ref=e635]:
+                      - generic [ref=e636]: 0.0%
+                  - row "10 選擇題 medium 1 1 100.0%" [ref=e637]:
+                    - cell "10" [ref=e638]
+                    - cell "選擇題" [ref=e639]
+                    - cell "medium" [ref=e640]:
+                      - generic [ref=e641]: medium
+                    - cell "1" [ref=e642]
+                    - cell "1" [ref=e643]
+                    - cell "100.0%" [ref=e644]:
+                      - generic [ref=e645]: 100.0%
+                  - row "11 選擇題 medium 1 1 100.0%" [ref=e646]:
+                    - cell "11" [ref=e647]
+                    - cell "選擇題" [ref=e648]
+                    - cell "medium" [ref=e649]:
+                      - generic [ref=e650]: medium
+                    - cell "1" [ref=e651]
+                    - cell "1" [ref=e652]
+                    - cell "100.0%" [ref=e653]:
+                      - generic [ref=e654]: 100.0%

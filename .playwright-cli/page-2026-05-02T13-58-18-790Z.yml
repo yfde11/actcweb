@@ -1,0 +1,123 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: "#home"
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: about.html
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: "#news"
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: "#events"
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: "#corporate-members"
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: workgroups.html
+          - generic [ref=e16]:
+            - generic [ref=e17]: 請先登入或註冊
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - generic [ref=e22]:
+    - img "ACTC Logo" [ref=e25]
+    - heading "ACTC" [level=1] [ref=e26]
+    - heading "國際資訊安全人才培育與推廣協會" [level=2] [ref=e27]
+    - paragraph [ref=e28]: 致力於推動資訊安全教育，培養專業人才，建立安全的數位環境
+  - generic [ref=e30]:
+    - heading "最新消息" [level=2] [ref=e32]
+    - generic [ref=e34]:
+      - button "全部消息" [ref=e35] [cursor=pointer]
+      - button "聯盟動態" [ref=e36] [cursor=pointer]
+      - button "活動預告" [ref=e37] [cursor=pointer]
+      - button "技術分享" [ref=e38] [cursor=pointer]
+      - button "一般消息" [ref=e39] [cursor=pointer]
+    - generic [ref=e41]:
+      - img [ref=e42]
+      - text: 載入中...
+  - generic [ref=e46]:
+    - generic [ref=e47]:
+      - heading "活動課程" [level=2] [ref=e48]
+      - paragraph [ref=e50]: 專業的資安培訓課程、工作坊和研討會，助您提升資訊安全技能
+    - generic [ref=e51]:
+      - heading "活動報名說明" [level=3] [ref=e52]
+      - generic [ref=e53]:
+        - paragraph [ref=e54]: 1. 報名前請先登入會員並完成信箱驗證。
+        - paragraph [ref=e55]: 2. 未登入點「立即報名」會先導向會員登入。
+        - paragraph [ref=e56]: 3. 登入後會回到首頁並確認要報名的活動。
+        - paragraph [ref=e57]: 4. 已報名活動會顯示「活動管理」可直達紀錄。
+        - paragraph [ref=e58]: 5. 付費活動請至會員專區補上後五碼/繳費憑證。
+        - paragraph [ref=e59]: 6. 取消後可再次報名，名額依當下狀態重新計算。
+      - paragraph [ref=e60]: 小提醒：若帳號尚未填寫電話，報名時會提醒先到會員專區補上，以利活動聯繫。
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]: 搜尋活動課程
+          - generic [ref=e65]:
+            - textbox "搜尋標題、描述、講師..." [ref=e66]
+            - img [ref=e68]
+        - generic [ref=e70]:
+          - generic [ref=e71]: 活動類型
+          - combobox [ref=e72]:
+            - option "全部類型" [selected]
+            - option "課程"
+            - option "工作坊"
+            - option "聚會"
+            - option "研討會"
+            - option "培訓"
+            - option "其他"
+        - generic [ref=e73]:
+          - generic [ref=e74]: 排序方式
+          - combobox [ref=e75]:
+            - option "日期 (遠到近)" [selected]
+            - option "日期 (近到遠)"
+            - option "標題 (A-Z)"
+            - option "標題 (Z-A)"
+      - generic [ref=e77]: 熱門標籤
+    - generic [ref=e79]:
+      - img [ref=e80]
+      - text: 載入活動課程中...
+  - generic [ref=e84]:
+    - generic [ref=e85]:
+      - heading "企業會員專區" [level=2] [ref=e86]
+      - paragraph [ref=e88]: 感謝企業夥伴的支持與參與，共同推動資訊安全人才培育發展
+    - paragraph [ref=e91]: 載入企業會員資料中...
+    - link "查看所有企業會員" [ref=e93] [cursor=pointer]:
+      - /url: /corporate-members
+      - text: 查看所有企業會員
+      - img [ref=e94]
+  - contentinfo [ref=e96]:
+    - generic [ref=e97]:
+      - generic [ref=e98]:
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - img "ACTC Logo" [ref=e102]
+            - generic [ref=e103]: ACTC
+          - paragraph [ref=e104]: 國際資訊安全人才培育與推廣協會
+          - paragraph [ref=e105]: 致力於推動資訊安全教育，培養專業人才
+        - generic [ref=e106]:
+          - heading "聯絡資訊" [level=3] [ref=e107]
+          - generic [ref=e108]:
+            - paragraph [ref=e109]: 信箱：actcactc2023@gmail.com
+            - paragraph [ref=e110]: 地址：105台北市松山區復興北路57號
+        - generic [ref=e111]:
+          - heading "快速連結" [level=3] [ref=e112]
+          - generic [ref=e113]:
+            - link "關於協會" [ref=e114] [cursor=pointer]:
+              - /url: about.html
+            - link "會員中心" [ref=e115] [cursor=pointer]:
+              - /url: /member
+            - link "最新消息" [ref=e116] [cursor=pointer]:
+              - /url: "#news"
+            - link "活動課程" [ref=e117] [cursor=pointer]:
+              - /url: "#events"
+            - link "企業會員" [ref=e118] [cursor=pointer]:
+              - /url: "#corporate-members"
+            - link "工作小組" [ref=e119] [cursor=pointer]:
+              - /url: workgroups.html
+      - paragraph [ref=e121]: © 2026 ACTC - 國際資訊安全人才培育與推廣協會. 版權所有.

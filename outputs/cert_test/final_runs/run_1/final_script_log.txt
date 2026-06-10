@@ -1,0 +1,2 @@
+step 1 action: Starting Playwright Firefox browser and setting up API mocks
+step 2 action: Navigating to member login page

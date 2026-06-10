@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - heading "證書管理" [level=1] [ref=e5]
+      - link " 返回管理後台" [ref=e6] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=e7]: 
+        - text: 返回管理後台
+  - main [ref=e8]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - button "+ 手動發證" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: +
+          - text: 手動發證
+        - button " 批次上傳" [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: 
+          - text: 批次上傳
+        - link " 匯出 CSV" [ref=e16] [cursor=pointer]:
+          - /url: /api/admin/certificates/export
+          - generic [ref=e17]: 
+          - text: 匯出 CSV
+      - generic [ref=e18]:
+        - combobox [ref=e19]:
+          - option "全部類型" [selected]
+          - option "考試型"
+          - option "課程型"
+        - combobox [ref=e20]:
+          - option "全部狀態" [selected]
+          - option "有效"
+          - option "已撤銷"
+        - textbox "會員 ID（選填）" [ref=e21]
+        - button " 篩選" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: 
+          - text: 篩選
+    - table [ref=e25]:
+      - rowgroup [ref=e26]:
+        - row "類型 證書編號 持有人 考試/課程 狀態 發證日期 到期日 操作" [ref=e27]:
+          - columnheader "類型" [ref=e28]
+          - columnheader "證書編號" [ref=e29]
+          - columnheader "持有人" [ref=e30]
+          - columnheader "考試/課程" [ref=e31]
+          - columnheader "狀態" [ref=e32]
+          - columnheader "發證日期" [ref=e33]
+          - columnheader "到期日" [ref=e34]
+          - columnheader "操作" [ref=e35]
+      - rowgroup [ref=e36]:
+        - row "載入中…" [ref=e37]:
+          - cell "載入中…" [ref=e38]
+  - text:              

@@ -38,6 +38,14 @@ async function verifyCertificate(certificateNumber) {
         return { ok: false, statusCode: 403, code: 'CERTIFICATE_EXPIRED', message: '證書已過期' };
     }
 
+    if (!certificate.user && certificate.recipientEmail) {
+        const linkedUser = await User.findOne({ email: certificate.recipientEmail.toLowerCase() }).select('username fullName englishName');
+        if (linkedUser) {
+            certificate.user = linkedUser;
+            Certificate.updateOne({ _id: certificate._id }, { $set: { user: linkedUser._id } }).catch(err => console.error('Link user to certificate in verify error:', err));
+        }
+    }
+
     return {
         ok: true,
         data: {
@@ -306,7 +314,14 @@ async function generateCertificatePDF(certificateId, res) {
         throw new Error('CERTIFICATE_REVOKED');
     }
 
-    const user = certificate.user;
+    let user = certificate.user;
+    if (!user && certificate.recipientEmail) {
+        user = await User.findOne({ email: certificate.recipientEmail.toLowerCase() });
+        if (user) {
+            certificate.user = user._id;
+            Certificate.updateOne({ _id: certificate._id }, { $set: { user: user._id } }).catch(err => console.error('Link user to certificate error:', err));
+        }
+    }
     const isCourse = certificate.certType === 'course';
 
     // Recipient name: prefer certificate.recipientName, fallback to user fields

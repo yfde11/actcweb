@@ -1,0 +1,222 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 請先登入或註冊
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - main [ref=e21]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - heading "重設密碼" [level=2] [ref=e25]
+        - paragraph [ref=e26]: 請輸入新密碼（至少 6 字元），並再確認一次。
+        - generic [ref=e27]:
+          - textbox "新密碼" [ref=e28]
+          - textbox "確認新密碼" [ref=e29]
+          - status [ref=e30]
+          - button [ref=e31] [cursor=pointer]
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - heading "註冊" [level=2] [ref=e34]
+          - generic [ref=e35]:
+            - textbox "使用者名稱（至少3字）" [ref=e36]
+            - textbox "Email" [ref=e37]
+            - textbox "密碼（至少6字）" [ref=e38]
+            - textbox "姓名（選填）" [ref=e39]
+            - status [ref=e40]
+            - button [ref=e41] [cursor=pointer]
+        - generic [ref=e42]:
+          - heading "登入" [level=2] [ref=e43]
+          - generic [ref=e44]:
+            - textbox "使用者名稱或 Email" [ref=e45]
+            - textbox "密碼" [ref=e46]
+            - status [ref=e47]
+            - button [ref=e48] [cursor=pointer]
+          - paragraph [ref=e49]: 忘記密碼？
+          - paragraph [ref=e50]: 輸入註冊時已驗證的 Email，我們將寄送重設連結（1 小時內有效）。
+          - generic [ref=e51]:
+            - textbox "Email" [ref=e52]
+            - status [ref=e53]
+            - button [ref=e54] [cursor=pointer]
+          - paragraph [ref=e55]: 未收到驗證信？
+          - generic [ref=e56]:
+            - textbox "註冊時的 Email" [ref=e57]
+            - button "重寄" [ref=e58] [cursor=pointer]
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - heading "帳號狀態" [level=2] [ref=e61]
+        - paragraph [ref=e62]: 信箱驗證：
+        - paragraph [ref=e63]: 會員審核：
+        - paragraph [ref=e64]:
+          - text: 管理後台「使用者啟用」僅代表此帳號可登入，
+          - strong [ref=e65]: 不會
+          - text: 自動變成「已核准」會員。 最新消息與活動內容由管理員於管理後台維護。
+        - link "前往管理後台" [ref=e66] [cursor=pointer]:
+          - /url: /admin
+        - button "重新整理狀態" [ref=e67] [cursor=pointer]
+        - text: （管理員已核准後若畫面未更新，請按此或重新登入）
+      - generic [ref=e68]:
+        - heading "個人資料" [level=2] [ref=e69]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - text: Email
+            - paragraph
+          - textbox "姓名" [ref=e72]
+          - textbox "電話（選填）" [ref=e73]
+          - generic [ref=e74]:
+            - checkbox "接收協會通知郵件（僅限已驗證帳號之發送對象）" [ref=e75]
+            - text: 接收協會通知郵件（僅限已驗證帳號之發送對象）
+          - status [ref=e76]
+          - button [ref=e77] [cursor=pointer]
+      - generic [ref=e78]:
+        - heading "我的活動中心" [level=2] [ref=e79]
+        - paragraph [ref=e80]: 顯示您的活動報名、付款、出席與教材/問卷操作。MVP 付款為人工審核流程。
+        - paragraph [ref=e81]: 載入中…
+        - paragraph [ref=e82]: 尚無報名紀錄。
+        - table [ref=e84]:
+          - rowgroup [ref=e85]:
+            - row "活動 時間 報名狀態 付款狀態 出席狀態 操作" [ref=e86]:
+              - columnheader "活動" [ref=e87]
+              - columnheader "時間" [ref=e88]
+              - columnheader "報名狀態" [ref=e89]
+              - columnheader "付款狀態" [ref=e90]
+              - columnheader "出席狀態" [ref=e91]
+              - columnheader "操作" [ref=e92]
+          - rowgroup
+        - paragraph [ref=e93]: 目前沒有進行中的報名紀錄。
+        - generic [ref=e94]:
+          - heading "已取消" [level=3] [ref=e95]
+          - table [ref=e97]:
+            - rowgroup [ref=e98]:
+              - row "活動 時間 報名狀態" [ref=e99]:
+                - columnheader "活動" [ref=e100]
+                - columnheader "時間" [ref=e101]
+                - columnheader "報名狀態" [ref=e102]
+            - rowgroup
+        - paragraph [ref=e103]
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - heading "考試專區" [level=2] [ref=e106]
+          - button "我的證書" [ref=e107] [cursor=pointer]
+        - paragraph [ref=e108]: 參加考試、查看成績與證書
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - heading "我的證書" [level=3] [ref=e112]
+            - button [ref=e113] [cursor=pointer]:
+              - img [ref=e114]
+          - generic [ref=e116]:
+            - paragraph [ref=e117]: 載入中…
+            - paragraph [ref=e118]: 尚無證書。
+        - generic [ref=e119]:
+          - heading "可報考考試" [level=3] [ref=e120]
+          - alert [ref=e121]
+          - paragraph [ref=e122]: 載入中…
+          - paragraph [ref=e123]: 目前沒有可報考的考試。
+        - generic [ref=e125]:
+          - generic [ref=e126]:
+            - heading "作答詳情" [level=3] [ref=e127]
+            - button "關閉" [ref=e128] [cursor=pointer]:
+              - img [ref=e129]
+          - button "關閉" [ref=e132] [cursor=pointer]
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - heading "考試進行中" [level=3] [ref=e135]
+            - button "返回列表" [ref=e136] [cursor=pointer]
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - paragraph
+              - paragraph [ref=e140]: "剩餘時間:"
+            - generic [ref=e141]: ⚠️ 剩餘時間不足5分鐘！
+            - button [ref=e142] [cursor=pointer]
+        - generic [ref=e143]:
+          - heading [level=3]
+          - paragraph [ref=e144]:
+            - text: "得分:"
+            - text: "分 (通過分數:"
+            - text: )
+          - generic [ref=e145]:
+            - button "關閉" [ref=e146] [cursor=pointer]
+            - button "下載證書" [ref=e147] [cursor=pointer]
+      - generic [ref=e149]:
+        - heading "上傳付款資訊" [level=3] [ref=e150]
+        - paragraph
+        - spinbutton [ref=e151]
+        - textbox "轉出帳戶後五碼（可與收據擇一）" [ref=e152]
+        - textbox "備註" [ref=e153]
+        - button "Choose File" [ref=e154]
+        - paragraph [ref=e155]
+        - generic [ref=e156]:
+          - button "取消" [ref=e157] [cursor=pointer]
+          - button "送出" [ref=e158] [cursor=pointer]
+      - generic [ref=e160]:
+        - heading "活動資料" [level=3] [ref=e161]
+        - paragraph
+        - button "關閉" [ref=e163] [cursor=pointer]
+      - generic [ref=e165]:
+        - heading "活動滿意度問卷" [level=3] [ref=e166]
+        - paragraph
+        - generic [ref=e167]:
+          - spinbutton [ref=e168]
+          - spinbutton [ref=e169]
+          - spinbutton [ref=e170]
+          - spinbutton [ref=e171]
+        - combobox [ref=e172]:
+          - option "難易度" [selected]
+          - option "太簡單"
+          - option "剛好"
+          - option "太難"
+        - textbox "最有收穫" [ref=e173]
+        - textbox "建議改善" [ref=e174]
+        - generic [ref=e175]:
+          - generic [ref=e176]:
+            - checkbox "有興趣進階課程" [ref=e177]
+            - text: 有興趣進階課程
+          - generic [ref=e178]:
+            - checkbox "有興趣企業內訓" [ref=e179]
+            - text: 有興趣企業內訓
+          - generic [ref=e180]:
+            - checkbox "有興趣工作小組" [ref=e181]
+            - text: 有興趣工作小組
+        - paragraph [ref=e182]
+        - generic [ref=e183]:
+          - button "取消" [ref=e184] [cursor=pointer]
+          - button "送出問卷" [ref=e185] [cursor=pointer]
+      - generic [ref=e187]:
+        - generic [ref=e188]:
+          - heading "活動詳情" [level=3] [ref=e189]
+          - button "關閉" [ref=e190] [cursor=pointer]:
+            - generic [ref=e191]: 
+        - generic [ref=e192]:
+          - paragraph [ref=e193]: 載入中…
+          - paragraph
+        - button "關閉" [ref=e195] [cursor=pointer]
+      - generic [ref=e196]:
+        - heading "工作小組" [level=2] [ref=e197]
+        - paragraph [ref=e198]:
+          - text: 勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見
+          - link "工作小組介紹" [ref=e199] [cursor=pointer]:
+            - /url: /workgroups
+          - text: 。
+        - paragraph [ref=e200]: 目前無可加入的工作小組。
+        - status [ref=e201]
+        - button [ref=e202] [cursor=pointer]

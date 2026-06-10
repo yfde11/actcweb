@@ -1,0 +1,205 @@
+- generic [ref=e1]:
+  - navigation "全站與管理後台導覽" [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - generic "管理後台資訊列" [ref=e32]:
+        - heading "ACTC 管理後台" [level=1] [ref=e33]
+        - generic [ref=e34]:
+          - generic [ref=e35]: 歡迎，admin（admin）
+          - button "登出" [ref=e36] [cursor=pointer]
+      - text:  
+  - generic [ref=e38]:
+    - complementary [ref=e39]:
+      - navigation [ref=e40]:
+        - generic [ref=e42] [cursor=pointer]: 會員管理
+        - generic [ref=e44] [cursor=pointer]: 最新消息管理
+        - generic [ref=e46] [cursor=pointer]: 活動課程管理
+        - generic [ref=e48] [cursor=pointer]: 企業會員管理
+        - generic [ref=e50] [cursor=pointer]: 工作小組
+        - generic [ref=e52] [cursor=pointer]: 考試管理
+        - generic [ref=e54] [cursor=pointer]: 題庫管理
+        - generic [ref=e56] [cursor=pointer]: 變更我的密碼
+    - main [ref=e57]:
+      - generic [ref=e207]:
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - heading "考試管理" [level=2] [ref=e211]
+            - paragraph [ref=e212]: 管理考卷、題目、作答紀錄與證書
+          - button "新增考卷" [ref=e214] [cursor=pointer]:
+            - img [ref=e215]
+            - text: 新增考卷
+        - table [ref=e218]:
+          - rowgroup [ref=e219]:
+            - row "標題 狀態 題數 通過分數 操作" [ref=e220]:
+              - columnheader "標題" [ref=e221]
+              - columnheader "狀態" [ref=e222]
+              - columnheader "題數" [ref=e223]
+              - columnheader "通過分數" [ref=e224]
+              - columnheader "操作" [ref=e225]
+          - rowgroup [ref=e226]:
+            - row "Manual Test Exam draft 5 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e240]:
+              - cell "Manual Test Exam" [ref=e241]
+              - cell "draft" [ref=e242]:
+                - generic [ref=e243]: draft
+              - cell "5" [ref=e244]
+              - cell "70%" [ref=e245]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e246]:
+                - button "預覽" [ref=e247] [cursor=pointer]
+                - button "編輯" [ref=e248] [cursor=pointer]
+                - button "題目" [active] [ref=e249] [cursor=pointer]
+                - button "作答" [ref=e250] [cursor=pointer]
+                - button "統計" [ref=e251] [cursor=pointer]
+                - button "刪除" [ref=e252] [cursor=pointer]
+            - row "Test CISSP Exam draft 50 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e253]:
+              - cell "Test CISSP Exam" [ref=e254]
+              - cell "draft" [ref=e255]:
+                - generic [ref=e256]: draft
+              - cell "50" [ref=e257]
+              - cell "70%" [ref=e258]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e259]:
+                - button "預覽" [ref=e260] [cursor=pointer]
+                - button "編輯" [ref=e261] [cursor=pointer]
+                - button "題目" [ref=e262] [cursor=pointer]
+                - button "作答" [ref=e263] [cursor=pointer]
+                - button "統計" [ref=e264] [cursor=pointer]
+                - button "刪除" [ref=e265] [cursor=pointer]
+            - row "Manual Test Exam draft 5 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e266]:
+              - cell "Manual Test Exam" [ref=e267]
+              - cell "draft" [ref=e268]:
+                - generic [ref=e269]: draft
+              - cell "5" [ref=e270]
+              - cell "70%" [ref=e271]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e272]:
+                - button "預覽" [ref=e273] [cursor=pointer]
+                - button "編輯" [ref=e274] [cursor=pointer]
+                - button "題目" [ref=e275] [cursor=pointer]
+                - button "作答" [ref=e276] [cursor=pointer]
+                - button "統計" [ref=e277] [cursor=pointer]
+                - button "刪除" [ref=e278] [cursor=pointer]
+            - row "Test CISSP Exam draft 50 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e279]:
+              - cell "Test CISSP Exam" [ref=e280]
+              - cell "draft" [ref=e281]:
+                - generic [ref=e282]: draft
+              - cell "50" [ref=e283]
+              - cell "70%" [ref=e284]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e285]:
+                - button "預覽" [ref=e286] [cursor=pointer]
+                - button "編輯" [ref=e287] [cursor=pointer]
+                - button "題目" [ref=e288] [cursor=pointer]
+                - button "作答" [ref=e289] [cursor=pointer]
+                - button "統計" [ref=e290] [cursor=pointer]
+                - button "刪除" [ref=e291] [cursor=pointer]
+            - row "Manual Test Exam draft 5 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e292]:
+              - cell "Manual Test Exam" [ref=e293]
+              - cell "draft" [ref=e294]:
+                - generic [ref=e295]: draft
+              - cell "5" [ref=e296]
+              - cell "70%" [ref=e297]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e298]:
+                - button "預覽" [ref=e299] [cursor=pointer]
+                - button "編輯" [ref=e300] [cursor=pointer]
+                - button "題目" [ref=e301] [cursor=pointer]
+                - button "作答" [ref=e302] [cursor=pointer]
+                - button "統計" [ref=e303] [cursor=pointer]
+                - button "刪除" [ref=e304] [cursor=pointer]
+            - row "CISSP Mock Exam 1 draft 100 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e305]:
+              - cell "CISSP Mock Exam 1" [ref=e306]
+              - cell "draft" [ref=e307]:
+                - generic [ref=e308]: draft
+              - cell "100" [ref=e309]
+              - cell "70%" [ref=e310]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e311]:
+                - button "預覽" [ref=e312] [cursor=pointer]
+                - button "編輯" [ref=e313] [cursor=pointer]
+                - button "題目" [ref=e314] [cursor=pointer]
+                - button "作答" [ref=e315] [cursor=pointer]
+                - button "統計" [ref=e316] [cursor=pointer]
+                - button "刪除" [ref=e317] [cursor=pointer]
+            - row "Test Exam active 3 70% 預覽 編輯 題目 作答 統計 刪除" [ref=e318]:
+              - cell "Test Exam" [ref=e319]
+              - cell "active" [ref=e320]:
+                - generic [ref=e321]: active
+              - cell "3" [ref=e322]
+              - cell "70%" [ref=e323]
+              - cell "預覽 編輯 題目 作答 統計 刪除" [ref=e324]:
+                - button "預覽" [ref=e325] [cursor=pointer]
+                - button "編輯" [ref=e326] [cursor=pointer]
+                - button "題目" [ref=e327] [cursor=pointer]
+                - button "作答" [ref=e328] [cursor=pointer]
+                - button "統計" [ref=e329] [cursor=pointer]
+                - button "刪除" [ref=e330] [cursor=pointer]
+        - generic [ref=e375]:
+          - generic [ref=e376]:
+            - heading "題目管理" [level=3] [ref=e377]
+            - generic [ref=e378]:
+              - button "新增題目" [ref=e379] [cursor=pointer]
+              - button "保存排序" [ref=e380] [cursor=pointer]
+              - button [ref=e381] [cursor=pointer]:
+                - img [ref=e382]
+          - generic [ref=e385]:
+            - generic [ref=e387]:
+              - generic [ref=e388]:
+                - generic [ref=e389]:
+                  - spinbutton [ref=e390]
+                  - generic [ref=e391]: 是非題
+                  - generic [ref=e392]: medium
+                  - generic [ref=e393]: 1 分
+                - paragraph [ref=e394]: 1. Confidentiality ensures that data is accessible only to authorized users.
+              - generic [ref=e395]:
+                - button "編輯" [ref=e396] [cursor=pointer]
+                - button "刪除" [ref=e397] [cursor=pointer]
+            - generic [ref=e399]:
+              - generic [ref=e400]:
+                - generic [ref=e401]:
+                  - spinbutton [ref=e402]
+                  - generic [ref=e403]: 是非題
+                  - generic [ref=e404]: medium
+                  - generic [ref=e405]: 1 分
+                - paragraph [ref=e406]: 2. Data classification helps determine the level of protection needed.
+              - generic [ref=e407]:
+                - button "編輯" [ref=e408] [cursor=pointer]
+                - button "刪除" [ref=e409] [cursor=pointer]
+            - generic [ref=e411]:
+              - generic [ref=e412]:
+                - generic [ref=e413]:
+                  - spinbutton [ref=e414]
+                  - generic [ref=e415]: 填空題
+                  - generic [ref=e416]: medium
+                  - generic [ref=e417]: 1 分
+                - paragraph [ref=e418]: 3. The security model that ensures no write-up is called _____.
+              - generic [ref=e419]:
+                - button "編輯" [ref=e420] [cursor=pointer]
+                - button "刪除" [ref=e421] [cursor=pointer]
+            - generic [ref=e423]:
+              - generic [ref=e424]:
+                - generic [ref=e425]:
+                  - spinbutton [ref=e426]
+                  - generic [ref=e427]: 填空題
+                  - generic [ref=e428]: medium
+                  - generic [ref=e429]: 1 分
+                - paragraph [ref=e430]: 4. The protocol used for secure web browsing is _____.
+              - generic [ref=e431]:
+                - button "編輯" [ref=e432] [cursor=pointer]
+                - button "刪除" [ref=e433] [cursor=pointer]

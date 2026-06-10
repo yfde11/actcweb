@@ -1,0 +1,135 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - main [ref=e21]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - heading "帳號狀態" [level=2] [ref=e24]
+        - paragraph [ref=e25]: 信箱驗證：已完成
+        - paragraph [ref=e26]: 會員審核：已核准
+        - paragraph [ref=e27]:
+          - text: 管理後台「使用者啟用」僅代表此帳號可登入，
+          - strong [ref=e28]: 不會
+          - text: 自動變成「已核准」會員。 最新消息與活動內容由管理員於管理後台維護。
+        - link "前往管理後台" [ref=e52] [cursor=pointer]:
+          - /url: /admin
+        - button "重新整理狀態" [ref=e29] [cursor=pointer]
+        - text: （管理員已核准後若畫面未更新，請按此或重新登入）
+      - generic [ref=e30]:
+        - heading "個人資料" [level=2] [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - text: Email
+            - paragraph [ref=e34]: "-"
+          - textbox "姓名" [ref=e35]
+          - textbox "電話（選填）" [ref=e36]
+          - generic [ref=e37]:
+            - checkbox "接收協會通知郵件（僅限已驗證帳號之發送對象）" [checked] [ref=e38]
+            - text: 接收協會通知郵件（僅限已驗證帳號之發送對象）
+          - button "立即同步" [ref=e39] [cursor=pointer]
+      - generic [ref=e40]:
+        - heading "我的活動中心" [level=2] [ref=e41]
+        - paragraph [ref=e42]: 顯示您的活動報名、付款、出席與教材/問卷操作。MVP 付款為人工審核流程。
+        - paragraph [ref=e43]: 尚無報名紀錄。
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - heading "考試專區" [level=2] [ref=e46]
+          - button "我的證書" [ref=e47] [cursor=pointer]
+        - paragraph [ref=e48]: 參加考試、查看成績與證書
+        - generic [ref=e49]:
+          - heading "可報考考試" [level=3] [ref=e50]
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - generic [ref=e55]:
+                - generic [ref=e56]:
+                  - heading "ACTC 截圖測試考卷 2026" [level=4] [ref=e57]
+                  - paragraph [ref=e58]: undefined...
+                  - generic [ref=e59]:
+                    - generic [ref=e60]: "通過分數: 0%"
+                    - generic [ref=e61]: "題數:"
+                  - generic [ref=e63]:
+                    - text: 已通過
+                    - generic [ref=e64]: (100分)
+                - generic [ref=e65]:
+                  - button "開始考試" [ref=e66] [cursor=pointer]
+                  - button "收起歷史" [active] [ref=e111] [cursor=pointer]
+              - generic [ref=e112]:
+                - heading "過去作答紀錄" [level=5] [ref=e113]
+                - generic [ref=e115]:
+                  - generic [ref=e116]:
+                    - generic [ref=e117]: 第 1 次
+                    - generic [ref=e118]: 100%
+                    - generic [ref=e119]: 已通過
+                    - generic [ref=e120]: 2026/05/04
+                  - button "查看詳情" [ref=e121] [cursor=pointer]
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - heading "考試測試" [level=4] [ref=e71]
+                - paragraph [ref=e72]: undefined...
+                - generic [ref=e73]:
+                  - generic [ref=e74]: "通過分數: 70%"
+                  - generic [ref=e75]: "題數:"
+              - button "開始考試" [ref=e77] [cursor=pointer]
+            - generic [ref=e79]:
+              - generic [ref=e80]:
+                - heading "Concurrency Test Exam" [level=4] [ref=e81]
+                - paragraph [ref=e82]: undefined...
+                - generic [ref=e83]:
+                  - generic [ref=e84]: "限時: 60 分鐘"
+                  - generic [ref=e85]: "通過分數: 60%"
+                  - generic [ref=e86]: "題數:"
+              - button "開始考試" [ref=e88] [cursor=pointer]
+      - text: 
+      - generic [ref=e89]:
+        - heading "工作小組" [level=2] [ref=e90]
+        - paragraph [ref=e91]:
+          - text: 勾選想加入的小組（可不選），變更後請按「儲存選擇」。內容說明請見
+          - link "工作小組介紹" [ref=e92] [cursor=pointer]:
+            - /url: /workgroups
+          - text: 。
+        - generic [ref=e93]:
+          - generic [ref=e94] [cursor=pointer]:
+            - checkbox "WG1 產學讀書會 促進技術交流與研究連結，建立學術與產業對話平台。" [ref=e95]
+            - generic [ref=e96]:
+              - text: WG1 產學讀書會
+              - generic [ref=e97]: 促進技術交流與研究連結，建立學術與產業對話平台。
+          - generic [ref=e98] [cursor=pointer]:
+            - checkbox "WG2 教育人培 發展課程體系與職能培訓機制，提升資安人才專業能力。" [ref=e99]
+            - generic [ref=e100]:
+              - text: WG2 教育人培
+              - generic [ref=e101]: 發展課程體系與職能培訓機制，提升資安人才專業能力。
+          - generic [ref=e102] [cursor=pointer]:
+            - checkbox "WG3 Gov 白帽駭客 推動政府合作專案，強化國家資安意識與防護能力。" [ref=e103]
+            - generic [ref=e104]:
+              - text: WG3 Gov 白帽駭客
+              - generic [ref=e105]: 推動政府合作專案，強化國家資安意識與防護能力。
+          - generic [ref=e106] [cursor=pointer]:
+            - checkbox "WG4 國際認證培訓 聚焦產業實務與 AI 資安應用認證培訓，推動國際化認證落地與技術創新。" [ref=e107]
+            - generic [ref=e108]:
+              - text: WG4 國際認證培訓
+              - generic [ref=e109]: 聚焦產業實務與 AI 資安應用認證培訓，推動國際化認證落地與技術創新。
+        - button "重試儲存" [ref=e110] [cursor=pointer]

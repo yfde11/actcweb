@@ -1,0 +1,64 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - main [ref=e21]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - heading "帳號狀態" [level=2] [ref=e24]
+        - paragraph [ref=e25]: 信箱驗證：未完成（部分功能受限）
+        - paragraph [ref=e26]: 會員審核：
+        - paragraph [ref=e27]:
+          - text: 管理後台「使用者啟用」僅代表此帳號可登入，
+          - strong [ref=e28]: 不會
+          - text: 自動變成「已核准」會員。 最新消息與活動內容由管理員於管理後台維護。
+        - button "重新整理狀態" [ref=e29] [cursor=pointer]
+        - text: （管理員已核准後若畫面未更新，請按此或重新登入）
+      - generic [ref=e30]:
+        - heading "個人資料" [level=2] [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - text: Email
+            - paragraph [ref=e34]: "-"
+          - textbox "姓名" [ref=e35]
+          - textbox "電話（選填）" [ref=e36]
+          - generic [ref=e37]:
+            - checkbox "接收協會通知郵件（僅限已驗證帳號之發送對象）" [checked] [ref=e38]
+            - text: 接收協會通知郵件（僅限已驗證帳號之發送對象）
+          - button "立即同步" [ref=e39] [cursor=pointer]
+      - generic [ref=e40]:
+        - heading "我的活動中心" [level=2] [ref=e41]
+        - paragraph [ref=e42]: 顯示您的活動報名、付款、出席與教材/問卷操作。MVP 付款為人工審核流程。
+        - paragraph [ref=e43]: 尚無報名紀錄。
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - heading "考試專區" [level=2] [ref=e46]
+          - button "我的證書" [ref=e47] [cursor=pointer]
+        - paragraph [ref=e48]: 參加考試、查看成績與證書
+        - generic [ref=e49]:
+          - heading "可報考考試" [level=3] [ref=e50]
+          - paragraph [ref=e51]: 載入中…
+      - text: 

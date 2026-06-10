@@ -1,0 +1,427 @@
+- generic [active] [ref=e1]:
+  - navigation "全站與管理後台導覽" [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - generic "管理後台資訊列" [ref=e21]:
+        - heading "ACTC 管理後台" [level=1] [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: 歡迎，admin（admin）
+          - button "登出" [ref=e25] [cursor=pointer]
+      - text:  
+  - generic [ref=e27]:
+    - complementary [ref=e28]:
+      - navigation [ref=e29]:
+        - generic [ref=e31] [cursor=pointer]: 會員管理
+        - generic [ref=e33] [cursor=pointer]: 最新消息管理
+        - generic [ref=e35] [cursor=pointer]: 活動課程管理
+        - generic [ref=e37] [cursor=pointer]: 企業會員管理
+        - generic [ref=e39] [cursor=pointer]: 工作小組
+        - generic [ref=e41] [cursor=pointer]: 考試管理
+        - generic [ref=e43] [cursor=pointer]: 題庫管理
+        - link "證書管理" [ref=e44] [cursor=pointer]:
+          - /url: /admin/certificates
+          - generic [ref=e45]: 證書管理
+        - generic [ref=e47] [cursor=pointer]: 變更我的密碼
+    - main [ref=e48]:
+      - generic [ref=e49]:
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - heading "會員管理" [level=2] [ref=e53]
+            - paragraph [ref=e54]: 管理會員資料、審核狀態與互動情況
+          - generic [ref=e55]:
+            - button "匯出會員資料" [ref=e56] [cursor=pointer]:
+              - img [ref=e57]
+              - text: 匯出會員資料
+            - button "新增會員" [ref=e59] [cursor=pointer]:
+              - img [ref=e60]
+              - text: 新增會員
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - generic [ref=e65]:
+                - generic [ref=e66]:
+                  - img [ref=e68]
+                  - generic [ref=e70]: +100%
+                - generic [ref=e71]:
+                  - generic [ref=e72]: "8"
+                  - generic [ref=e73]: 會員總數
+                  - generic [ref=e74]: 較上月成長率
+              - generic [ref=e75]:
+                - generic [ref=e76]:
+                  - img [ref=e78]
+                  - button "前往處理" [ref=e80] [cursor=pointer]
+                - generic [ref=e81]:
+                  - generic [ref=e82]: "0"
+                  - generic [ref=e83]: 待審核
+                  - generic [ref=e84]: 需管理員審查申請
+              - generic [ref=e85]:
+                - generic [ref=e86]:
+                  - img [ref=e88]
+                  - generic [ref=e90]: 活躍中
+                - generic [ref=e91]:
+                  - generic [ref=e92]: "8"
+                  - generic [ref=e93]: 近 30 天活躍
+                  - generic [ref=e94]: 最近 30 天有登入紀錄
+              - generic [ref=e95]:
+                - generic [ref=e96]:
+                  - img [ref=e98]
+                  - button "查看名單" [ref=e100] [cursor=pointer]
+                - generic [ref=e101]:
+                  - generic [ref=e102]: "0"
+                  - generic [ref=e103]: 待關心會員
+                  - generic [ref=e104]: 久未登入、低互動或資料不完整
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - img [ref=e108]
+                  - searchbox "搜尋姓名、Email、公司、標籤..." [ref=e110]
+                - generic [ref=e111]:
+                  - generic [ref=e112]: 排序
+                  - combobox [ref=e113]:
+                    - option "最近登入" [selected]
+                    - option "加入時間"
+                    - option "活躍度"
+                    - option "待審核優先"
+                    - option "久未登入優先"
+                  - button "▼" [ref=e114] [cursor=pointer]
+              - generic [ref=e115]:
+                - button "全部會員 8" [ref=e116] [cursor=pointer]:
+                  - generic [ref=e117]: 全部會員
+                  - generic [ref=e118]: "8"
+                - button "待審核 0" [ref=e119] [cursor=pointer]:
+                  - generic [ref=e120]: 待審核
+                  - generic [ref=e121]: "0"
+                - button "新加入 7 天 8" [ref=e122] [cursor=pointer]:
+                  - generic [ref=e123]: 新加入 7 天
+                  - generic [ref=e124]: "8"
+                - button "活躍會員 8" [ref=e125] [cursor=pointer]:
+                  - generic [ref=e126]: 活躍會員
+                  - generic [ref=e127]: "8"
+                - button "待關心 0" [ref=e128] [cursor=pointer]:
+                  - generic [ref=e129]: 待關心
+                  - generic [ref=e130]: "0"
+                - button "管理員 1" [ref=e131] [cursor=pointer]:
+                  - generic [ref=e132]: 管理員
+                  - generic [ref=e133]: "1"
+                - button "停用帳號 0" [ref=e134] [cursor=pointer]:
+                  - generic [ref=e135]: 停用帳號
+                  - generic [ref=e136]: "0"
+              - generic [ref=e137]:
+                - generic [ref=e138]: 加入日期
+                - generic [ref=e139]:
+                  - button "全部" [ref=e140] [cursor=pointer]
+                  - button "最近 7 天" [ref=e141] [cursor=pointer]
+                  - button "最近 30 天" [ref=e142] [cursor=pointer]
+                  - button "最近 90 天" [ref=e143] [cursor=pointer]
+                  - button "本月" [ref=e144] [cursor=pointer]
+                  - button "上月" [ref=e145] [cursor=pointer]
+                  - button "自訂" [ref=e146] [cursor=pointer]
+                - button "清除全部" [ref=e147] [cursor=pointer]
+            - generic [ref=e148]:
+              - generic [ref=e149]:
+                - generic [ref=e150]: 共 8 筆
+                - generic [ref=e151]:
+                  - generic [ref=e152]: 每頁
+                  - combobox [ref=e153]:
+                    - option "10"
+                    - option "20" [selected]
+                    - option "50"
+                    - option "100"
+                  - generic [ref=e154]: 筆
+              - table [ref=e156]:
+                - rowgroup [ref=e157]:
+                  - row "會員 Email 會員類型 審核狀態 帳號狀態 活躍度 最後登入 關注 操作" [ref=e158]:
+                    - columnheader [ref=e159]:
+                      - checkbox [ref=e160]
+                    - columnheader "會員" [ref=e161]
+                    - columnheader "Email" [ref=e162]
+                    - columnheader "會員類型" [ref=e163]
+                    - columnheader "審核狀態" [ref=e164]
+                    - columnheader "帳號狀態" [ref=e165]
+                    - columnheader "活躍度" [ref=e166]
+                    - columnheader "最後登入" [ref=e167]
+                    - columnheader "關注" [ref=e168]
+                    - columnheader "操作" [ref=e169]
+                - rowgroup [ref=e170]:
+                  - row "A admin — 管理員 已通過 啟用 高活躍 2026-05-07 09:24" [ref=e171]:
+                    - cell [ref=e172]:
+                      - checkbox [ref=e173]
+                    - cell "A admin" [ref=e174]:
+                      - generic [ref=e175]:
+                        - generic [ref=e176]: A
+                        - generic [ref=e178]: admin
+                    - cell "—" [ref=e179]
+                    - cell "管理員" [ref=e180]
+                    - cell "已通過" [ref=e181]
+                    - cell "啟用" [ref=e182]
+                    - cell "高活躍" [ref=e183]
+                    - cell "2026-05-07 09:24" [ref=e184]
+                    - cell [ref=e185]:
+                      - button "加入需追蹤" [ref=e186] [cursor=pointer]:
+                        - img [ref=e187]
+                    - cell [ref=e189]:
+                      - generic [ref=e190]:
+                        - button "查看" [ref=e191] [cursor=pointer]:
+                          - img [ref=e192]
+                        - button "編輯" [ref=e195] [cursor=pointer]:
+                          - img [ref=e196]
+                        - button "更多" [ref=e198] [cursor=pointer]:
+                          - img [ref=e199]
+                  - row "M ms msx test@actc.com 一般會員 已通過 啟用 中等 2026-05-04 20:19" [ref=e200]:
+                    - cell [ref=e201]:
+                      - checkbox [ref=e202]
+                    - cell "M ms msx" [ref=e203]:
+                      - generic [ref=e204]:
+                        - generic [ref=e205]: M
+                        - generic [ref=e206]:
+                          - generic [ref=e207]: ms
+                          - generic [ref=e208]: msx
+                    - cell "test@actc.com" [ref=e209]
+                    - cell "一般會員" [ref=e210]
+                    - cell "已通過" [ref=e211]
+                    - cell "啟用" [ref=e212]
+                    - cell "中等" [ref=e213]
+                    - cell "2026-05-04 20:19" [ref=e214]
+                    - cell [ref=e215]:
+                      - button "加入需追蹤" [ref=e216] [cursor=pointer]:
+                        - img [ref=e217]
+                    - cell [ref=e219]:
+                      - generic [ref=e220]:
+                        - button "查看" [ref=e221] [cursor=pointer]:
+                          - img [ref=e222]
+                        - button "編輯" [ref=e225] [cursor=pointer]:
+                          - img [ref=e226]
+                        - button "更多" [ref=e228] [cursor=pointer]:
+                          - img [ref=e229]
+                  - row "C Concurrency Test concurrency_test_u2 concurrency_test_u2 concurrency_test_u2@concurrency-test.invalid 一般會員 已通過 啟用 高活躍 2026-05-04 20:08" [ref=e230]:
+                    - cell [ref=e231]:
+                      - checkbox [ref=e232]
+                    - cell "C Concurrency Test concurrency_test_u2 concurrency_test_u2" [ref=e233]:
+                      - generic [ref=e234]:
+                        - generic [ref=e235]: C
+                        - generic [ref=e236]:
+                          - generic [ref=e237]: Concurrency Test concurrency_test_u2
+                          - generic [ref=e238]: concurrency_test_u2
+                    - cell "concurrency_test_u2@concurrency-test.invalid" [ref=e239]
+                    - cell "一般會員" [ref=e240]
+                    - cell "已通過" [ref=e241]
+                    - cell "啟用" [ref=e242]
+                    - cell "高活躍" [ref=e243]
+                    - cell "2026-05-04 20:08" [ref=e244]
+                    - cell [ref=e245]:
+                      - button "加入需追蹤" [ref=e246] [cursor=pointer]:
+                        - img [ref=e247]
+                    - cell [ref=e249]:
+                      - generic [ref=e250]:
+                        - button "查看" [ref=e251] [cursor=pointer]:
+                          - img [ref=e252]
+                        - button "編輯" [ref=e255] [cursor=pointer]:
+                          - img [ref=e256]
+                        - button "更多" [ref=e258] [cursor=pointer]:
+                          - img [ref=e259]
+                  - row "C Concurrency Test concurrency_test_u1 concurrency_test_u1 concurrency_test_u1@concurrency-test.invalid 一般會員 已通過 啟用 高活躍 2026-05-04 20:08" [ref=e260]:
+                    - cell [ref=e261]:
+                      - checkbox [ref=e262]
+                    - cell "C Concurrency Test concurrency_test_u1 concurrency_test_u1" [ref=e263]:
+                      - generic [ref=e264]:
+                        - generic [ref=e265]: C
+                        - generic [ref=e266]:
+                          - generic [ref=e267]: Concurrency Test concurrency_test_u1
+                          - generic [ref=e268]: concurrency_test_u1
+                    - cell "concurrency_test_u1@concurrency-test.invalid" [ref=e269]
+                    - cell "一般會員" [ref=e270]
+                    - cell "已通過" [ref=e271]
+                    - cell "啟用" [ref=e272]
+                    - cell "高活躍" [ref=e273]
+                    - cell "2026-05-04 20:08" [ref=e274]
+                    - cell [ref=e275]:
+                      - button "加入需追蹤" [ref=e276] [cursor=pointer]:
+                        - img [ref=e277]
+                    - cell [ref=e279]:
+                      - generic [ref=e280]:
+                        - button "查看" [ref=e281] [cursor=pointer]:
+                          - img [ref=e282]
+                        - button "編輯" [ref=e285] [cursor=pointer]:
+                          - img [ref=e286]
+                        - button "更多" [ref=e288] [cursor=pointer]:
+                          - img [ref=e289]
+                  - row "E E2E Test e2e_unapproved_mor5i47b e2e_unapproved_mor5i47b e2e_unapproved_mor5i47b@e2e-test.invalid 一般會員 一般 啟用 中等 2026-05-04 20:03" [ref=e290]:
+                    - cell [ref=e291]:
+                      - checkbox [ref=e292]
+                    - cell "E E2E Test e2e_unapproved_mor5i47b e2e_unapproved_mor5i47b" [ref=e293]:
+                      - generic [ref=e294]:
+                        - generic [ref=e295]: E
+                        - generic [ref=e296]:
+                          - generic [ref=e297]: E2E Test e2e_unapproved_mor5i47b
+                          - generic [ref=e298]: e2e_unapproved_mor5i47b
+                    - cell "e2e_unapproved_mor5i47b@e2e-test.invalid" [ref=e299]
+                    - cell "一般會員" [ref=e300]
+                    - cell "一般" [ref=e301]
+                    - cell "啟用" [ref=e302]
+                    - cell "中等" [ref=e303]
+                    - cell "2026-05-04 20:03" [ref=e304]
+                    - cell [ref=e305]:
+                      - button "加入需追蹤" [ref=e306] [cursor=pointer]:
+                        - img [ref=e307]
+                    - cell [ref=e309]:
+                      - generic [ref=e310]:
+                        - button "查看" [ref=e311] [cursor=pointer]:
+                          - img [ref=e312]
+                        - button "編輯" [ref=e315] [cursor=pointer]:
+                          - img [ref=e316]
+                        - button "更多" [ref=e318] [cursor=pointer]:
+                          - img [ref=e319]
+                  - row "E E2E Test e2e_member_mor5i47b e2e_member_mor5i47b e2e_member_mor5i47b@e2e-test.invalid 一般會員 已通過 啟用 高活躍 2026-05-04 20:03" [ref=e320]:
+                    - cell [ref=e321]:
+                      - checkbox [ref=e322]
+                    - cell "E E2E Test e2e_member_mor5i47b e2e_member_mor5i47b" [ref=e323]:
+                      - generic [ref=e324]:
+                        - generic [ref=e325]: E
+                        - generic [ref=e326]:
+                          - generic [ref=e327]: E2E Test e2e_member_mor5i47b
+                          - generic [ref=e328]: e2e_member_mor5i47b
+                    - cell "e2e_member_mor5i47b@e2e-test.invalid" [ref=e329]
+                    - cell "一般會員" [ref=e330]
+                    - cell "已通過" [ref=e331]
+                    - cell "啟用" [ref=e332]
+                    - cell "高活躍" [ref=e333]
+                    - cell "2026-05-04 20:03" [ref=e334]
+                    - cell [ref=e335]:
+                      - button "加入需追蹤" [ref=e336] [cursor=pointer]:
+                        - img [ref=e337]
+                    - cell [ref=e339]:
+                      - generic [ref=e340]:
+                        - button "查看" [ref=e341] [cursor=pointer]:
+                          - img [ref=e342]
+                        - button "編輯" [ref=e345] [cursor=pointer]:
+                          - img [ref=e346]
+                        - button "更多" [ref=e348] [cursor=pointer]:
+                          - img [ref=e349]
+                  - row "E E2E Test e2e_unapproved_mor5gpu1 e2e_unapproved_mor5gpu1 e2e_unapproved_mor5gpu1@e2e-test.invalid 一般會員 一般 啟用 高活躍 2026-05-04 20:02" [ref=e350]:
+                    - cell [ref=e351]:
+                      - checkbox [ref=e352]
+                    - cell "E E2E Test e2e_unapproved_mor5gpu1 e2e_unapproved_mor5gpu1" [ref=e353]:
+                      - generic [ref=e354]:
+                        - generic [ref=e355]: E
+                        - generic [ref=e356]:
+                          - generic [ref=e357]: E2E Test e2e_unapproved_mor5gpu1
+                          - generic [ref=e358]: e2e_unapproved_mor5gpu1
+                    - cell "e2e_unapproved_mor5gpu1@e2e-test.invalid" [ref=e359]
+                    - cell "一般會員" [ref=e360]
+                    - cell "一般" [ref=e361]
+                    - cell "啟用" [ref=e362]
+                    - cell "高活躍" [ref=e363]
+                    - cell "2026-05-04 20:02" [ref=e364]
+                    - cell [ref=e365]:
+                      - button "加入需追蹤" [ref=e366] [cursor=pointer]:
+                        - img [ref=e367]
+                    - cell [ref=e369]:
+                      - generic [ref=e370]:
+                        - button "查看" [ref=e371] [cursor=pointer]:
+                          - img [ref=e372]
+                        - button "編輯" [ref=e375] [cursor=pointer]:
+                          - img [ref=e376]
+                        - button "更多" [ref=e378] [cursor=pointer]:
+                          - img [ref=e379]
+                  - row "E E2E Test e2e_member_mor5gpu1 e2e_member_mor5gpu1 e2e_member_mor5gpu1@e2e-test.invalid 一般會員 已通過 啟用 中等 2026-05-04 20:02" [ref=e380]:
+                    - cell [ref=e381]:
+                      - checkbox [ref=e382]
+                    - cell "E E2E Test e2e_member_mor5gpu1 e2e_member_mor5gpu1" [ref=e383]:
+                      - generic [ref=e384]:
+                        - generic [ref=e385]: E
+                        - generic [ref=e386]:
+                          - generic [ref=e387]: E2E Test e2e_member_mor5gpu1
+                          - generic [ref=e388]: e2e_member_mor5gpu1
+                    - cell "e2e_member_mor5gpu1@e2e-test.invalid" [ref=e389]
+                    - cell "一般會員" [ref=e390]
+                    - cell "已通過" [ref=e391]
+                    - cell "啟用" [ref=e392]
+                    - cell "中等" [ref=e393]
+                    - cell "2026-05-04 20:02" [ref=e394]
+                    - cell [ref=e395]:
+                      - button "加入需追蹤" [ref=e396] [cursor=pointer]:
+                        - img [ref=e397]
+                    - cell [ref=e399]:
+                      - generic [ref=e400]:
+                        - button "查看" [ref=e401] [cursor=pointer]:
+                          - img [ref=e402]
+                        - button "編輯" [ref=e405] [cursor=pointer]:
+                          - img [ref=e406]
+                        - button "更多" [ref=e408] [cursor=pointer]:
+                          - img [ref=e409]
+              - generic [ref=e410]:
+                - generic [ref=e411]: 第 1 / 1 頁
+                - generic [ref=e412]:
+                  - button "上一頁" [disabled] [ref=e413]
+                  - button "1" [ref=e414] [cursor=pointer]
+                  - button "下一頁" [disabled] [ref=e415]
+          - complementary [ref=e416]:
+            - generic [ref=e417]:
+              - generic [ref=e418]:
+                - heading "最新加入會員" [level=3] [ref=e419]
+                - button "查看全部" [ref=e420] [cursor=pointer]
+              - list [ref=e421]:
+                - listitem [ref=e422]:
+                  - generic [ref=e423]: M
+                  - generic [ref=e424]:
+                    - generic [ref=e425]: ms
+                    - generic [ref=e426]: test@actc.com
+                  - generic [ref=e427]: 2026-05-04
+                - listitem [ref=e428]:
+                  - generic [ref=e429]: C
+                  - generic [ref=e430]:
+                    - generic [ref=e431]: Concurrency Test concurrency_test_u2
+                    - generic [ref=e432]: concurrency_test_u2@concurrency-test.invalid
+                  - generic [ref=e433]: 2026-05-04
+                - listitem [ref=e434]:
+                  - generic [ref=e435]: C
+                  - generic [ref=e436]:
+                    - generic [ref=e437]: Concurrency Test concurrency_test_u1
+                    - generic [ref=e438]: concurrency_test_u1@concurrency-test.invalid
+                  - generic [ref=e439]: 2026-05-04
+                - listitem [ref=e440]:
+                  - generic [ref=e441]: E
+                  - generic [ref=e442]:
+                    - generic [ref=e443]: E2E Test e2e_unapproved_mor5i47b
+                    - generic [ref=e444]: e2e_unapproved_mor5i47b@e2e-test.invalid
+                  - generic [ref=e445]: 2026-05-04
+                - listitem [ref=e446]:
+                  - generic [ref=e447]: E
+                  - generic [ref=e448]:
+                    - generic [ref=e449]: E2E Test e2e_member_mor5i47b
+                    - generic [ref=e450]: e2e_member_mor5i47b@e2e-test.invalid
+                  - generic [ref=e451]: 2026-05-04
+            - generic [ref=e452]:
+              - generic [ref=e453]:
+                - heading "近期未登入 30 天以上" [level=3] [ref=e454]
+                - button "查看全部" [ref=e455] [cursor=pointer]
+              - list [ref=e456]:
+                - listitem [ref=e457]: 目前沒有資料
+            - generic [ref=e458]:
+              - generic [ref=e459]:
+                - heading "待審核優先處理" [level=3] [ref=e460]
+                - button "查看全部" [ref=e461] [cursor=pointer]
+              - list [ref=e462]:
+                - listitem [ref=e463]: 目前沒有待審核會員

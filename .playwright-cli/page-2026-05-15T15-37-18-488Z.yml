@@ -1,0 +1,200 @@
+- generic [active] [ref=e1]:
+  - navigation "全站與管理後台導覽" [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /#home
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /#corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - generic "管理後台資訊列" [ref=e32]:
+        - heading "ACTC 管理後台" [level=1] [ref=e33]
+        - generic [ref=e34]:
+          - generic [ref=e35]: 歡迎，admin（admin）
+          - button "登出" [ref=e36] [cursor=pointer]
+      - text:  
+  - generic [ref=e38]:
+    - complementary [ref=e39]:
+      - navigation [ref=e40]:
+        - generic [ref=e42] [cursor=pointer]: 會員管理
+        - generic [ref=e44] [cursor=pointer]: 最新消息管理
+        - generic [ref=e46] [cursor=pointer]: 活動課程管理
+        - generic [ref=e48] [cursor=pointer]: 企業會員管理
+        - generic [ref=e50] [cursor=pointer]: 工作小組
+        - generic [ref=e52] [cursor=pointer]: 考試管理
+        - generic [ref=e54] [cursor=pointer]: 題庫管理
+        - link "證書管理" [ref=e55] [cursor=pointer]:
+          - /url: /admin/certificates
+          - generic [ref=e56]: 證書管理
+        - link "證書類型管理" [ref=e57] [cursor=pointer]:
+          - /url: /admin/certificate-types
+          - generic [ref=e58]: 證書類型管理
+        - link "考試授權管理" [ref=e59] [cursor=pointer]:
+          - /url: /admin/exam-access
+          - generic [ref=e60]: 考試授權管理
+        - generic [ref=e62] [cursor=pointer]: 變更我的密碼
+    - main [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - heading "會員管理" [level=2] [ref=e68]
+            - paragraph [ref=e69]: 管理會員資料、審核狀態與互動情況
+          - generic [ref=e70]:
+            - button "匯出會員資料" [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+              - text: 匯出會員資料
+            - button "新增會員" [ref=e74] [cursor=pointer]:
+              - img [ref=e75]
+              - text: 新增會員
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - generic [ref=e80]:
+                - generic [ref=e81]:
+                  - img [ref=e83]
+                  - generic [ref=e85]: +0%
+                - generic [ref=e86]:
+                  - generic [ref=e87]: "0"
+                  - generic [ref=e88]: 會員總數
+                  - generic [ref=e89]: 較上月成長率
+              - generic [ref=e90]:
+                - generic [ref=e91]:
+                  - img [ref=e93]
+                  - button "前往處理" [ref=e95] [cursor=pointer]
+                - generic [ref=e96]:
+                  - generic [ref=e97]: "0"
+                  - generic [ref=e98]: 待審核
+                  - generic [ref=e99]: 需管理員審查申請
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - img [ref=e103]
+                  - generic [ref=e105]: 活躍中
+                - generic [ref=e106]:
+                  - generic [ref=e107]: "0"
+                  - generic [ref=e108]: 近 30 天活躍
+                  - generic [ref=e109]: 最近 30 天有登入紀錄
+              - generic [ref=e110]:
+                - generic [ref=e111]:
+                  - img [ref=e113]
+                  - button "查看名單" [ref=e115] [cursor=pointer]
+                - generic [ref=e116]:
+                  - generic [ref=e117]: "0"
+                  - generic [ref=e118]: 待關心會員
+                  - generic [ref=e119]: 久未登入、低互動或資料不完整
+            - generic [ref=e120]:
+              - generic [ref=e121]:
+                - generic [ref=e122]:
+                  - img [ref=e123]
+                  - searchbox "搜尋姓名、Email、公司、標籤..." [ref=e125]
+                - generic [ref=e126]:
+                  - generic [ref=e127]: 排序
+                  - combobox [ref=e128]:
+                    - option "最近登入" [selected]
+                    - option "加入時間"
+                    - option "活躍度"
+                    - option "待審核優先"
+                    - option "久未登入優先"
+                  - button "▼" [ref=e129] [cursor=pointer]
+              - generic [ref=e130]:
+                - button "全部會員 0" [ref=e131] [cursor=pointer]:
+                  - generic [ref=e132]: 全部會員
+                  - generic [ref=e133]: "0"
+                - button "待審核 0" [ref=e134] [cursor=pointer]:
+                  - generic [ref=e135]: 待審核
+                  - generic [ref=e136]: "0"
+                - button "新加入 7 天 0" [ref=e137] [cursor=pointer]:
+                  - generic [ref=e138]: 新加入 7 天
+                  - generic [ref=e139]: "0"
+                - button "活躍會員 0" [ref=e140] [cursor=pointer]:
+                  - generic [ref=e141]: 活躍會員
+                  - generic [ref=e142]: "0"
+                - button "待關心 0" [ref=e143] [cursor=pointer]:
+                  - generic [ref=e144]: 待關心
+                  - generic [ref=e145]: "0"
+                - button "管理員 0" [ref=e146] [cursor=pointer]:
+                  - generic [ref=e147]: 管理員
+                  - generic [ref=e148]: "0"
+                - button "停用帳號 0" [ref=e149] [cursor=pointer]:
+                  - generic [ref=e150]: 停用帳號
+                  - generic [ref=e151]: "0"
+              - generic [ref=e152]:
+                - generic [ref=e153]: 加入日期
+                - generic [ref=e154]:
+                  - button "全部" [ref=e155] [cursor=pointer]
+                  - button "最近 7 天" [ref=e156] [cursor=pointer]
+                  - button "最近 30 天" [ref=e157] [cursor=pointer]
+                  - button "最近 90 天" [ref=e158] [cursor=pointer]
+                  - button "本月" [ref=e159] [cursor=pointer]
+                  - button "上月" [ref=e160] [cursor=pointer]
+                  - button "自訂" [ref=e161] [cursor=pointer]
+                - button "清除全部" [ref=e162] [cursor=pointer]
+            - generic [ref=e163]:
+              - generic [ref=e164]:
+                - generic [ref=e165]: 共 0 筆 載入失敗
+                - generic [ref=e166]:
+                  - generic [ref=e167]: 每頁
+                  - combobox [ref=e168]:
+                    - option "10"
+                    - option "20" [selected]
+                    - option "50"
+                    - option "100"
+                  - generic [ref=e169]: 筆
+              - table [ref=e171]:
+                - rowgroup [ref=e172]:
+                  - row "會員 Email 會員類型 審核狀態 帳號狀態 活躍度 最後登入 關注 操作" [ref=e173]:
+                    - columnheader [ref=e174]:
+                      - checkbox [ref=e175]
+                    - columnheader "會員" [ref=e176]
+                    - columnheader "Email" [ref=e177]
+                    - columnheader "會員類型" [ref=e178]
+                    - columnheader "審核狀態" [ref=e179]
+                    - columnheader "帳號狀態" [ref=e180]
+                    - columnheader "活躍度" [ref=e181]
+                    - columnheader "最後登入" [ref=e182]
+                    - columnheader "關注" [ref=e183]
+                    - columnheader "操作" [ref=e184]
+                - rowgroup [ref=e185]:
+                  - row "無符合條件的會員" [ref=e186]:
+                    - cell "無符合條件的會員" [ref=e187]
+              - generic [ref=e188]:
+                - generic [ref=e189]: 第 1 / 1 頁
+                - generic [ref=e190]:
+                  - button "上一頁" [disabled] [ref=e191]
+                  - button "1" [ref=e192] [cursor=pointer]
+                  - button "下一頁" [disabled] [ref=e193]
+          - complementary [ref=e194]:
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - heading "最新加入會員" [level=3] [ref=e197]
+                - button "查看全部" [ref=e198] [cursor=pointer]
+              - list [ref=e199]:
+                - listitem [ref=e200]: 目前沒有資料
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - heading "近期未登入 30 天以上" [level=3] [ref=e203]
+                - button "查看全部" [ref=e204] [cursor=pointer]
+              - list [ref=e205]:
+                - listitem [ref=e206]: 目前沒有資料
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - heading "待審核優先處理" [level=3] [ref=e209]
+                - button "查看全部" [ref=e210] [cursor=pointer]
+              - list [ref=e211]:
+                - listitem [ref=e212]: 目前沒有待審核會員

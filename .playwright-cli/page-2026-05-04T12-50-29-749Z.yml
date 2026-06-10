@@ -1,0 +1,120 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ACTC Logo ACTC" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "ACTC Logo" [ref=e7]
+          - generic [ref=e8]: ACTC
+        - generic [ref=e9]:
+          - link "首頁" [ref=e10] [cursor=pointer]:
+            - /url: /
+          - link "關於協會" [ref=e11] [cursor=pointer]:
+            - /url: /about
+          - link "最新消息" [ref=e12] [cursor=pointer]:
+            - /url: /#news
+          - link "活動課程" [ref=e13] [cursor=pointer]:
+            - /url: /#events
+          - link "企業會員" [ref=e14] [cursor=pointer]:
+            - /url: /corporate-members
+          - link "工作小組" [ref=e15] [cursor=pointer]:
+            - /url: /workgroups
+          - generic [ref=e16]:
+            - generic [ref=e17]: 會員管理
+            - button "會員選單" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: 
+              - generic [ref=e20]: 會員選單
+      - text:  
+  - main [ref=e21]:
+    - generic [ref=e23]:
+      - generic [ref=e25]: 
+      - heading "證書驗證" [level=1] [ref=e26]
+      - paragraph [ref=e27]: 輸入證書編號以確認 ACTC 認證的有效性
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]: 
+          - text: 輸入證書編號
+        - generic [ref=e33]:
+          - textbox "證書編號" [ref=e34]:
+            - /placeholder: 例：ACTC-EXAM-2024-000001
+            - text: ACTC-EXAM-2026-000001
+          - button "驗證" [ref=e35] [cursor=pointer]
+        - paragraph [ref=e36]: 證書編號印於您的認證文件右下角，格式為 ACTC-EXAM-YYYY-XXXXXX
+      - text: 
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - generic [ref=e106]: 
+          - generic [ref=e107]:
+            - paragraph [ref=e108]: 驗證成功
+            - paragraph [ref=e109]: 此證書有效且未被撤銷
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - img "ACTC Logo" [ref=e112]
+            - generic [ref=e113]:
+              - paragraph [ref=e114]: 發證機構
+              - paragraph [ref=e115]: 國際資訊安全人才培育與推廣協會
+          - separator [ref=e116]
+          - generic [ref=e117]:
+            - paragraph [ref=e118]: 持證人
+            - paragraph
+          - separator [ref=e119]
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - paragraph [ref=e122]: 認證項目
+              - paragraph
+            - generic [ref=e123]:
+              - paragraph [ref=e124]: 考試成績
+              - paragraph [ref=e125]: 分
+            - generic [ref=e126]:
+              - paragraph [ref=e127]: 發證日期
+              - paragraph [ref=e128]: 2026年5月4日
+            - generic [ref=e129]:
+              - paragraph [ref=e130]: 有效期限
+              - paragraph [ref=e131]: 2028年5月4日
+            - generic [ref=e132]:
+              - paragraph [ref=e133]: 證書編號
+              - paragraph [ref=e134]: ACTC-EXAM-2026-000001
+          - separator [ref=e135]
+          - paragraph [ref=e136]: 驗證時間：2026/05/04 20:50:27
+      - text:    
+      - button "驗證其他證書" [ref=e102] [cursor=pointer]
+    - generic [ref=e56]:
+      - generic [ref=e57]: 
+      - generic [ref=e58]:
+        - paragraph [ref=e59]: 需要協助？
+        - paragraph [ref=e60]:
+          - text: 若對驗證結果有疑問，請來信
+          - link "actcactc2023@gmail.com" [ref=e61] [cursor=pointer]:
+            - /url: mailto:actcactc2023@gmail.com
+          - text: 與我們聯繫，我們將協助確認您的證書狀態。
+  - contentinfo [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - img "ACTC Logo" [ref=e68]
+            - generic [ref=e69]: ACTC
+          - paragraph [ref=e70]: 國際資訊安全人才培育與推廣協會
+          - paragraph [ref=e71]: 致力於推動資訊安全教育，培養專業人才
+        - generic [ref=e72]:
+          - heading "聯絡資訊" [level=3] [ref=e73]
+          - generic [ref=e74]:
+            - paragraph [ref=e75]: 信箱：actcactc2023@gmail.com
+            - paragraph [ref=e76]: 地址：105台北市松山區復興北路57號
+        - generic [ref=e77]:
+          - heading "快速連結" [level=3] [ref=e78]
+          - generic [ref=e79]:
+            - link "首頁" [ref=e80] [cursor=pointer]:
+              - /url: /
+            - link "關於協會" [ref=e81] [cursor=pointer]:
+              - /url: /about
+            - link "最新消息" [ref=e82] [cursor=pointer]:
+              - /url: /#news
+            - link "活動課程" [ref=e83] [cursor=pointer]:
+              - /url: /#events
+            - link "企業會員" [ref=e84] [cursor=pointer]:
+              - /url: /corporate-members
+            - link "工作小組" [ref=e85] [cursor=pointer]:
+              - /url: /workgroups
+      - paragraph [ref=e87]: © 2026 國際資訊安全人才培育與推廣協會. 版權所有.
