@@ -164,6 +164,12 @@
                                placeholder="課程名稱">
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">英文課程名稱</label>
+                        <input type="text" x-model="issueForm.courseEnglishName"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="選填，中英雙行顯示">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">證書類型</label>
                         <select x-model="issueForm.certTypeId"
                                 class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -339,6 +345,7 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">英文姓名</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">Email</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">課程名稱</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">英文課程名稱</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">完課日期</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">時數</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">備註</th>
@@ -352,7 +359,7 @@
                                             <input type="checkbox" x-model="rec._selected" class="rounded">
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="text" x-model="rec.recipientName" @blur=\"validateBulkRecord(idx)\"
+                                            <input type="text" x-model="rec.recipientName" @blur="validateBulkRecord(idx)"
                                                    class="w-full min-w-[80px] border rounded px-2 py-1 text-sm"
                                                    :class="rec._errors?.recipientName ? 'border-red-400 bg-red-50' : ''">
                                             <div x-show="rec._errors?.recipientName" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.recipientName"></div>
@@ -373,6 +380,11 @@
                                                    class="w-full min-w-[120px] border rounded px-2 py-1 text-sm"
                                                    :class="rec._errors?.courseName ? 'border-red-400 bg-red-50' : ''">
                                             <div x-show="rec._errors?.courseName" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.courseName"></div>
+                                        </td>
+                                        <td class="px-3 py-1.5">
+                                            <input type="text" x-model="rec.courseEnglishName"
+                                                   class="w-full min-w-[120px] border rounded px-2 py-1 text-sm"
+                                                   placeholder="選填">
                                         </td>
                                         <td class="px-3 py-1.5">
                                             <input type="date" x-model="rec.attendanceDate" @blur="validateBulkRecord(idx)"
@@ -549,7 +561,7 @@
 
             // Issue modal
             showIssueModal: false,
-            issueForm: { courseName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' },
+            issueForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' },
             issueError: '',
             issueLoading: false,
 
@@ -663,7 +675,7 @@
             },
 
             resetIssueForm() {
-                this.issueForm = { courseName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' };
+                this.issueForm = { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' };
                 this.issueError = '';
             },
 
@@ -678,6 +690,7 @@
                 try {
                     const body = {
                         courseName: f.courseName.trim(),
+                        courseEnglishName: f.courseEnglishName.trim() || undefined,
                         courseCode: f.courseCode.trim() || undefined,
                         recipientName: f.recipientName.trim(),
                         recipientEnglishName: f.recipientEnglishName.trim(),
@@ -798,13 +811,14 @@
                     'recipientEnglishName': 'recipientEnglishName', 'englishName': 'recipientEnglishName', 'English Name': 'recipientEnglishName', '英文姓名': 'recipientEnglishName',
                     'recipientEmail': 'recipientEmail', 'email': 'recipientEmail', 'Email': 'recipientEmail',
                     'courseName': 'courseName', '課程名稱': 'courseName',
+                    'courseEnglishName': 'courseEnglishName', '英文課程名稱': 'courseEnglishName', 'English Course Name': 'courseEnglishName',
                     'attendanceDate': 'attendanceDate', '出席日期': 'attendanceDate',
                     'completionHours': 'completionHours', '完成時數': 'completionHours',
                     'instructorName': 'instructorName', '講師': 'instructorName',
                     'notes': 'notes', '備註': 'notes',
                     'courseCode': 'courseCode', '課程代碼': 'courseCode'
                 };
-                const result = { recipientName: '', recipientEnglishName: '', recipientEmail: '', courseName: '', attendanceDate: '', completionHours: '', instructorName: '', notes: '', courseCode: '' };
+                const result = { recipientName: '', recipientEnglishName: '', recipientEmail: '', courseName: '', courseEnglishName: '', attendanceDate: '', completionHours: '', instructorName: '', notes: '', courseCode: '' };
                 for (const key of Object.keys(row)) {
                     const nk = fieldMap[key.trim()];
                     if (nk && result.hasOwnProperty(nk)) {

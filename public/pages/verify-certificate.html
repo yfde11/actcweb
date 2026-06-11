@@ -273,6 +273,9 @@
                                     <div>
                                         <p class="cert-field-label mb-1">認證項目</p>
                                         <p class="cert-field-value" x-text="result.data.examTitle"></p>
+                                        <template x-if="result.data.certType === 'course' && result.data.courseEnglishName">
+                                            <p class="text-xs text-gray-500 font-semibold mt-0.5" x-text="result.data.courseEnglishName"></p>
+                                        </template>
                                     </div>
                                     <div x-show="result.data.certTypeName">
                                         <p class="cert-field-label mb-1">證書類型</p>

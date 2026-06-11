@@ -421,6 +421,7 @@ router.post('/', adminAuth, upload.fields([
     try {
         const { 
             title, 
+            titleEn,
             type, 
             description, 
             shortDescription,
@@ -470,6 +471,7 @@ router.post('/', adminAuth, upload.fields([
         // 處理檔案上傳
         let eventData = {
             title,
+            titleEn,
             type,
             description,
             shortDescription,

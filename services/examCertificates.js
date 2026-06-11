@@ -26,7 +26,7 @@ async function verifyCertificate(certificateNumber) {
         isRevoked: { $ne: true }
     })
         .populate('exam', 'title')
-        .populate('course', 'courseName')
+        .populate('course', 'courseName courseEnglishName')
         .populate('user', 'username fullName englishName')
         .populate('certTypeRef', 'name titleZh');
 
@@ -67,7 +67,13 @@ async function verifyCertificate(certificateNumber) {
                 || null,
             user: certificate.user
                 ? { username: certificate.user.username, fullName: certificate.user.fullName, englishName: certificate.user.englishName }
-                : { username: null, fullName: certificate.recipientName || null, englishName: certificate.recipientEnglishName || null }
+                : { username: null, fullName: certificate.recipientName || null, englishName: certificate.recipientEnglishName || null },
+            examTitle: certificate.certType === 'course'
+                ? (certificate.course ? certificate.course.courseName : '課程')
+                : (certificate.exam ? certificate.exam.title : '考試'),
+            courseEnglishName: certificate.certType === 'course' && certificate.course
+                ? (certificate.course.courseEnglishName || null)
+                : null
         }
     };
 }

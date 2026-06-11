@@ -62,6 +62,7 @@ async function processBulkRecords(records, certValidityYears, resolvedCertTypeId
 
             const attendance = new CourseAttendance({
                 courseName: rec.courseName,
+                courseEnglishName: rec.courseEnglishName || undefined,
                 courseCode: rec.courseCode || undefined,
                 recipientName: rec.recipientName,
                 recipientEnglishName: rec.recipientEnglishName || undefined,
@@ -290,7 +291,7 @@ router.patch('/:id/expiry', adminAuth, async (req, res) => {
 // userId 選填：填入時嘗試關聯本會會員帳號，否則視為外部人士
 router.post('/course-attendances', adminAuth, async (req, res) => {
     try {
-        const { courseName, courseCode, recipientName, recipientEnglishName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears, certTypeId } = req.body;
+        const { courseName, courseEnglishName, courseCode, recipientName, recipientEnglishName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears, certTypeId } = req.body;
 
         if (!courseName || !recipientName || !attendanceDate) {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名及出席日期為必填');
@@ -325,6 +326,7 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
 
         const attendance = new CourseAttendance({
             courseName: courseName.trim(),
+            courseEnglishName: courseEnglishName ? courseEnglishName.trim() : undefined,
             courseCode: courseCode ? courseCode.trim() : undefined,
             recipientName: recipientName.trim(),
             recipientEnglishName: recipientEnglishName ? recipientEnglishName.trim() : undefined,
@@ -412,6 +414,7 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
             records = jsonRecords.map((r, i) => ({
                 _rowNum: i + 1,
                 courseName: (r.courseName || '').trim(),
+                courseEnglishName: (r.courseEnglishName || '').trim(),
                 courseCode: (r.courseCode || '').trim(),
                 recipientName: (r.recipientName || '').trim(),
                 recipientEnglishName: (r.recipientEnglishName || '').trim(),
@@ -451,6 +454,7 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
             records = rows.map((row, i) => ({
                 _rowNum: i + 2,
                 courseName: (row.courseName || row['課程名稱'] || '').trim(),
+                courseEnglishName: (row.courseEnglishName || row['英文課程名稱'] || row['English Course Name'] || '').trim(),
                 courseCode: (row.courseCode || row['課程代碼'] || '').trim(),
                 recipientName: (row.recipientName || row['姓名'] || '').trim(),
                 recipientEnglishName: (row.recipientEnglishName || row.englishName || row['English Name'] || row['英文姓名'] || '').trim(),

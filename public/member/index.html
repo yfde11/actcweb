@@ -525,6 +525,9 @@
                                                     </div>
                                                     <p class="font-medium text-sm"
                                                        x-text="cert.certType === 'course' ? (cert.course?.courseName || '課程') : (cert.exam?.title || '考試')"></p>
+                                                    <template x-if="cert.certType === 'course' && cert.course?.courseEnglishName">
+                                                        <p class="text-xs text-gray-500 font-semibold mt-0.5" x-text="cert.course.courseEnglishName"></p>
+                                                    </template>
                                                     <p class="text-xs text-gray-500 mt-0.5">證書編號：<span x-text="cert.certificateNumber"></span></p>
                                                     <p class="text-xs text-gray-500">發證日期：<span x-text="new Date(cert.issuedAt).toLocaleDateString('zh-TW')"></span></p>
                                                     <p x-show="cert.expiresAt" class="text-xs text-gray-500">到期日：<span x-text="cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString('zh-TW') : ''"></span></p>

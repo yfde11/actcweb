@@ -190,6 +190,7 @@ async function run() {
         console.log('\n--- Case 2: Create course attendance with English name ---');
         const attendance = new CourseAttendance({
             courseName: 'TEST_COURSE_詠春拳大師班',
+            courseEnglishName: 'Wing Chun Grandmaster Course',
             recipientName: '李小龍',
             recipientEnglishName: 'Bruce Lee',
             recipientEmail: 'test_en_bruce@example.com',
@@ -217,8 +218,14 @@ async function run() {
         console.log('Verification status ok:', verifyRes.ok);
         console.log('holderName:', verifyRes.data.holderName);
         console.log('holderEnglishName:', verifyRes.data.holderEnglishName);
+        console.log('examTitle:', verifyRes.data.examTitle);
+        console.log('courseEnglishName:', verifyRes.data.courseEnglishName);
 
-        if (verifyRes.ok && verifyRes.data.holderName === '李小龍' && verifyRes.data.holderEnglishName === 'Bruce Lee') {
+        if (verifyRes.ok && 
+            verifyRes.data.holderName === '李小龍' && 
+            verifyRes.data.holderEnglishName === 'Bruce Lee' &&
+            verifyRes.data.examTitle === 'TEST_COURSE_詠春拳大師班' &&
+            verifyRes.data.courseEnglishName === 'Wing Chun Grandmaster Course') {
             console.log('✅ VERIFICATION API PASSED: name fields resolved correctly');
         } else {
             console.log('❌ VERIFICATION API FAILED: got', verifyRes.data);

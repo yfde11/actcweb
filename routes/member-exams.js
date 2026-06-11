@@ -186,7 +186,7 @@ router.get('/certificates', verifiedAuth, async (req, res) => {
                 .skip(skip)
                 .limit(parseInt(limit))
                 .populate('exam', 'title examType')
-                .populate('course', 'courseName')
+                .populate('course', 'courseName courseEnglishName')
                 .populate('certTypeRef', 'name titleZh'),
             Certificate.countDocuments(certQuery)
         ]);
