@@ -181,6 +181,11 @@ function drawCertificateLayout(doc, data) {
     doc.font('Bold').fontSize(18).fillColor(NAVY)
        .text(data.customBodyText || data.displayTitle, marginX + 40, titleNameY, { width: contentW - 80, align: 'center' });
 
+    if (!data.customBodyText && data.isCourse && data.course && data.course.courseEnglishName) {
+        doc.font('Regular').fontSize(12).fillColor(NAVY)
+           .text(data.course.courseEnglishName, marginX + 40, titleNameY + 24, { width: contentW - 80, align: 'center' });
+    }
+
     // ── Course / Exam info — two-column layout ────────────────────────────────
     const infoLabelY = 394;
     const infoLabelEnY = 409;
@@ -385,6 +390,7 @@ async function generateCertificatePDF(certificateId, res) {
             .replace(/\{\{name\}\}/g, recipientDisplayName)
             .replace(/\{\{examTitle\}\}/g, examTitle)
             .replace(/\{\{courseName\}\}/g, courseName)
+            .replace(/\{\{courseEnglishName\}\}/g, isCourse && certificate.course ? (certificate.course.courseEnglishName || '') : '')
             .replace(/\{\{date\}\}/g, issuedDateStrForBody)
             .replace(/\{\{certNumber\}\}/g, certificate.certificateNumber);
     }
@@ -400,7 +406,8 @@ async function generateCertificatePDF(certificateId, res) {
         displayTitle,
         course: isCourse && certificate.course ? {
             attendanceDate: certificate.course.attendanceDate,
-            completionHours: certificate.course.completionHours
+            completionHours: certificate.course.completionHours,
+            courseEnglishName: certificate.course.courseEnglishName
         } : null,
         issuedAt: certificate.issuedAt,
         expiresAt: certificate.expiresAt
@@ -447,6 +454,7 @@ async function generatePreviewPDF(previewData, res) {
             .replace(/\{\{name\}\}/g, recipientDisplayName)
             .replace(/\{\{examTitle\}\}/g, examTitle)
             .replace(/\{\{courseName\}\}/g, courseName)
+            .replace(/\{\{courseEnglishName\}\}/g, 'ISO 27001 Information Security Management System Lead Auditor Course')
             .replace(/\{\{date\}\}/g, issuedDateStrForBody)
             .replace(/\{\{certNumber\}\}/g, certificateNumber);
     }
@@ -476,7 +484,8 @@ async function generatePreviewPDF(previewData, res) {
         displayTitle,
         course: {
             attendanceDate: new Date(),
-            completionHours: 40
+            completionHours: 40,
+            courseEnglishName: 'ISO 27001 Information Security Management System Lead Auditor Course'
         },
         issuedAt: new Date(),
         expiresAt: null
