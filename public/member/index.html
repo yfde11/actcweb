@@ -2549,7 +2549,8 @@
                     const token = localStorage.getItem('memberToken') || localStorage.getItem('adminToken') || '';
                     try {
                         const res = await fetch(`/api/member/exams/certificate/${certificateNumber}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            credentials: 'include'
                         });
                         if (res.ok) {
                             const blob = await res.blob();
@@ -2559,8 +2560,10 @@
                             a.download = `certificate-${certificateNumber}.pdf`;
                             document.body.appendChild(a);
                             a.click();
-                            document.body.removeChild(a);
-                            window.URL.revokeObjectURL(url);
+                            setTimeout(() => {
+                                window.URL.revokeObjectURL(url);
+                                if (a.parentNode) a.parentNode.removeChild(a);
+                            }, 1000);
                         } else if (res.status === 401 || res.status === 403) {
                             alert('請重新登入後再試');
                         } else if (res.status === 404) {

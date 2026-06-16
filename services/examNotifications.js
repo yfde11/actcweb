@@ -38,8 +38,9 @@ async function sendExamPassedEmail(user, exam, attempt, certificateNumber) {
         const userName = validator.escape(user.fullName || user.username);
         const examTitle = validator.escape(exam.title);
         const score = attempt.score;
-        const downloadUrl = certificateNumber 
-            ? `${siteBaseUrl()}/api/member/exams/certificate/${certificateNumber}`
+        const memberUrl = `${siteBaseUrl()}/member#exams`;
+        const verifyUrl = certificateNumber
+            ? `${siteBaseUrl()}/verify-certificate/${certificateNumber}`
             : '';
 
         const subject = `考試通過通知 - ${examTitle}`;
@@ -47,9 +48,9 @@ async function sendExamPassedEmail(user, exam, attempt, certificateNumber) {
             <p>親愛的 ${userName}，</p>
             <p>恭喜您通過考試「${examTitle}」！</p>
             <p>您的成績：${score} 分</p>
-            ${certificateNumber ? `<p>證書編號：${certificateNumber}</p><p>下載證書：<a href="${downloadUrl}">${downloadUrl}</a></p>` : ''}
+            ${certificateNumber ? `<p>證書編號：${certificateNumber}</p><p>證書驗證：<a href="${verifyUrl}">${verifyUrl}</a></p><p>下載證書請登入會員專區：<a href="${memberUrl}">${memberUrl}</a></p>` : ''}
         `;
-        const text = `親愛的 ${userName}，恭喜您通過考試「${examTitle}」！您的成績：${score} 分${certificateNumber ? `，證書編號：${certificateNumber}，下載：${downloadUrl}` : ''}`;
+        const text = `親愛的 ${userName}，恭喜您通過考試「${examTitle}」！您的成績：${score} 分${certificateNumber ? `，證書編號：${certificateNumber}，驗證：${verifyUrl}，下載請登入會員專區：${memberUrl}` : ''}`;
 
         return await sendMail({ to: user.email, subject, html, text });
     } catch (error) {
