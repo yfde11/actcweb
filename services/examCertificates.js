@@ -326,11 +326,15 @@ async function generateCertificatePDF(certificateId, res) {
     }
 
     let user = certificate.user;
+    const certificatePostUpdate = {
+        $inc: { downloadCount: 1 },
+        $set: { lastDownloadedAt: new Date() }
+    };
+
     if (!user && certificate.recipientEmail) {
         user = await User.findOne({ email: certificate.recipientEmail.toLowerCase() });
         if (user) {
-            certificate.user = user._id;
-            Certificate.updateOne({ _id: certificate._id }, { $set: { user: user._id } }).catch(err => console.error('Link user to certificate error:', err));
+            certificatePostUpdate.$set.user = user._id;
         }
     }
     const isCourse = certificate.certType === 'course';
@@ -347,8 +351,7 @@ async function generateCertificatePDF(certificateId, res) {
 
     // Solidify to DB if empty on certificate but present on user profile
     if (!certificate.recipientEnglishName && user && user.englishName) {
-        certificate.recipientEnglishName = user.englishName;
-        certificate.save().catch(err => console.error('Solidify recipientEnglishName error:', err));
+        certificatePostUpdate.$set.recipientEnglishName = user.englishName;
     }
 
     // Create PDF document — A4 landscape: 841.89 × 595.28 pt
@@ -418,10 +421,10 @@ async function generateCertificatePDF(certificateId, res) {
     // Finalize PDF
     doc.end();
 
-    // Update download count
-    certificate.downloadCount += 1;
-    certificate.lastDownloadedAt = new Date();
-    await certificate.save();
+    // Update download metadata outside the response stream path. A failed audit update
+    // must not turn a successfully generated PDF into a broken download.
+    Certificate.updateOne({ _id: certificate._id }, certificatePostUpdate)
+        .catch(err => console.error('Update certificate download metadata error:', err));
 }
 
 /**
