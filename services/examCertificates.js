@@ -89,6 +89,17 @@ function hasChineseFont() {
     return fs.existsSync(FONT_PATH);
 }
 
+function formatTaipeiDottedDate(value) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(new Date(value));
+    const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${map.year}.${map.month}.${map.day}`;
+}
+
 /**
  * Generate certificate PDF on-the-fly (streaming)
  * @param {string} certificateId - Certificate ID
@@ -196,28 +207,43 @@ function drawCertificateLayout(doc, data) {
     const colW      = 175;
 
     if (data.isCourse && data.course) {
-        // Left — Course Date
-        doc.font('Bold').fontSize(13).fillColor(NAVY)
-           .text('課程日期', colLeftX, infoLabelY);
-        doc.font('Regular').fontSize(10).fillColor(GRAY)
-           .text('Course Date', colLeftX, infoLabelEnY);
+        const infoItems = [];
         if (data.course.attendanceDate) {
-            const d = new Date(data.course.attendanceDate);
-            const dateVal = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-            doc.font('Bold').fontSize(16).fillColor(NAVY)
-               .text(dateVal, colLeftX + 90, infoValueY);
+            infoItems.push({
+                labelZh: '課程日期',
+                labelEn: 'Course Date',
+                valueZh: formatTaipeiDottedDate(data.course.attendanceDate)
+            });
         }
-        // Right — Course Duration
-        doc.font('Bold').fontSize(13).fillColor(NAVY)
-           .text('課程時數', colRightX, infoLabelY);
-        doc.font('Regular').fontSize(10).fillColor(GRAY)
-           .text('Course Duration', colRightX, infoLabelEnY);
         if (data.course.completionHours) {
-            doc.font('Bold').fontSize(16).fillColor(NAVY)
-               .text(`${data.course.completionHours}小時`, colRightX + 90, infoLabelY - 1);
-            doc.font('Regular').fontSize(10).fillColor(GRAY)
-               .text(`${data.course.completionHours} Hours`, colRightX + 90, infoLabelEnY);
+            infoItems.push({
+                labelZh: '課程時數',
+                labelEn: 'Course Duration',
+                valueZh: `${data.course.completionHours}小時`,
+                valueEn: `${data.course.completionHours} Hours`
+            });
         }
+
+        const itemPositions = infoItems.length === 1
+            ? [{ labelX: cx - 110, valueX: cx - 20 }]
+            : [
+                { labelX: colLeftX, valueX: colLeftX + 90 },
+                { labelX: colRightX, valueX: colRightX + 90 }
+            ];
+
+        infoItems.slice(0, 2).forEach((item, idx) => {
+            const pos = itemPositions[idx];
+            doc.font('Bold').fontSize(13).fillColor(NAVY)
+               .text(item.labelZh, pos.labelX, infoLabelY);
+            doc.font('Regular').fontSize(10).fillColor(GRAY)
+               .text(item.labelEn, pos.labelX, infoLabelEnY);
+            doc.font('Bold').fontSize(16).fillColor(NAVY)
+               .text(item.valueZh, pos.valueX, item.valueEn ? infoLabelY - 1 : infoValueY);
+            if (item.valueEn) {
+                doc.font('Regular').fontSize(10).fillColor(GRAY)
+                   .text(item.valueEn, pos.valueX, infoLabelEnY);
+            }
+        });
     } else if (!data.isCourse) {
         // Left — Issue Date
         const d = new Date(data.issuedAt);

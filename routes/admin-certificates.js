@@ -18,11 +18,105 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+const CSV_TEMPLATE_HEADERS = [
+    'courseName',
+    'courseEnglishName',
+    'recipientName',
+    'recipientEnglishName',
+    'recipientEmail',
+    'attendanceDate',
+    'courseCode',
+    'completionHours',
+    'instructorName',
+    'notes'
+];
+
 // Error response helper
 function errorResponse(res, statusCode, code, message, details = {}) {
     return res.status(statusCode).json({
         error: { code, message, details }
     });
+}
+
+function parseAttendanceDate(value) {
+    const raw = String(value || '').trim();
+    if (!raw) {
+        return { error: '出席日期為必填' };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        return { error: '出席日期格式必須為 YYYY-MM-DD' };
+    }
+    const [year, month, day] = raw.split('-').map(Number);
+    const utcCheck = new Date(Date.UTC(year, month - 1, day));
+    if (
+        utcCheck.getUTCFullYear() !== year ||
+        utcCheck.getUTCMonth() + 1 !== month ||
+        utcCheck.getUTCDate() !== day
+    ) {
+        return { error: '出席日期不是合法日期' };
+    }
+    const parsed = new Date(`${raw}T00:00:00.000+08:00`);
+    if (isNaN(parsed.getTime())) {
+        return { error: '出席日期不是合法日期' };
+    }
+    const todayTaipei = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date());
+    if (raw > todayTaipei) {
+        return { error: '出席日期不可為未來日期' };
+    }
+    return { date: parsed };
+}
+
+function escapeRegex(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeSearchTerm(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    return escapeRegex(raw.slice(0, 100));
+}
+
+function normalizePositiveHours(value) {
+    if (value === undefined || value === null || value === '') {
+        return { value: undefined };
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num) || num <= 0) {
+        return { error: '完成時數若有填寫，必須為正數' };
+    }
+    return { value: num };
+}
+
+function normalizeRequiredEmail(value) {
+    const email = String(value || '').trim().toLowerCase();
+    if (!email) {
+        return { error: '受證者 Email 為必填' };
+    }
+    if (!validator.isEmail(email)) {
+        return { error: `Email 格式不正確：${email}` };
+    }
+    return { email };
+}
+
+function collectChanges(doc, updates) {
+    const changes = {};
+    for (const [field, nextValue] of Object.entries(updates)) {
+        const prevValue = doc[field] instanceof Date
+            ? doc[field].toISOString()
+            : doc[field];
+        const normalizedNext = nextValue instanceof Date
+            ? nextValue.toISOString()
+            : nextValue;
+        if (String(prevValue ?? '') !== String(normalizedNext ?? '')) {
+            changes[field] = { from: prevValue ?? null, to: normalizedNext ?? null };
+        }
+    }
+    return changes;
 }
 
 // Shared: process an array of normalized records (issued from CSV or JSON body)
@@ -34,31 +128,37 @@ async function processBulkRecords(records, certValidityYears, resolvedCertTypeId
         const rec = records[i];
         const rowNum = rec._rowNum || (i + 1);
 
-        if (!rec.courseName || !rec.recipientName || !rec.attendanceDateStr) {
+        if (!rec.courseName || !rec.recipientName || !rec.attendanceDateStr || !rec.recipientEmail) {
             results.failed++;
-            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: '課程名稱、姓名及出席日期為必填欄位' });
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: '課程名稱、姓名、出席日期及 Email 為必填欄位' });
             continue;
         }
 
-        if (rec.recipientEmail && !validator.isEmail(rec.recipientEmail)) {
+        const emailResult = normalizeRequiredEmail(rec.recipientEmail);
+        if (emailResult.error) {
             results.failed++;
-            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: `Email 格式不正確：${rec.recipientEmail}` });
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: emailResult.error });
             continue;
         }
 
-        const attendanceDate = new Date(rec.attendanceDateStr);
-        if (isNaN(attendanceDate.getTime())) {
+        const dateResult = parseAttendanceDate(rec.attendanceDateStr);
+        if (dateResult.error) {
             results.failed++;
-            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: `無效的出席日期：${rec.attendanceDateStr}` });
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: dateResult.error });
+            continue;
+        }
+
+        const hoursResult = normalizePositiveHours(rec.completionHoursStr);
+        if (hoursResult.error) {
+            results.failed++;
+            results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: hoursResult.error });
             continue;
         }
 
         try {
             let linkedUserId = null;
-            if (rec.recipientEmail) {
-                const user = await User.findOne({ email: rec.recipientEmail }).select('_id');
-                if (user) linkedUserId = user._id;
-            }
+            const user = await User.findOne({ email: emailResult.email }).select('_id');
+            if (user) linkedUserId = user._id;
 
             const attendance = new CourseAttendance({
                 courseName: rec.courseName,
@@ -66,10 +166,10 @@ async function processBulkRecords(records, certValidityYears, resolvedCertTypeId
                 courseCode: rec.courseCode || undefined,
                 recipientName: rec.recipientName,
                 recipientEnglishName: rec.recipientEnglishName || undefined,
-                recipientEmail: rec.recipientEmail || undefined,
+                recipientEmail: emailResult.email,
                 user: linkedUserId,
-                attendanceDate,
-                completionHours: rec.completionHoursStr ? Number(rec.completionHoursStr) : undefined,
+                attendanceDate: dateResult.date,
+                completionHours: hoursResult.value,
                 instructorName: rec.instructorName || undefined,
                 notes: rec.notes || undefined,
                 createdBy: adminUserId
@@ -121,13 +221,15 @@ function formatTaipeiDate(date) {
 }
 
 // GET /api/admin/certificates - 全局列表（cursor 分頁）
-// Query: certType, isRevoked, userId, examId, limit, cursor
+// Query: certType, isRevoked, userId, examId, q, certificateNumber, recipientName, recipientEmail, courseName, courseCode, limit, cursor
 router.get('/', adminAuth, async (req, res) => {
     try {
-        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-        const { cursor, certType, isRevoked, userId, examId } = req.query;
+        const requestedLimit = parseInt(req.query.limit, 10);
+        const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 20;
+        const { cursor, certType, isRevoked, userId, examId, q, certificateNumber, recipientName, recipientEmail, courseName, courseCode } = req.query;
 
         const query = {};
+        const andConditions = [];
         if (certType && ['exam', 'course'].includes(certType)) {
             query.certType = certType;
         }
@@ -141,12 +243,65 @@ router.get('/', adminAuth, async (req, res) => {
             query.exam = new mongoose.Types.ObjectId(examId);
         }
 
+        const courseFilters = [];
+        const courseNameTerm = normalizeSearchTerm(courseName);
+        const courseCodeTerm = normalizeSearchTerm(courseCode);
+        if (courseNameTerm) {
+            courseFilters.push({ courseName: { $regex: courseNameTerm, $options: 'i' } });
+        }
+        if (courseCodeTerm) {
+            courseFilters.push({ courseCode: { $regex: courseCodeTerm, $options: 'i' } });
+        }
+        if (courseFilters.length > 0) {
+            const courseIds = await CourseAttendance.find({ $and: courseFilters }).distinct('_id');
+            andConditions.push({ course: { $in: courseIds } });
+        }
+
+        const certificateNumberTerm = normalizeSearchTerm(certificateNumber);
+        const recipientNameTerm = normalizeSearchTerm(recipientName);
+        const recipientEmailTerm = normalizeSearchTerm(recipientEmail);
+        if (certificateNumberTerm) {
+            andConditions.push({ certificateNumber: { $regex: certificateNumberTerm, $options: 'i' } });
+        }
+        if (recipientNameTerm) {
+            andConditions.push({ recipientName: { $regex: recipientNameTerm, $options: 'i' } });
+        }
+        if (recipientEmailTerm) {
+            andConditions.push({ recipientEmail: { $regex: recipientEmailTerm.toLowerCase(), $options: 'i' } });
+        }
+        const qTerm = normalizeSearchTerm(q);
+        if (qTerm) {
+            const matchedCourseIds = await CourseAttendance.find({
+                $or: [
+                    { courseName: { $regex: qTerm, $options: 'i' } },
+                    { courseCode: { $regex: qTerm, $options: 'i' } },
+                    { recipientName: { $regex: qTerm, $options: 'i' } },
+                    { recipientEmail: { $regex: qTerm.toLowerCase(), $options: 'i' } }
+                ]
+            }).distinct('_id');
+            andConditions.push({
+                $or: [
+                    { certificateNumber: { $regex: qTerm, $options: 'i' } },
+                    { recipientName: { $regex: qTerm, $options: 'i' } },
+                    { recipientEmail: { $regex: qTerm.toLowerCase(), $options: 'i' } },
+                    { course: { $in: matchedCourseIds } }
+                ]
+            });
+        }
+
         if (cursor) {
             const [issuedAt, id] = cursor.split('|');
-            query.$or = [
+            if (!issuedAt || !id || isNaN(new Date(issuedAt).getTime()) || !mongoose.Types.ObjectId.isValid(id)) {
+                return errorResponse(res, 400, 'INVALID_CURSOR', '無效的分頁游標');
+            }
+            andConditions.push({ $or: [
                 { issuedAt: { $lt: new Date(issuedAt) } },
                 { issuedAt: new Date(issuedAt), _id: { $lt: new mongoose.Types.ObjectId(id) } }
-            ];
+            ]});
+        }
+
+        if (andConditions.length > 0) {
+            query.$and = andConditions;
         }
 
         const certs = await Certificate.find(query)
@@ -154,7 +309,7 @@ router.get('/', adminAuth, async (req, res) => {
             .limit(limit + 1)
             .populate('user', 'username email fullName')
             .populate('exam', 'title')
-            .populate('course', 'courseName')
+            .populate('course', 'courseName courseEnglishName courseCode recipientName recipientEnglishName recipientEmail attendanceDate completionHours instructorName notes')
             .populate('certTypeRef', 'name titleZh')
             .populate('attempt', 'score passed attemptNumber')
             .populate('revokedBy', 'username fullName');
@@ -176,13 +331,34 @@ router.get('/', adminAuth, async (req, res) => {
     }
 });
 
+// GET /api/admin/certificates/course-attendances/template.csv - 空白批次上傳範本
+router.get('/course-attendances/template.csv', adminAuth, async (req, res) => {
+    const sample = [
+        '範例課程',
+        'Sample Course',
+        '王小明',
+        'Wang Xiao Ming',
+        'student@example.com',
+        formatTaipeiDate(new Date()),
+        'ACTC-COURSE-001',
+        '6',
+        '陳講師',
+        '範例列，正式上傳前請刪除'
+    ];
+    const csvContent = '﻿' + CSV_TEMPLATE_HEADERS.join(',') + '\n' + sample.map(escapeCSVField).join(',') + '\n';
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="certificate-upload-template.csv"');
+    res.send(csvContent);
+});
+
 // GET /api/admin/certificates/export - CSV 匯出（上限 5000 筆，UTF-8 BOM）
-// Query: certType, isRevoked, userId, examId
+// Query: certType, isRevoked, userId, examId, q
 router.get('/export', adminAuth, async (req, res) => {
     try {
-        const { certType, isRevoked, userId, examId } = req.query;
+        const { certType, isRevoked, userId, examId, q } = req.query;
 
         const query = {};
+        const andConditions = [];
         if (certType && ['exam', 'course'].includes(certType)) {
             query.certType = certType;
         }
@@ -195,19 +371,41 @@ router.get('/export', adminAuth, async (req, res) => {
         if (examId && mongoose.Types.ObjectId.isValid(examId)) {
             query.exam = new mongoose.Types.ObjectId(examId);
         }
+        const qTerm = normalizeSearchTerm(q);
+        if (qTerm) {
+            const matchedCourseIds = await CourseAttendance.find({
+                $or: [
+                    { courseName: { $regex: qTerm, $options: 'i' } },
+                    { courseCode: { $regex: qTerm, $options: 'i' } },
+                    { recipientName: { $regex: qTerm, $options: 'i' } },
+                    { recipientEmail: { $regex: qTerm.toLowerCase(), $options: 'i' } }
+                ]
+            }).distinct('_id');
+            andConditions.push({
+                $or: [
+                    { certificateNumber: { $regex: qTerm, $options: 'i' } },
+                    { recipientName: { $regex: qTerm, $options: 'i' } },
+                    { recipientEmail: { $regex: qTerm.toLowerCase(), $options: 'i' } },
+                    { course: { $in: matchedCourseIds } }
+                ]
+            });
+        }
+        if (andConditions.length > 0) {
+            query.$and = andConditions;
+        }
 
         const certs = await Certificate.find(query)
             .sort({ issuedAt: -1, _id: -1 })
             .limit(5000)
             .populate('user', 'username email fullName')
             .populate('exam', 'title')
-            .populate('course', 'courseName')
+            .populate('course', 'courseName courseEnglishName courseCode attendanceDate completionHours instructorName')
             .populate('attempt', 'score passed')
             .populate('revokedBy', 'username fullName')
             .lean();
 
         const csvRows = [];
-        csvRows.push('證書編號,證書類型,姓名,使用者名稱,Email,考試/課程名稱,發證日期,到期日,狀態,撤銷原因,管理備註');
+        csvRows.push('證書編號,證書類型,姓名,英文姓名,使用者名稱,Email,考試/課程名稱,英文課程名稱,課程代碼,出席日期,完成時數,講師,發證日期,到期日,狀態,撤銷原因,管理備註');
 
         for (const cert of certs) {
             const user = cert.user || {};
@@ -222,9 +420,15 @@ router.get('/export', adminAuth, async (req, res) => {
                 escapeCSVField(cert.certificateNumber),
                 escapeCSVField(cert.certType === 'exam' ? '考試型' : '課程型'),
                 escapeCSVField(displayName),
+                escapeCSVField(cert.recipientEnglishName || ''),
                 escapeCSVField(user.username || ''),
                 escapeCSVField(displayEmail),
                 escapeCSVField(examOrCourse),
+                escapeCSVField(cert.course?.courseEnglishName || ''),
+                escapeCSVField(cert.course?.courseCode || ''),
+                cert.course?.attendanceDate ? formatTaipeiDate(cert.course.attendanceDate) : '',
+                escapeCSVField(cert.course?.completionHours || ''),
+                escapeCSVField(cert.course?.instructorName || ''),
                 formatTaipeiDate(cert.issuedAt),
                 cert.expiresAt ? formatTaipeiDate(cert.expiresAt) : '永久',
                 escapeCSVField(status),
@@ -287,19 +491,29 @@ router.patch('/:id/expiry', adminAuth, async (req, res) => {
 });
 
 // POST /api/admin/certificates/course-attendances - 手動單筆發課程型證書
-// Body: { courseName, courseCode?, recipientName, recipientEmail?, userId?, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears?, certTypeId? }
+// Body: { courseName, courseCode?, recipientName, recipientEmail, userId?, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears?, certTypeId? }
 // userId 選填：填入時嘗試關聯本會會員帳號，否則視為外部人士
 router.post('/course-attendances', adminAuth, async (req, res) => {
     try {
         const { courseName, courseEnglishName, courseCode, recipientName, recipientEnglishName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears, certTypeId } = req.body;
 
-        if (!courseName || !recipientName || !attendanceDate) {
-            return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名及出席日期為必填');
+        if (!courseName || !recipientName || !attendanceDate || !recipientEmail) {
+            return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名、Email 及出席日期為必填');
         }
 
-        const attendanceDateParsed = new Date(attendanceDate);
-        if (isNaN(attendanceDateParsed.getTime())) {
-            return errorResponse(res, 400, 'INVALID_DATE', '無效的出席日期格式');
+        const dateResult = parseAttendanceDate(attendanceDate);
+        if (dateResult.error) {
+            return errorResponse(res, 400, 'INVALID_DATE', dateResult.error);
+        }
+
+        const emailResult = normalizeRequiredEmail(recipientEmail);
+        if (emailResult.error) {
+            return errorResponse(res, 400, 'INVALID_EMAIL', emailResult.error);
+        }
+
+        const hoursResult = normalizePositiveHours(completionHours);
+        if (hoursResult.error) {
+            return errorResponse(res, 400, 'INVALID_COMPLETION_HOURS', hoursResult.error);
         }
 
         // 選填：嘗試關聯會員帳號
@@ -313,32 +527,10 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
                 return errorResponse(res, 404, 'USER_NOT_FOUND', '找不到指定的使用者');
             }
             linkedUserId = userId;
-        } else if (recipientEmail) {
-            const emailNorm = recipientEmail.trim().toLowerCase();
-            if (!validator.isEmail(emailNorm)) {
-                return errorResponse(res, 400, 'INVALID_EMAIL', '受證者 Email 格式不正確');
-            }
-            const user = await User.findOne({ email: emailNorm }).select('_id');
+        } else {
+            const user = await User.findOne({ email: emailResult.email }).select('_id');
             if (user) linkedUserId = user._id;
         }
-
-        const normalizedEmail = recipientEmail ? recipientEmail.trim().toLowerCase() : undefined;
-
-        const attendance = new CourseAttendance({
-            courseName: courseName.trim(),
-            courseEnglishName: courseEnglishName ? courseEnglishName.trim() : undefined,
-            courseCode: courseCode ? courseCode.trim() : undefined,
-            recipientName: recipientName.trim(),
-            recipientEnglishName: recipientEnglishName ? recipientEnglishName.trim() : undefined,
-            recipientEmail: normalizedEmail,
-            user: linkedUserId,
-            attendanceDate: attendanceDateParsed,
-            completionHours: completionHours ? Number(completionHours) : undefined,
-            instructorName: instructorName ? instructorName.trim() : undefined,
-            notes: notes ? notes.trim() : undefined,
-            createdBy: req.user.userId
-        });
-        await attendance.save();
 
         const years = certValidityYears !== undefined ? Number(certValidityYears) : undefined;
 
@@ -354,6 +546,22 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
             resolvedCertTypeId = certTypeId;
         }
 
+        const attendance = new CourseAttendance({
+            courseName: courseName.trim(),
+            courseEnglishName: courseEnglishName ? courseEnglishName.trim() : undefined,
+            courseCode: courseCode ? courseCode.trim() : undefined,
+            recipientName: recipientName.trim(),
+            recipientEnglishName: recipientEnglishName ? recipientEnglishName.trim() : undefined,
+            recipientEmail: emailResult.email,
+            user: linkedUserId,
+            attendanceDate: dateResult.date,
+            completionHours: hoursResult.value,
+            instructorName: instructorName ? instructorName.trim() : undefined,
+            notes: notes ? notes.trim() : undefined,
+            createdBy: req.user.userId
+        });
+        await attendance.save();
+
         const { attendance: updatedAttendance, certificate } = await issueCourseAttendanceCertificate(
             attendance._id.toString(),
             years,
@@ -366,6 +574,117 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
         if (error.message === 'CERTIFICATE_ALREADY_ISSUED') {
             return errorResponse(res, 409, 'CERTIFICATE_ALREADY_ISSUED', '此出席紀錄已發過證書');
         }
+        if (error.name === 'ValidationError') {
+            const details = {};
+            for (let field in error.errors) {
+                details[field] = error.errors[field].message;
+            }
+            return errorResponse(res, 400, 'VALIDATION_ERROR', '欄位驗證失敗', details);
+        }
+        errorResponse(res, 500, 'INTERNAL_ERROR', '伺服器錯誤', { debug: error.message });
+    }
+});
+
+// PATCH /api/admin/certificates/:id/course-attendance - 編輯已發出的課程型證書資料
+// Body: { courseName, courseEnglishName?, courseCode?, recipientName, recipientEnglishName?, recipientEmail, attendanceDate, completionHours?, instructorName?, notes?, editReason }
+router.patch('/:id/course-attendance', adminAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return errorResponse(res, 400, 'INVALID_ID', '無效的證書 ID');
+        }
+
+        const {
+            courseName,
+            courseEnglishName,
+            courseCode,
+            recipientName,
+            recipientEnglishName,
+            recipientEmail,
+            attendanceDate,
+            completionHours,
+            instructorName,
+            notes,
+            editReason
+        } = req.body;
+
+        const reason = String(editReason || '').trim();
+        if (!reason) {
+            return errorResponse(res, 400, 'EDIT_REASON_REQUIRED', '修改原因為必填');
+        }
+        if (!courseName || !recipientName || !attendanceDate || !recipientEmail) {
+            return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名、Email 及出席日期為必填');
+        }
+
+        const dateResult = parseAttendanceDate(attendanceDate);
+        if (dateResult.error) {
+            return errorResponse(res, 400, 'INVALID_DATE', dateResult.error);
+        }
+        const emailResult = normalizeRequiredEmail(recipientEmail);
+        if (emailResult.error) {
+            return errorResponse(res, 400, 'INVALID_EMAIL', emailResult.error);
+        }
+        const hoursResult = normalizePositiveHours(completionHours);
+        if (hoursResult.error) {
+            return errorResponse(res, 400, 'INVALID_COMPLETION_HOURS', hoursResult.error);
+        }
+
+        const cert = await Certificate.findById(req.params.id).populate('course');
+        if (!cert) {
+            return errorResponse(res, 404, 'NOT_FOUND', '證書不存在');
+        }
+        if (cert.certType !== 'course' || !cert.course) {
+            return errorResponse(res, 400, 'NOT_COURSE_CERTIFICATE', '僅課程型證書可編輯課程發證資料');
+        }
+
+        const attendance = await CourseAttendance.findById(cert.course._id || cert.course);
+        if (!attendance) {
+            return errorResponse(res, 404, 'COURSE_ATTENDANCE_NOT_FOUND', '找不到課程出席紀錄');
+        }
+
+        const linkedUser = await User.findOne({ email: emailResult.email }).select('_id');
+        const updates = {
+            courseName: courseName.trim(),
+            courseEnglishName: courseEnglishName ? courseEnglishName.trim() : undefined,
+            courseCode: courseCode ? courseCode.trim() : undefined,
+            recipientName: recipientName.trim(),
+            recipientEnglishName: recipientEnglishName ? recipientEnglishName.trim() : undefined,
+            recipientEmail: emailResult.email,
+            user: linkedUser ? linkedUser._id : null,
+            attendanceDate: dateResult.date,
+            completionHours: hoursResult.value,
+            instructorName: instructorName ? instructorName.trim() : undefined,
+            notes: notes ? notes.trim() : undefined
+        };
+
+        const changes = collectChanges(attendance, updates);
+        if (Object.keys(changes).length === 0) {
+            return res.json({ data: { certificate: cert, attendance, changed: false } });
+        }
+
+        Object.assign(attendance, updates);
+        attendance.lastEditedBy = req.user.userId;
+        attendance.lastEditedAt = new Date();
+        attendance.editHistory.push({
+            editedBy: req.user.userId,
+            editedAt: new Date(),
+            changes,
+            reason
+        });
+        await attendance.save();
+
+        cert.recipientName = updates.recipientName;
+        cert.recipientEnglishName = updates.recipientEnglishName;
+        cert.recipientEmail = updates.recipientEmail;
+        cert.user = updates.user;
+        await cert.save();
+
+        await cert.populate('course');
+        await cert.populate('user', 'username email fullName');
+        await cert.populate('certTypeRef', 'name titleZh');
+
+        res.json({ data: { certificate: cert, attendance, changed: true } });
+    } catch (error) {
+        console.error('Edit course certificate error:', error);
         if (error.name === 'ValidationError') {
             const details = {};
             for (let field in error.errors) {

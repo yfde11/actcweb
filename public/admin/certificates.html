@@ -36,11 +36,17 @@
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-file-import mr-2"></i>批次上傳
                         </button>
-                        <a :href="exportUrl()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
+                        <button @click="downloadTemplate()"
+                           class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
+                            <i class="fas fa-file-csv mr-2"></i>下載範本
+                        </button>
+                        <button @click="downloadExport()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                             <i class="fas fa-download mr-2"></i>匯出 CSV
-                        </a>
+                        </button>
                     </div>
                     <div class="flex flex-wrap gap-3">
+                        <input type="text" x-model="filters.q" @keydown.enter="resetAndLoad()" placeholder="搜尋證書編號、姓名、Email、課程"
+                               class="border rounded-lg px-3 py-2 text-sm w-64">
                         <select x-model="filters.certType" @change="resetAndLoad()"
                                 class="border rounded-lg px-3 py-2 text-sm">
                             <option value="">全部類型</option>
@@ -105,7 +111,7 @@
                                     <div class="text-xs text-gray-500" x-text="cert.recipientEmail || cert.user?.email || ''"></div>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-700"
-                                    x-text="cert.certType === 'course' ? (cert.course?.courseName || 'N/A') : (cert.exam?.title || 'N/A')"></td>
+                                    x-text="cert.certType === 'course' ? [cert.course?.courseName || 'N/A', cert.course?.courseCode ? '(' + cert.course.courseCode + ')' : ''].filter(Boolean).join(' ') : (cert.exam?.title || 'N/A')"></td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <span x-show="cert.isRevoked"
                                           class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 font-medium">已撤銷</span>
@@ -119,6 +125,9 @@
                                 <td class="px-4 py-3 text-sm text-gray-700"
                                     x-text="cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString('zh-TW') : '永久'"></td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <button x-show="cert.certType === 'course'"
+                                            @click="openEditModal(cert)"
+                                            class="text-blue-600 hover:text-blue-900 mr-3">編輯</button>
                                     <button @click="openExpiryModal(cert)"
                                             class="text-indigo-600 hover:text-indigo-900 mr-3">修改到期</button>
                                     <button x-show="!cert.isRevoked"
@@ -198,10 +207,10 @@
                                placeholder="英文姓名（選填）">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">受證者 Email</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">受證者 Email <span class="text-red-500">*</span></label>
                         <input type="email" x-model="issueForm.recipientEmail"
                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="選填，有助於與會員帳號連結">
+                               placeholder="必填，用於與會員帳號連結">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">出席日期 <span class="text-red-500">*</span></label>
@@ -278,8 +287,8 @@
                 <div x-show="currentBulkStep === 'upload'" class="p-6 space-y-4 overflow-y-auto">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                         <p class="font-medium mb-1">CSV 格式說明（上限 500 筆）</p>
-                        <p>必要欄位：<code>courseName</code>（課程名稱）、<code>recipientName</code>（姓名）、<code>attendanceDate</code>（出席日期 YYYY-MM-DD）</p>
-                        <p class="mt-1">選填欄位：<code>recipientEmail</code>（Email，有助於自動關聯會員帳號）、<code>englishName</code> / <code>英文姓名</code>（選填，中英雙行顯示）、<code>courseCode</code>、<code>completionHours</code>、<code>instructorName</code>、<code>notes</code></p>
+                        <p>必要欄位：<code>courseName</code>（課程名稱）、<code>recipientName</code>（姓名）、<code>recipientEmail</code>（Email）、<code>attendanceDate</code>（出席日期 YYYY-MM-DD）</p>
+                        <p class="mt-1">選填欄位：<code>recipientEnglishName</code> / <code>englishName</code>（英文姓名）、<code>courseEnglishName</code>、<code>courseCode</code>、<code>completionHours</code>、<code>instructorName</code>、<code>notes</code></p>
                         <p class="mt-1 text-gray-500">受證者不需為本會會員，外部人士亦可發證。若填入 Email 且與會員帳號相符，系統將自動關聯。</p>
                     </div>
                     <div>
@@ -321,7 +330,8 @@
                     <div class="px-6 py-3 bg-gray-50 border-b flex items-center justify-between shrink-0">
                         <span class="text-sm text-gray-700">
                             共 <span class="font-medium" x-text="bulkRecords.length"></span> 筆，
-                            <span class="font-medium" :class="bulkErrorCount > 0 ? 'text-red-600' : 'text-green-600'" x-text="bulkErrorCount"></span> 筆有錯誤
+                            <span class="font-medium" :class="bulkErrorCount > 0 ? 'text-red-600' : 'text-green-600'" x-text="bulkErrorCount"></span> 筆有錯誤，
+                            <span class="font-medium" :class="bulkWarningCount > 0 ? 'text-amber-600' : 'text-green-600'" x-text="bulkWarningCount"></span> 筆有警告
                         </span>
                         <div class="flex items-center gap-3">
                             <label class="text-xs text-gray-600 flex items-center gap-1 cursor-pointer select-none">
@@ -346,20 +356,22 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">Email</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">課程名稱</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">英文課程名稱</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">課程代碼</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">完課日期</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">時數</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">講師</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">備註</th>
                                     <th class="px-3 py-2 w-12"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
                                 <template x-for="(rec, idx) in bulkRecords" :key="idx">
-                                    <tr :class="rec._hasError ? 'bg-red-50 border-l-4 border-red-500' : ''">
+                                    <tr :class="rec._hasError ? 'bg-red-50 border-l-4 border-red-500' : (rec._hasWarning ? 'bg-amber-50 border-l-4 border-amber-400' : '')">
                                         <td class="px-3 py-1.5">
                                             <input type="checkbox" x-model="rec._selected" class="rounded">
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="text" x-model="rec.recipientName" @blur="validateBulkRecord(idx)"
+                                            <input type="text" x-model="rec.recipientName" @blur="refreshBulkRecord(idx)"
                                                    class="w-full min-w-[80px] border rounded px-2 py-1 text-sm"
                                                    :class="rec._errors?.recipientName ? 'border-red-400 bg-red-50' : ''">
                                             <div x-show="rec._errors?.recipientName" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.recipientName"></div>
@@ -370,31 +382,50 @@
                                                    placeholder="選填">
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="text" x-model="rec.recipientEmail" @blur="validateBulkRecord(idx)"
+                                            <input type="text" x-model="rec.recipientEmail" @blur="refreshBulkRecord(idx)"
                                                    class="w-full min-w-[120px] border rounded px-2 py-1 text-sm"
                                                    :class="rec._errors?.recipientEmail ? 'border-red-400 bg-red-50' : ''">
                                             <div x-show="rec._errors?.recipientEmail" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.recipientEmail"></div>
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="text" x-model="rec.courseName" @blur="validateBulkRecord(idx)"
+                                            <input type="text" x-model="rec.courseName" @blur="refreshBulkRecord(idx)"
                                                    class="w-full min-w-[120px] border rounded px-2 py-1 text-sm"
-                                                   :class="rec._errors?.courseName ? 'border-red-400 bg-red-50' : ''">
+                                                   :class="rec._errors?.courseName ? 'border-red-400 bg-red-50' : (rec._warnings?.courseName ? 'border-amber-400 bg-amber-50' : '')">
                                             <div x-show="rec._errors?.courseName" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.courseName"></div>
+                                            <div x-show="rec._warnings?.courseName" class="text-xs text-amber-700 mt-0.5" x-text="rec._warnings.courseName"></div>
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="text" x-model="rec.courseEnglishName"
+                                            <input type="text" x-model="rec.courseEnglishName" @blur="refreshBulkRecord(idx)"
                                                    class="w-full min-w-[120px] border rounded px-2 py-1 text-sm"
+                                                   :class="rec._warnings?.courseEnglishName ? 'border-amber-400 bg-amber-50' : ''"
                                                    placeholder="選填">
+                                            <div x-show="rec._warnings?.courseEnglishName" class="text-xs text-amber-700 mt-0.5" x-text="rec._warnings.courseEnglishName"></div>
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="date" x-model="rec.attendanceDate" @blur="validateBulkRecord(idx)"
+                                            <input type="text" x-model="rec.courseCode" @blur="refreshBulkRecord(idx)"
+                                                   class="w-full min-w-[90px] border rounded px-2 py-1 text-sm"
+                                                   :class="rec._warnings?.courseCode ? 'border-amber-400 bg-amber-50' : ''"
+                                                   placeholder="選填">
+                                            <div x-show="rec._warnings?.courseCode" class="text-xs text-amber-700 mt-0.5" x-text="rec._warnings.courseCode"></div>
+                                        </td>
+                                        <td class="px-3 py-1.5">
+                                            <input type="date" x-model="rec.attendanceDate" @blur="refreshBulkRecord(idx)"
                                                    class="w-full min-w-[130px] border rounded px-2 py-1 text-sm"
                                                    :class="rec._errors?.attendanceDate ? 'border-red-400 bg-red-50' : ''">
                                             <div x-show="rec._errors?.attendanceDate" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.attendanceDate"></div>
                                         </td>
                                         <td class="px-3 py-1.5">
-                                            <input type="number" x-model="rec.completionHours" min="0" step="0.5"
-                                                   class="w-full min-w-[60px] border rounded px-2 py-1 text-sm">
+                                            <input type="number" x-model="rec.completionHours" min="0" step="0.5" @blur="refreshBulkRecord(idx)"
+                                                   class="w-full min-w-[60px] border rounded px-2 py-1 text-sm"
+                                                   :class="rec._errors?.completionHours ? 'border-red-400 bg-red-50' : ''">
+                                            <div x-show="rec._errors?.completionHours" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.completionHours"></div>
+                                        </td>
+                                        <td class="px-3 py-1.5">
+                                            <input type="text" x-model="rec.instructorName" @blur="refreshBulkRecord(idx)"
+                                                   class="w-full min-w-[80px] border rounded px-2 py-1 text-sm"
+                                                   :class="rec._warnings?.instructorName ? 'border-amber-400 bg-amber-50' : ''"
+                                                   placeholder="選填">
+                                            <div x-show="rec._warnings?.instructorName" class="text-xs text-amber-700 mt-0.5" x-text="rec._warnings.instructorName"></div>
                                         </td>
                                         <td class="px-3 py-1.5">
                                             <input type="text" x-model="rec.notes"
@@ -408,7 +439,7 @@
                                     </tr>
                                 </template>
                                 <tr x-show="bulkRecords.length === 0">
-                                    <td colspan="8" class="px-4 py-6 text-center text-gray-400 text-sm">無資料</td>
+                                    <td colspan="12" class="px-4 py-6 text-center text-gray-400 text-sm">無資料</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -464,6 +495,79 @@
                             完成
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 編輯課程型證書 Modal -->
+        <div x-show="showEditModal" x-cloak
+             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             @click.self="showEditModal = false" @keydown.escape.window="showEditModal = false">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;" @click.stop>
+                <div class="p-6 border-b flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 class="text-lg font-bold">編輯課程型證書資料</h3>
+                        <p class="text-xs text-gray-500 mt-1">證書編號：<span class="font-mono" x-text="editTarget?.certificateNumber"></span></p>
+                    </div>
+                    <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4 overflow-y-auto flex-1">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">課程名稱 <span class="text-red-500">*</span></label>
+                            <input type="text" x-model="editForm.courseName" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">英文課程名稱</label>
+                            <input type="text" x-model="editForm.courseEnglishName" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">課程代碼</label>
+                            <input type="text" x-model="editForm.courseCode" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">出席日期 <span class="text-red-500">*</span></label>
+                            <input type="date" x-model="editForm.attendanceDate" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">受證者姓名 <span class="text-red-500">*</span></label>
+                            <input type="text" x-model="editForm.recipientName" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">受證者英文姓名</label>
+                            <input type="text" x-model="editForm.recipientEnglishName" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">受證者 Email <span class="text-red-500">*</span></label>
+                            <input type="email" x-model="editForm.recipientEmail" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">完成時數</label>
+                            <input type="number" x-model="editForm.completionHours" min="0" step="0.5" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">講師</label>
+                            <input type="text" x-model="editForm.instructorName" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                        <textarea x-model="editForm.notes" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">修改原因 <span class="text-red-500">*</span></label>
+                        <textarea x-model="editForm.editReason" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="請說明修改原因"></textarea>
+                    </div>
+                    <div x-show="editError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3" x-text="editError"></div>
+                </div>
+                <div class="p-6 border-t flex justify-end gap-3 shrink-0">
+                    <button @click="showEditModal = false" class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button @click="submitEdit()" :disabled="editLoading" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
+                        <span x-show="editLoading"><i class="fas fa-spinner fa-spin mr-1"></i></span>
+                        儲存修改
+                    </button>
                 </div>
             </div>
         </div>
@@ -551,7 +655,7 @@
             loading: false,
             hasMore: false,
             nextCursor: null,
-            filters: { certType: '', isRevoked: '', userId: '' },
+            filters: { q: '', certType: '', isRevoked: '', userId: '' },
 
             // Toast
             toast: { visible: false, message: '', type: 'success' },
@@ -564,6 +668,13 @@
             issueForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' },
             issueError: '',
             issueLoading: false,
+
+            // Edit modal
+            showEditModal: false,
+            editTarget: null,
+            editForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', instructorName: '', notes: '', editReason: '' },
+            editError: '',
+            editLoading: false,
 
             // Bulk modal
             showBulkModal: false,
@@ -614,6 +725,7 @@
 
             buildQueryString() {
                 const params = new URLSearchParams();
+                if (this.filters.q.trim()) params.set('q', this.filters.q.trim());
                 if (this.filters.certType) params.set('certType', this.filters.certType);
                 if (this.filters.isRevoked !== '') params.set('isRevoked', this.filters.isRevoked);
                 if (this.filters.userId.trim()) params.set('userId', this.filters.userId.trim());
@@ -623,6 +735,31 @@
             exportUrl() {
                 const qs = this.buildQueryString();
                 return `/api/admin/certificates/export${qs ? '?' + qs : ''}`;
+            },
+
+            async downloadCsv(url, filename) {
+                const res = await fetch(url, { headers: this.getAuthHeaders() });
+                if (!res.ok) {
+                    const json = await res.json();
+                    throw new Error(json.error?.message || '下載失敗');
+                }
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(objectUrl);
+            },
+
+            async downloadExport() {
+                try {
+                    await this.downloadCsv(this.exportUrl(), 'certificates.csv');
+                } catch (e) {
+                    this.showToast(e.message, 'error');
+                }
             },
 
             async resetAndLoad() {
@@ -669,9 +806,29 @@
                 } catch (e) { /* non-critical */ }
             },
 
+            async downloadTemplate() {
+                try {
+                    await this.downloadCsv('/api/admin/certificates/course-attendances/template.csv', 'certificate-upload-template.csv');
+                } catch (e) {
+                    this.showToast(e.message, 'error');
+                }
+            },
+
             showToast(message, type = 'success') {
                 this.toast = { visible: true, message, type };
                 setTimeout(() => { this.toast.visible = false; }, 3000);
+            },
+
+            isValidEmail(email) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            },
+
+            isFutureDate(dateStr) {
+                if (!dateStr) return false;
+                const d = new Date(`${dateStr}T00:00:00`);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return d > today;
             },
 
             resetIssueForm() {
@@ -682,8 +839,20 @@
             async submitIssue() {
                 this.issueError = '';
                 const f = this.issueForm;
-                if (!f.courseName.trim() || !f.recipientName.trim() || !f.attendanceDate) {
-                    this.issueError = '課程名稱、受證者姓名及出席日期為必填';
+                if (!f.courseName.trim() || !f.recipientName.trim() || !f.recipientEmail.trim() || !f.attendanceDate) {
+                    this.issueError = '課程名稱、受證者姓名、Email 及出席日期為必填';
+                    return;
+                }
+                if (!this.isValidEmail(f.recipientEmail.trim())) {
+                    this.issueError = '受證者 Email 格式不正確';
+                    return;
+                }
+                if (this.isFutureDate(f.attendanceDate)) {
+                    this.issueError = '出席日期不可為未來日期';
+                    return;
+                }
+                if (f.completionHours !== '' && Number(f.completionHours) <= 0) {
+                    this.issueError = '完成時數若有填寫，必須大於 0';
                     return;
                 }
                 this.issueLoading = true;
@@ -694,7 +863,7 @@
                         courseCode: f.courseCode.trim() || undefined,
                         recipientName: f.recipientName.trim(),
                         recipientEnglishName: f.recipientEnglishName.trim(),
-                        recipientEmail: f.recipientEmail.trim() || undefined,
+                        recipientEmail: f.recipientEmail.trim(),
                         attendanceDate: f.attendanceDate,
                         completionHours: f.completionHours !== '' ? Number(f.completionHours) : undefined,
                         certValidityYears: f.certValidityYears !== '' ? Number(f.certValidityYears) : undefined,
@@ -759,6 +928,9 @@
             get bulkSelectedCount() {
                 return this.bulkRecords ? this.bulkRecords.filter(r => r._selected).length : 0;
             },
+            get bulkWarningCount() {
+                return this.bulkRecords ? this.bulkRecords.filter(r => r._hasWarning).length : 0;
+            },
 
             toggleBulkSelectAll() {
                 const val = this.bulkSelectedAll;
@@ -779,6 +951,7 @@
                 const rec = this.bulkRecords[idx];
                 if (!rec) return false;
                 const errors = {};
+                const warnings = rec._warnings || {};
                 if (!rec.recipientName || !rec.recipientName.trim()) {
                     errors.recipientName = '姓名為必填';
                 }
@@ -795,14 +968,57 @@
                 } else {
                     errors.attendanceDate = '出席日期為必填';
                 }
-                if (rec.recipientEmail && rec.recipientEmail.trim()) {
-                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rec.recipientEmail.trim())) {
-                        errors.recipientEmail = 'Email 格式不正確';
+                if (!rec.recipientEmail || !rec.recipientEmail.trim()) {
+                    errors.recipientEmail = 'Email 為必填';
+                } else if (!this.isValidEmail(rec.recipientEmail.trim())) {
+                    errors.recipientEmail = 'Email 格式不正確';
+                }
+                if (rec.attendanceDate && this.isFutureDate(rec.attendanceDate.trim())) {
+                    errors.attendanceDate = '出席日期不可為未來日期';
+                }
+                if (rec.completionHours !== undefined && rec.completionHours !== null && String(rec.completionHours).trim() !== '') {
+                    const hours = Number(rec.completionHours);
+                    if (!Number.isFinite(hours) || hours <= 0) {
+                        errors.completionHours = '完成時數必須大於 0';
                     }
                 }
                 rec._errors = errors;
                 rec._hasError = Object.keys(errors).length > 0;
+                rec._warnings = warnings;
+                rec._hasWarning = Object.keys(warnings).length > 0;
                 return !rec._hasError;
+            },
+
+            refreshBulkRecord(idx) {
+                this.applyBulkWarnings();
+                return this.validateBulkRecord(idx);
+            },
+
+            applyBulkWarnings() {
+                const fields = [
+                    ['courseName', '同批次有多個課程名稱，請確認是否正確'],
+                    ['courseEnglishName', '同批次有多個英文課程名稱，請確認是否正確'],
+                    ['courseCode', '同批次有多個課程代碼，請確認是否正確'],
+                    ['instructorName', '同批次有多個講師，請確認是否正確']
+                ];
+                this.bulkRecords.forEach(rec => {
+                    rec._warnings = {};
+                    rec._hasWarning = false;
+                });
+                fields.forEach(([field, message]) => {
+                    const values = [...new Set(this.bulkRecords
+                        .map(r => (r[field] || '').trim())
+                        .filter(Boolean)
+                        .map(v => v.toLowerCase()))];
+                    if (values.length > 1) {
+                        this.bulkRecords.forEach(rec => {
+                            if ((rec[field] || '').trim()) {
+                                rec._warnings[field] = message;
+                                rec._hasWarning = true;
+                            }
+                        });
+                    }
+                });
             },
 
             normalizeBulkRow(row) {
@@ -915,9 +1131,12 @@
                         const rec = this.normalizeBulkRow(row);
                         rec._selected = false;
                         rec._errors = {};
+                        rec._warnings = {};
                         rec._hasError = false;
+                        rec._hasWarning = false;
                         return rec;
                     });
+                    this.applyBulkWarnings();
                     this.bulkRecords.forEach((rec, idx) => this.validateBulkRecord(idx, true));
                     this.bulkSelectedAll = false;
                     this.currentBulkStep = 'preview';
@@ -930,6 +1149,7 @@
 
             async submitBulkAll() {
                 let hasErrors = false;
+                this.applyBulkWarnings();
                 this.bulkRecords.forEach((rec, idx) => {
                     if (!this.validateBulkRecord(idx)) hasErrors = true;
                 });
@@ -938,6 +1158,8 @@
             },
 
             async submitBulkSkipErrors() {
+                this.applyBulkWarnings();
+                this.bulkRecords.forEach((rec, idx) => this.validateBulkRecord(idx));
                 const valid = this.bulkRecords.filter(rec => !rec._hasError);
                 await this.submitBulkToServer(valid);
             },
@@ -949,6 +1171,7 @@
                     const body = {
                         records: records.map(r => ({
                             courseName: r.courseName,
+                            courseEnglishName: r.courseEnglishName || undefined,
                             courseCode: r.courseCode || undefined,
                             recipientName: r.recipientName,
                             recipientEnglishName: r.recipientEnglishName || undefined,
@@ -977,6 +1200,81 @@
                     this.bulkSubmitError = e.message;
                 } finally {
                     this.bulkLoading = false;
+                }
+            },
+
+            openEditModal(cert) {
+                const course = cert.course || {};
+                this.editTarget = cert;
+                this.editForm = {
+                    courseName: course.courseName || '',
+                    courseEnglishName: course.courseEnglishName || '',
+                    courseCode: course.courseCode || '',
+                    recipientName: cert.recipientName || course.recipientName || '',
+                    recipientEnglishName: cert.recipientEnglishName || course.recipientEnglishName || '',
+                    recipientEmail: cert.recipientEmail || course.recipientEmail || cert.user?.email || '',
+                    attendanceDate: course.attendanceDate ? new Date(course.attendanceDate).toISOString().slice(0, 10) : '',
+                    completionHours: course.completionHours !== undefined && course.completionHours !== null ? course.completionHours : '',
+                    instructorName: course.instructorName || '',
+                    notes: course.notes || '',
+                    editReason: ''
+                };
+                this.editError = '';
+                this.showEditModal = true;
+            },
+
+            async submitEdit() {
+                this.editError = '';
+                const f = this.editForm;
+                if (!f.courseName.trim() || !f.recipientName.trim() || !f.recipientEmail.trim() || !f.attendanceDate) {
+                    this.editError = '課程名稱、受證者姓名、Email 及出席日期為必填';
+                    return;
+                }
+                if (!this.isValidEmail(f.recipientEmail.trim())) {
+                    this.editError = '受證者 Email 格式不正確';
+                    return;
+                }
+                if (this.isFutureDate(f.attendanceDate)) {
+                    this.editError = '出席日期不可為未來日期';
+                    return;
+                }
+                if (f.completionHours !== '' && Number(f.completionHours) <= 0) {
+                    this.editError = '完成時數若有填寫，必須大於 0';
+                    return;
+                }
+                if (!f.editReason.trim()) {
+                    this.editError = '修改原因為必填';
+                    return;
+                }
+                this.editLoading = true;
+                try {
+                    const body = {
+                        courseName: f.courseName.trim(),
+                        courseEnglishName: f.courseEnglishName.trim() || undefined,
+                        courseCode: f.courseCode.trim() || undefined,
+                        recipientName: f.recipientName.trim(),
+                        recipientEnglishName: f.recipientEnglishName.trim() || undefined,
+                        recipientEmail: f.recipientEmail.trim(),
+                        attendanceDate: f.attendanceDate,
+                        completionHours: f.completionHours !== '' ? Number(f.completionHours) : undefined,
+                        instructorName: f.instructorName.trim() || undefined,
+                        notes: f.notes.trim() || undefined,
+                        editReason: f.editReason.trim()
+                    };
+                    const res = await fetch(`/api/admin/certificates/${this.editTarget._id}/course-attendance`, {
+                        method: 'PATCH',
+                        headers: this.getAuthHeaders(),
+                        body: JSON.stringify(body)
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || '儲存失敗');
+                    this.showToast(json.data?.changed === false ? '資料無變更' : '證書資料已更新');
+                    this.showEditModal = false;
+                    await this.resetAndLoad();
+                } catch (e) {
+                    this.editError = e.message;
+                } finally {
+                    this.editLoading = false;
                 }
             },
 
