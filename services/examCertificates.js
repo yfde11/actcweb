@@ -209,10 +209,16 @@ function drawCertificateLayout(doc, data) {
     if (data.isCourse && data.course) {
         const infoItems = [];
         if (data.course.attendanceDate) {
+            const attendanceDate = formatTaipeiDottedDate(data.course.attendanceDate);
+            const attendanceEndDate = data.course.attendanceEndDate
+                ? formatTaipeiDottedDate(data.course.attendanceEndDate)
+                : null;
             infoItems.push({
                 labelZh: '課程日期',
                 labelEn: 'Course Date',
-                valueZh: formatTaipeiDottedDate(data.course.attendanceDate)
+                valueZh: attendanceEndDate && attendanceEndDate !== attendanceDate
+                    ? `${attendanceDate}~${attendanceEndDate}`
+                    : attendanceDate
             });
         }
         if (data.course.completionHours) {
@@ -435,6 +441,7 @@ async function generateCertificatePDF(certificateId, res) {
         displayTitle,
         course: isCourse && certificate.course ? {
             attendanceDate: certificate.course.attendanceDate,
+            attendanceEndDate: certificate.course.attendanceEndDate,
             completionHours: certificate.course.completionHours,
             courseEnglishName: certificate.course.courseEnglishName
         } : null,

@@ -37,6 +37,16 @@ const courseAttendanceSchema = new mongoose.Schema({
         type: Date,
         required: [true, '出席日期為必填']
     },
+    attendanceEndDate: {
+        type: Date,
+        validate: {
+            validator: function(v) {
+                if (!v) return true; // 允許空值
+                return v >= this.attendanceDate;
+            },
+            message: 'Attendance end date must be after or equal to attendance date'
+        }
+    },
     completionHours: {
         type: Number,
         min: 0

@@ -25,6 +25,7 @@ const CSV_TEMPLATE_HEADERS = [
     'recipientEnglishName',
     'recipientEmail',
     'attendanceDate',
+    'attendanceEndDate',
     'courseCode',
     'completionHours',
     'instructorName',
@@ -148,6 +149,22 @@ async function processBulkRecords(records, certValidityYears, resolvedCertTypeId
             continue;
         }
 
+        let attendanceEndDate;
+        if (rec.attendanceEndDateStr) {
+            const endDateResult = parseAttendanceDate(rec.attendanceEndDateStr);
+            if (endDateResult.error) {
+                results.failed++;
+                results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: endDateResult.error });
+                continue;
+            }
+            if (endDateResult.date < dateResult.date) {
+                results.failed++;
+                results.errors.push({ row: rowNum, recipientName: rec.recipientName || '', message: '結束日期不可早於開始日期' });
+                continue;
+            }
+            attendanceEndDate = endDateResult.date;
+        }
+
         const hoursResult = normalizePositiveHours(rec.completionHoursStr);
         if (hoursResult.error) {
             results.failed++;
@@ -169,6 +186,7 @@ async function processBulkRecords(records, certValidityYears, resolvedCertTypeId
                 recipientEmail: emailResult.email,
                 user: linkedUserId,
                 attendanceDate: dateResult.date,
+                ...(attendanceEndDate ? { attendanceEndDate } : {}),
                 completionHours: hoursResult.value,
                 instructorName: rec.instructorName || undefined,
                 notes: rec.notes || undefined,
@@ -309,7 +327,7 @@ router.get('/', adminAuth, async (req, res) => {
             .limit(limit + 1)
             .populate('user', 'username email fullName')
             .populate('exam', 'title')
-            .populate('course', 'courseName courseEnglishName courseCode recipientName recipientEnglishName recipientEmail attendanceDate completionHours instructorName notes')
+            .populate('course', 'courseName courseEnglishName courseCode recipientName recipientEnglishName recipientEmail attendanceDate attendanceEndDate completionHours instructorName notes')
             .populate('certTypeRef', 'name titleZh')
             .populate('attempt', 'score passed attemptNumber')
             .populate('revokedBy', 'username fullName');
@@ -340,6 +358,7 @@ router.get('/course-attendances/template.csv', adminAuth, async (req, res) => {
         'Wang Xiao Ming',
         'student@example.com',
         formatTaipeiDate(new Date()),
+        '',
         'ACTC-COURSE-001',
         '6',
         '陳講師',
@@ -399,13 +418,13 @@ router.get('/export', adminAuth, async (req, res) => {
             .limit(5000)
             .populate('user', 'username email fullName')
             .populate('exam', 'title')
-            .populate('course', 'courseName courseEnglishName courseCode attendanceDate completionHours instructorName')
+            .populate('course', 'courseName courseEnglishName courseCode attendanceDate attendanceEndDate completionHours instructorName')
             .populate('attempt', 'score passed')
             .populate('revokedBy', 'username fullName')
             .lean();
 
         const csvRows = [];
-        csvRows.push('證書編號,證書類型,姓名,英文姓名,使用者名稱,Email,考試/課程名稱,英文課程名稱,課程代碼,出席日期,完成時數,講師,發證日期,到期日,狀態,撤銷原因,管理備註');
+        csvRows.push('證書編號,證書類型,姓名,英文姓名,使用者名稱,Email,考試/課程名稱,英文課程名稱,課程代碼,出席日期,出席結束日期,完成時數,講師,發證日期,到期日,狀態,撤銷原因,管理備註');
 
         for (const cert of certs) {
             const user = cert.user || {};
@@ -427,6 +446,7 @@ router.get('/export', adminAuth, async (req, res) => {
                 escapeCSVField(cert.course?.courseEnglishName || ''),
                 escapeCSVField(cert.course?.courseCode || ''),
                 cert.course?.attendanceDate ? formatTaipeiDate(cert.course.attendanceDate) : '',
+                cert.course?.attendanceEndDate ? formatTaipeiDate(cert.course.attendanceEndDate) : '',
                 escapeCSVField(cert.course?.completionHours || ''),
                 escapeCSVField(cert.course?.instructorName || ''),
                 formatTaipeiDate(cert.issuedAt),
@@ -491,11 +511,11 @@ router.patch('/:id/expiry', adminAuth, async (req, res) => {
 });
 
 // POST /api/admin/certificates/course-attendances - 手動單筆發課程型證書
-// Body: { courseName, courseCode?, recipientName, recipientEmail, userId?, attendanceDate, completionHours?, instructorName?, notes?, certValidityYears?, certTypeId? }
+// Body: { courseName, courseCode?, recipientName, recipientEmail, userId?, attendanceDate, attendanceEndDate?, completionHours?, instructorName?, notes?, certValidityYears?, certTypeId? }
 // userId 選填：填入時嘗試關聯本會會員帳號，否則視為外部人士
 router.post('/course-attendances', adminAuth, async (req, res) => {
     try {
-        const { courseName, courseEnglishName, courseCode, recipientName, recipientEnglishName, recipientEmail, userId, attendanceDate, completionHours, instructorName, notes, certValidityYears, certTypeId } = req.body;
+        const { courseName, courseEnglishName, courseCode, recipientName, recipientEnglishName, recipientEmail, userId, attendanceDate, attendanceEndDate, completionHours, instructorName, notes, certValidityYears, certTypeId } = req.body;
 
         if (!courseName || !recipientName || !attendanceDate || !recipientEmail) {
             return errorResponse(res, 400, 'VALIDATION_ERROR', '課程名稱、受證者姓名、Email 及出席日期為必填');
@@ -504,6 +524,18 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
         const dateResult = parseAttendanceDate(attendanceDate);
         if (dateResult.error) {
             return errorResponse(res, 400, 'INVALID_DATE', dateResult.error);
+        }
+
+        let parsedAttendanceEndDate;
+        if (attendanceEndDate !== undefined && attendanceEndDate !== null && String(attendanceEndDate).trim()) {
+            const endDateResult = parseAttendanceDate(attendanceEndDate);
+            if (endDateResult.error) {
+                return errorResponse(res, 400, 'INVALID_DATE', endDateResult.error);
+            }
+            if (endDateResult.date < dateResult.date) {
+                return errorResponse(res, 400, 'INVALID_DATE', '結束日期不可早於開始日期');
+            }
+            parsedAttendanceEndDate = endDateResult.date;
         }
 
         const emailResult = normalizeRequiredEmail(recipientEmail);
@@ -555,6 +587,7 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
             recipientEmail: emailResult.email,
             user: linkedUserId,
             attendanceDate: dateResult.date,
+            ...(parsedAttendanceEndDate ? { attendanceEndDate: parsedAttendanceEndDate } : {}),
             completionHours: hoursResult.value,
             instructorName: instructorName ? instructorName.trim() : undefined,
             notes: notes ? notes.trim() : undefined,
@@ -586,7 +619,7 @@ router.post('/course-attendances', adminAuth, async (req, res) => {
 });
 
 // PATCH /api/admin/certificates/:id/course-attendance - 編輯已發出的課程型證書資料
-// Body: { courseName, courseEnglishName?, courseCode?, recipientName, recipientEnglishName?, recipientEmail, attendanceDate, completionHours?, instructorName?, notes?, editReason }
+// Body: { courseName, courseEnglishName?, courseCode?, recipientName, recipientEnglishName?, recipientEmail, attendanceDate, attendanceEndDate?, completionHours?, instructorName?, notes?, editReason }
 router.patch('/:id/course-attendance', adminAuth, async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -601,6 +634,7 @@ router.patch('/:id/course-attendance', adminAuth, async (req, res) => {
             recipientEnglishName,
             recipientEmail,
             attendanceDate,
+            attendanceEndDate,
             completionHours,
             instructorName,
             notes,
@@ -618,6 +652,17 @@ router.patch('/:id/course-attendance', adminAuth, async (req, res) => {
         const dateResult = parseAttendanceDate(attendanceDate);
         if (dateResult.error) {
             return errorResponse(res, 400, 'INVALID_DATE', dateResult.error);
+        }
+        let parsedAttendanceEndDate;
+        if (attendanceEndDate !== undefined && attendanceEndDate !== null && String(attendanceEndDate).trim()) {
+            const endDateResult = parseAttendanceDate(attendanceEndDate);
+            if (endDateResult.error) {
+                return errorResponse(res, 400, 'INVALID_DATE', endDateResult.error);
+            }
+            if (endDateResult.date < dateResult.date) {
+                return errorResponse(res, 400, 'INVALID_DATE', '結束日期不可早於開始日期');
+            }
+            parsedAttendanceEndDate = endDateResult.date;
         }
         const emailResult = normalizeRequiredEmail(recipientEmail);
         if (emailResult.error) {
@@ -651,6 +696,7 @@ router.patch('/:id/course-attendance', adminAuth, async (req, res) => {
             recipientEmail: emailResult.email,
             user: linkedUser ? linkedUser._id : null,
             attendanceDate: dateResult.date,
+            attendanceEndDate: parsedAttendanceEndDate,
             completionHours: hoursResult.value,
             instructorName: instructorName ? instructorName.trim() : undefined,
             notes: notes ? notes.trim() : undefined
@@ -739,6 +785,7 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
                 recipientEnglishName: (r.recipientEnglishName || '').trim(),
                 recipientEmail: (r.recipientEmail || '').trim().toLowerCase(),
                 attendanceDateStr: (r.attendanceDate || '').trim(),
+                attendanceEndDateStr: (r.attendanceEndDate || '').trim(),
                 completionHoursStr: r.completionHours !== undefined && r.completionHours !== '' ? String(r.completionHours).trim() : '',
                 instructorName: (r.instructorName || '').trim(),
                 notes: (r.notes || '').trim()
@@ -779,6 +826,7 @@ router.post('/course-attendances/bulk', adminAuth, upload.single('file'), async 
                 recipientEnglishName: (row.recipientEnglishName || row.englishName || row['English Name'] || row['英文姓名'] || '').trim(),
                 recipientEmail: (row.recipientEmail || row.email || row['Email'] || '').trim().toLowerCase(),
                 attendanceDateStr: (row.attendanceDate || row['出席日期'] || '').trim(),
+                attendanceEndDateStr: (row.attendanceEndDate || row['出席結束日期'] || '').trim(),
                 completionHoursStr: (row.completionHours || row['完成時數'] || '').trim(),
                 instructorName: (row.instructorName || row['講師'] || '').trim(),
                 notes: (row.notes || row['備註'] || '').trim()
