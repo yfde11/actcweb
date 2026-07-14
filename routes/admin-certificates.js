@@ -43,10 +43,13 @@ function parseAttendanceDate(value) {
     if (!raw) {
         return { error: '出席日期為必填' };
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-        return { error: '出席日期格式必須為 YYYY-MM-DD' };
+    const hyphenMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const slashMatch = raw.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    const dateParts = hyphenMatch || slashMatch;
+    if (!dateParts) {
+        return { error: '出席日期格式必須為 YYYY-MM-DD 或 YYYY/M/D' };
     }
-    const [year, month, day] = raw.split('-').map(Number);
+    const [year, month, day] = dateParts.slice(1).map(Number);
     const utcCheck = new Date(Date.UTC(year, month - 1, day));
     if (
         utcCheck.getUTCFullYear() !== year ||
@@ -55,7 +58,10 @@ function parseAttendanceDate(value) {
     ) {
         return { error: '出席日期不是合法日期' };
     }
-    const parsed = new Date(`${raw}T00:00:00.000+08:00`);
+    const normalized = [year, month, day]
+        .map((part, index) => index === 0 ? String(part) : String(part).padStart(2, '0'))
+        .join('-');
+    const parsed = new Date(`${normalized}T00:00:00.000+08:00`);
     if (isNaN(parsed.getTime())) {
         return { error: '出席日期不是合法日期' };
     }
@@ -65,7 +71,7 @@ function parseAttendanceDate(value) {
         month: '2-digit',
         day: '2-digit'
     }).format(new Date());
-    if (raw > todayTaipei) {
+    if (normalized > todayTaipei) {
         return { error: '出席日期不可為未來日期' };
     }
     return { date: parsed };
