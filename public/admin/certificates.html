@@ -853,6 +853,20 @@
                 return d > today;
             },
 
+            // Pre-existing bug (not introduced here): `new Date(x).toISOString().slice(0,10)`
+            // converts to UTC before slicing, so an Asia/Taipei midnight timestamp shifts to
+            // the previous calendar day for UTC+ zones ahead of UTC-of-that-instant. Use a
+            // Taipei-anchored formatter instead, matching the backend's own todayTaipei pattern.
+            toTaipeiDateInputValue(value) {
+                if (!value) return '';
+                const parts = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Taipei',
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                }).formatToParts(new Date(value));
+                const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+                return `${map.year}-${map.month}-${map.day}`;
+            },
+
             resetIssueForm() {
                 this.issueForm = { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', attendanceEndDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' };
                 this.issueError = '';
@@ -1253,8 +1267,8 @@
                     recipientName: cert.recipientName || course.recipientName || '',
                     recipientEnglishName: cert.recipientEnglishName || course.recipientEnglishName || '',
                     recipientEmail: cert.recipientEmail || course.recipientEmail || cert.user?.email || '',
-                    attendanceDate: course.attendanceDate ? new Date(course.attendanceDate).toISOString().slice(0, 10) : '',
-                    attendanceEndDate: course.attendanceEndDate ? new Date(course.attendanceEndDate).toISOString().slice(0, 10) : '',
+                    attendanceDate: this.toTaipeiDateInputValue(course.attendanceDate),
+                    attendanceEndDate: this.toTaipeiDateInputValue(course.attendanceEndDate),
                     completionHours: course.completionHours !== undefined && course.completionHours !== null ? course.completionHours : '',
                     instructorName: course.instructorName || '',
                     notes: course.notes || '',
