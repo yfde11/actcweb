@@ -61,6 +61,8 @@
                         </select>
                         <input type="text" x-model="filters.userId" placeholder="會員 ID（選填）"
                                class="border rounded-lg px-3 py-2 text-sm w-48">
+                        <input type="text" x-model="filters.courseCode" placeholder="課程代碼（選填）"
+                               class="border rounded-lg px-3 py-2 text-sm w-48">
                         <button @click="resetAndLoad()"
                                 class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm">
                             <i class="fas fa-search"></i> 篩選
@@ -655,7 +657,7 @@
             loading: false,
             hasMore: false,
             nextCursor: null,
-            filters: { q: '', certType: '', isRevoked: '', userId: '' },
+            filters: { q: '', certType: '', isRevoked: '', userId: '', courseCode: '' },
 
             // Toast
             toast: { visible: false, message: '', type: 'success' },
@@ -729,6 +731,7 @@
                 if (this.filters.certType) params.set('certType', this.filters.certType);
                 if (this.filters.isRevoked !== '') params.set('isRevoked', this.filters.isRevoked);
                 if (this.filters.userId.trim()) params.set('userId', this.filters.userId.trim());
+                if (this.filters.courseCode.trim()) params.set('courseCode', this.filters.courseCode.trim());
                 return params.toString();
             },
 
