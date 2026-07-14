@@ -1269,8 +1269,12 @@
                         return;
                     }
                     if (response.status === 401 || response.status === 403) {
-                        clearPendingRegistrationIntent();
                         const needsVerify = errorData.code === 'EMAIL_NOT_VERIFIED';
+                        if (needsVerify) {
+                            clearPendingRegistrationIntent();
+                        } else {
+                            savePendingRegistrationIntent({ eventId, isWaitlist: !!isWaitlist, returnTo: '/' });
+                        }
                         showNotification(
                             needsVerify
                                 ? '請先完成信箱驗證後再報名，將帶您前往會員專區。'
