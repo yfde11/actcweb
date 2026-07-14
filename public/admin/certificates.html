@@ -217,6 +217,11 @@
                         <input type="date" x-model="issueForm.attendanceDate"
                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">結束日期（選填，多天課程用）</label>
+                        <input type="date" x-model="issueForm.attendanceEndDate"
+                               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">完成時數</label>
@@ -287,8 +292,8 @@
                 <div x-show="currentBulkStep === 'upload'" class="p-6 space-y-4 overflow-y-auto">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                         <p class="font-medium mb-1">CSV 格式說明（上限 500 筆）</p>
-                        <p>必要欄位：<code>courseName</code>（課程名稱）、<code>recipientName</code>（姓名）、<code>recipientEmail</code>（Email）、<code>attendanceDate</code>（出席日期 YYYY-MM-DD）</p>
-                        <p class="mt-1">選填欄位：<code>recipientEnglishName</code> / <code>englishName</code>（英文姓名）、<code>courseEnglishName</code>、<code>courseCode</code>、<code>completionHours</code>、<code>instructorName</code>、<code>notes</code></p>
+                        <p>必要欄位：<code>courseName</code>（課程名稱）、<code>recipientName</code>（姓名）、<code>recipientEmail</code>（Email）、<code>attendanceDate</code>（出席日期 YYYY-MM-DD 或 YYYY/M/D）</p>
+                        <p class="mt-1">選填欄位：<code>attendanceEndDate</code>（出席結束日期）、<code>recipientEnglishName</code> / <code>englishName</code>（英文姓名）、<code>courseEnglishName</code>、<code>courseCode</code>、<code>completionHours</code>、<code>instructorName</code>、<code>notes</code></p>
                         <p class="mt-1 text-gray-500">受證者不需為本會會員，外部人士亦可發證。若填入 Email 且與會員帳號相符，系統將自動關聯。</p>
                     </div>
                     <div>
@@ -358,6 +363,7 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">英文課程名稱</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">課程代碼</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">完課日期</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">結束日期</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">時數</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">講師</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-600">備註</th>
@@ -415,6 +421,12 @@
                                             <div x-show="rec._errors?.attendanceDate" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.attendanceDate"></div>
                                         </td>
                                         <td class="px-3 py-1.5">
+                                            <input type="date" x-model="rec.attendanceEndDate" @blur="refreshBulkRecord(idx)"
+                                                   class="w-full min-w-[130px] border rounded px-2 py-1 text-sm"
+                                                   :class="rec._errors?.attendanceEndDate ? 'border-red-400 bg-red-50' : ''">
+                                            <div x-show="rec._errors?.attendanceEndDate" class="text-xs text-red-600 mt-0.5" x-text="rec._errors.attendanceEndDate"></div>
+                                        </td>
+                                        <td class="px-3 py-1.5">
                                             <input type="number" x-model="rec.completionHours" min="0" step="0.5" @blur="refreshBulkRecord(idx)"
                                                    class="w-full min-w-[60px] border rounded px-2 py-1 text-sm"
                                                    :class="rec._errors?.completionHours ? 'border-red-400 bg-red-50' : ''">
@@ -439,7 +451,7 @@
                                     </tr>
                                 </template>
                                 <tr x-show="bulkRecords.length === 0">
-                                    <td colspan="12" class="px-4 py-6 text-center text-gray-400 text-sm">無資料</td>
+                                    <td colspan="13" class="px-4 py-6 text-center text-gray-400 text-sm">無資料</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -530,6 +542,10 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">出席日期 <span class="text-red-500">*</span></label>
                             <input type="date" x-model="editForm.attendanceDate" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">結束日期（選填，多天課程用）</label>
+                            <input type="date" x-model="editForm.attendanceEndDate" class="w-full border rounded-lg px-3 py-2 text-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">受證者姓名 <span class="text-red-500">*</span></label>
@@ -665,14 +681,14 @@
 
             // Issue modal
             showIssueModal: false,
-            issueForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' },
+            issueForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', attendanceEndDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' },
             issueError: '',
             issueLoading: false,
 
             // Edit modal
             showEditModal: false,
             editTarget: null,
-            editForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', instructorName: '', notes: '', editReason: '' },
+            editForm: { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', attendanceEndDate: '', completionHours: '', instructorName: '', notes: '', editReason: '' },
             editError: '',
             editLoading: false,
 
@@ -825,14 +841,17 @@
 
             isFutureDate(dateStr) {
                 if (!dateStr) return false;
-                const d = new Date(`${dateStr}T00:00:00`);
+                const parts = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+                const d = parts
+                    ? new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
+                    : new Date(`${dateStr}T00:00:00`);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 return d > today;
             },
 
             resetIssueForm() {
-                this.issueForm = { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' };
+                this.issueForm = { courseName: '', courseEnglishName: '', courseCode: '', recipientName: '', recipientEnglishName: '', recipientEmail: '', attendanceDate: '', attendanceEndDate: '', completionHours: '', certValidityYears: '', certTypeId: '', instructorName: '', notes: '' };
                 this.issueError = '';
             },
 
@@ -851,6 +870,10 @@
                     this.issueError = '出席日期不可為未來日期';
                     return;
                 }
+                if (f.attendanceEndDate && this.isFutureDate(f.attendanceEndDate)) {
+                    this.issueError = '結束日期不可為未來日期';
+                    return;
+                }
                 if (f.completionHours !== '' && Number(f.completionHours) <= 0) {
                     this.issueError = '完成時數若有填寫，必須大於 0';
                     return;
@@ -865,6 +888,7 @@
                         recipientEnglishName: f.recipientEnglishName.trim(),
                         recipientEmail: f.recipientEmail.trim(),
                         attendanceDate: f.attendanceDate,
+                        attendanceEndDate: f.attendanceEndDate || undefined,
                         completionHours: f.completionHours !== '' ? Number(f.completionHours) : undefined,
                         certValidityYears: f.certValidityYears !== '' ? Number(f.certValidityYears) : undefined,
                         instructorName: f.instructorName.trim() || undefined,
@@ -959,14 +983,22 @@
                     errors.courseName = '課程名稱為必填';
                 }
                 if (rec.attendanceDate && rec.attendanceDate.trim()) {
-                    if (!/^\d{4}-\d{2}-\d{2}$/.test(rec.attendanceDate.trim())) {
-                        errors.attendanceDate = '日期格式應為 YYYY-MM-DD';
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(rec.attendanceDate.trim()) && !/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(rec.attendanceDate.trim())) {
+                        errors.attendanceDate = '日期格式應為 YYYY-MM-DD 或 YYYY/M/D';
                     } else {
                         const d = new Date(rec.attendanceDate.trim());
                         if (isNaN(d.getTime())) errors.attendanceDate = '無效的日期';
                     }
                 } else {
                     errors.attendanceDate = '出席日期為必填';
+                }
+                if (rec.attendanceEndDate && rec.attendanceEndDate.trim()) {
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(rec.attendanceEndDate.trim()) && !/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(rec.attendanceEndDate.trim())) {
+                        errors.attendanceEndDate = '日期格式應為 YYYY-MM-DD 或 YYYY/M/D';
+                    } else {
+                        const d = new Date(rec.attendanceEndDate.trim());
+                        if (isNaN(d.getTime())) errors.attendanceEndDate = '無效的日期';
+                    }
                 }
                 if (!rec.recipientEmail || !rec.recipientEmail.trim()) {
                     errors.recipientEmail = 'Email 為必填';
@@ -975,6 +1007,9 @@
                 }
                 if (rec.attendanceDate && this.isFutureDate(rec.attendanceDate.trim())) {
                     errors.attendanceDate = '出席日期不可為未來日期';
+                }
+                if (rec.attendanceEndDate && this.isFutureDate(rec.attendanceEndDate.trim())) {
+                    errors.attendanceEndDate = '結束日期不可為未來日期';
                 }
                 if (rec.completionHours !== undefined && rec.completionHours !== null && String(rec.completionHours).trim() !== '') {
                     const hours = Number(rec.completionHours);
@@ -1029,12 +1064,13 @@
                     'courseName': 'courseName', '課程名稱': 'courseName',
                     'courseEnglishName': 'courseEnglishName', '英文課程名稱': 'courseEnglishName', 'English Course Name': 'courseEnglishName',
                     'attendanceDate': 'attendanceDate', '出席日期': 'attendanceDate',
+                    'attendanceEndDate': 'attendanceEndDate', '出席結束日期': 'attendanceEndDate',
                     'completionHours': 'completionHours', '完成時數': 'completionHours',
                     'instructorName': 'instructorName', '講師': 'instructorName',
                     'notes': 'notes', '備註': 'notes',
                     'courseCode': 'courseCode', '課程代碼': 'courseCode'
                 };
-                const result = { recipientName: '', recipientEnglishName: '', recipientEmail: '', courseName: '', courseEnglishName: '', attendanceDate: '', completionHours: '', instructorName: '', notes: '', courseCode: '' };
+                const result = { recipientName: '', recipientEnglishName: '', recipientEmail: '', courseName: '', courseEnglishName: '', attendanceDate: '', attendanceEndDate: '', completionHours: '', instructorName: '', notes: '', courseCode: '' };
                 for (const key of Object.keys(row)) {
                     const nk = fieldMap[key.trim()];
                     if (nk && result.hasOwnProperty(nk)) {
@@ -1177,6 +1213,7 @@
                             recipientEnglishName: r.recipientEnglishName || undefined,
                             recipientEmail: r.recipientEmail || undefined,
                             attendanceDate: r.attendanceDate,
+                            attendanceEndDate: r.attendanceEndDate || undefined,
                             completionHours: r.completionHours !== '' ? Number(r.completionHours) : undefined,
                             instructorName: r.instructorName || undefined,
                             notes: r.notes || undefined
@@ -1214,6 +1251,7 @@
                     recipientEnglishName: cert.recipientEnglishName || course.recipientEnglishName || '',
                     recipientEmail: cert.recipientEmail || course.recipientEmail || cert.user?.email || '',
                     attendanceDate: course.attendanceDate ? new Date(course.attendanceDate).toISOString().slice(0, 10) : '',
+                    attendanceEndDate: course.attendanceEndDate ? new Date(course.attendanceEndDate).toISOString().slice(0, 10) : '',
                     completionHours: course.completionHours !== undefined && course.completionHours !== null ? course.completionHours : '',
                     instructorName: course.instructorName || '',
                     notes: course.notes || '',
@@ -1238,6 +1276,10 @@
                     this.editError = '出席日期不可為未來日期';
                     return;
                 }
+                if (f.attendanceEndDate && this.isFutureDate(f.attendanceEndDate)) {
+                    this.editError = '結束日期不可為未來日期';
+                    return;
+                }
                 if (f.completionHours !== '' && Number(f.completionHours) <= 0) {
                     this.editError = '完成時數若有填寫，必須大於 0';
                     return;
@@ -1256,6 +1298,7 @@
                         recipientEnglishName: f.recipientEnglishName.trim() || undefined,
                         recipientEmail: f.recipientEmail.trim(),
                         attendanceDate: f.attendanceDate,
+                        attendanceEndDate: f.attendanceEndDate || undefined,
                         completionHours: f.completionHours !== '' ? Number(f.completionHours) : undefined,
                         instructorName: f.instructorName.trim() || undefined,
                         notes: f.notes.trim() || undefined,
