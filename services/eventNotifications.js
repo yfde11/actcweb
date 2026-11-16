@@ -6,10 +6,11 @@ function formatEventDateRange(event) {
         const start = event?.date ? new Date(event.date) : null;
         const end = event?.endDate ? new Date(event.endDate) : null;
         if (!start) return '時間待定';
-        const startText = start.toLocaleString('zh-TW', { dateStyle: 'medium', timeStyle: 'short' });
-        if (!end) return startText;
-        const endText = end.toLocaleString('zh-TW', { dateStyle: 'medium', timeStyle: 'short' });
-        return `${startText} ～ ${endText}`;
+        const options = { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Taipei' };
+        const startText = start.toLocaleString('zh-TW', options);
+        if (!end) return `${startText}（台灣時間）`;
+        const endText = end.toLocaleString('zh-TW', options);
+        return `${startText} ～ ${endText}（台灣時間）`;
     } catch {
         return '時間待定';
     }
